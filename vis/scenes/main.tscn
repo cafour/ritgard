@@ -35,8 +35,17 @@ sky = SubResource("Sky_85g3d")
 [node name="Main" type="Node3D"]
 script = ExtResource("1_o5qli")
 
+[node name="VoxelLodTerrain" type="VoxelLodTerrain" parent="."]
+generator = SubResource("VoxelGeneratorNoise_0wfyh")
+mesher = SubResource("VoxelMesherBlocky_tefeu")
+view_distance = 1024
+lod_distance = 128.0
+secondary_lod_distance = 128.0
+material = SubResource("StandardMaterial3D_o6xl0")
+
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
+visible = false
 generator = SubResource("VoxelGeneratorNoise_0wfyh")
 mesher = SubResource("VoxelMesherBlocky_tefeu")
 max_view_distance = 256
