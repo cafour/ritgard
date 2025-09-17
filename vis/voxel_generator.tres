@@ -1,0 +1,8 @@
+[gd_resource type="VoxelGeneratorScript" load_steps=3 format=3 uid="uid://cyvkjh7cp6kjh"]
+
+[ext_resource type="Script" uid="uid://cwj6wi5pwu1cy" path="res://VoxelGenerator.cs" id="1_8oohy"]
+[ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="1_rtxxi"]
+
+[resource]
+script = ExtResource("1_8oohy")
+Library = ExtResource("1_rtxxi")

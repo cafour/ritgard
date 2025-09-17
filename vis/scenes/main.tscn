@@ -1,26 +1,15 @@
-[gd_scene load_steps=12 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=10 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_o5qli"]
-
-[sub_resource type="VoxelGeneratorNoise" id="VoxelGeneratorNoise_0wfyh"]
-channel = 0
-noise = SubResource("FastNoiseLite_o5qli")
-height_range = 42.0
-
-[sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_sugp2"]
-
-[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_jyhfs"]
-
-[sub_resource type="VoxelBlockyLibrary" id="VoxelBlockyLibrary_tbgi4"]
-models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_sugp2"), SubResource("VoxelBlockyModelCube_jyhfs")])
-
-[sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_tefeu"]
-library = SubResource("VoxelBlockyLibrary_tbgi4")
+[ext_resource type="VoxelGeneratorScript" uid="uid://cyvkjh7cp6kjh" path="res://voxel_generator.tres" id="2_sugp2"]
+[ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="3_jyhfs"]
+[ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_sugp2"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o6xl0"]
 vertex_color_use_as_albedo = true
+
+[sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_tefeu"]
+library = ExtResource("3_jyhfs")
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tipki"]
 sky_top_color = Color(0.388235, 0.329412, 0.54902, 1)
@@ -36,20 +25,22 @@ sky = SubResource("Sky_85g3d")
 script = ExtResource("1_o5qli")
 
 [node name="VoxelLodTerrain" type="VoxelLodTerrain" parent="."]
-generator = SubResource("VoxelGeneratorNoise_0wfyh")
-mesher = SubResource("VoxelMesherBlocky_tefeu")
+generator = ExtResource("2_sugp2")
+mesher = ExtResource("3_sugp2")
 view_distance = 1024
 lod_distance = 128.0
 secondary_lod_distance = 128.0
 material = SubResource("StandardMaterial3D_o6xl0")
+run_stream_in_editor = false
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
 visible = false
-generator = SubResource("VoxelGeneratorNoise_0wfyh")
+generator = ExtResource("2_sugp2")
 mesher = SubResource("VoxelMesherBlocky_tefeu")
 max_view_distance = 256
 material_override = SubResource("StandardMaterial3D_o6xl0")
+run_stream_in_editor = false
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 100, 0)

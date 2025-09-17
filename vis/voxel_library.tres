@@ -1,0 +1,20 @@
+[gd_resource type="VoxelBlockyLibrary" load_steps=5 format=3 uid="uid://cbghhwq48nb1x"]
+
+[sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_80ftu"]
+resource_name = "air"
+lod_skirts_enabled = false
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_80ftu"]
+resource_name = "stone"
+color = Color(0.12549, 0.12549, 0.12549, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_slcdn"]
+resource_name = "grass"
+color = Color(0.172549, 0.552941, 0, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_o2oqi"]
+resource_name = "dirt"
+color = Color(0.501961, 0.137255, 0, 1)
+
+[resource]
+models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_80ftu"), SubResource("VoxelBlockyModelCube_80ftu"), SubResource("VoxelBlockyModelCube_slcdn"), SubResource("VoxelBlockyModelCube_o2oqi")])
