@@ -1,6 +1,55 @@
-[gd_scene load_steps=2 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=12 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_o5qli"]
+
+[sub_resource type="VoxelGeneratorNoise2D" id="VoxelGeneratorNoise2D_0wfyh"]
+channel = 0
+height_range = 42.0
+noise = SubResource("FastNoiseLite_o5qli")
+
+[sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_sugp2"]
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_jyhfs"]
+
+[sub_resource type="VoxelBlockyLibrary" id="VoxelBlockyLibrary_tbgi4"]
+models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_sugp2"), SubResource("VoxelBlockyModelCube_jyhfs")])
+
+[sub_resource type="VoxelMesherBlocky" id="VoxelMesherBlocky_tefeu"]
+library = SubResource("VoxelBlockyLibrary_tbgi4")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o6xl0"]
+vertex_color_use_as_albedo = true
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tipki"]
+sky_top_color = Color(0.388235, 0.329412, 0.54902, 1)
+
+[sub_resource type="Sky" id="Sky_85g3d"]
+sky_material = SubResource("ProceduralSkyMaterial_tipki")
+
+[sub_resource type="Environment" id="Environment_choun"]
+background_mode = 2
+sky = SubResource("Sky_85g3d")
+
 [node name="Main" type="Node3D"]
 script = ExtResource("1_o5qli")
+
+[node name="VoxelTerrain" type="VoxelTerrain" parent="."]
+transform = Transform3D(1, 0.000121601, 0.000408474, -0.000121553, 1, -9.35613e-05, -0.000408488, 9.34992e-05, 1, 0, 0, 0)
+generator = SubResource("VoxelGeneratorNoise2D_0wfyh")
+mesher = SubResource("VoxelMesherBlocky_tefeu")
+max_view_distance = 256
+material_override = SubResource("StandardMaterial3D_o6xl0")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 100, 0)
+
+[node name="VoxelViewer" type="VoxelViewer" parent="Camera3D"]
+view_distance = 256
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_choun")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.0794593, 0.375, -0.923613, -0.5, 0.786566, 0.362372, 0.862373, 0.4906, 0.125, 0, 100, 0)
