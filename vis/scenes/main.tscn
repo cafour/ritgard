@@ -4,10 +4,10 @@
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_o5qli"]
 
-[sub_resource type="VoxelGeneratorNoise2D" id="VoxelGeneratorNoise2D_0wfyh"]
+[sub_resource type="VoxelGeneratorNoise" id="VoxelGeneratorNoise_0wfyh"]
 channel = 0
-height_range = 42.0
 noise = SubResource("FastNoiseLite_o5qli")
+height_range = 42.0
 
 [sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_sugp2"]
 
@@ -36,8 +36,8 @@ sky = SubResource("Sky_85g3d")
 script = ExtResource("1_o5qli")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
-transform = Transform3D(1, 0.000121601, 0.000408474, -0.000121553, 1, -9.35613e-05, -0.000408488, 9.34992e-05, 1, 0, 0, 0)
-generator = SubResource("VoxelGeneratorNoise2D_0wfyh")
+transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
+generator = SubResource("VoxelGeneratorNoise_0wfyh")
 mesher = SubResource("VoxelMesherBlocky_tefeu")
 max_view_distance = 256
 material_override = SubResource("StandardMaterial3D_o6xl0")
