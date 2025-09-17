@@ -20,6 +20,12 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript
         // {
         //     // buffer.Fill((ulong)Library.GetModelIndexFromResourceName("stone"));
         // }
+
+        int GetHeight(int gx, int gz)
+        {
+            return (int)Mathf.Round((Noise.GetNoise2D(gx, gz) + 1.0f) * 0.5f * 100f);
+        }
+
         var chunkSize = buffer.GetSize();
         for (int x = 0; x < chunkSize.X; ++x)
         {
@@ -27,7 +33,7 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript
             for (int z = 0; z < chunkSize.Z; ++z)
             {
                 var gz = origin.Z + z;
-                var height = (int)Mathf.Round((Noise.GetNoise2D(gx, gz) + 1.0f) * 0.5f * 100f);
+                var height = GetHeight(gx, gz);
                 var relativeHeight = height - origin.Y;
                 if (relativeHeight < 0)
                 {
@@ -59,6 +65,24 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript
                     );
                 }
             }
+        }
+
+        var rng = new RandomNumberGenerator();
+        var structCount = rng.RandiRange(0, 1);
+        var voxelTool = buffer.GetVoxelTool();
+        for (int i = 0; i < structCount; ++i)
+        {
+            var position = new Vector3I(rng.RandiRange(0, chunkSize.X - 1), 0, rng.RandiRange(0, chunkSize.Z - 1));
+            var height = GetHeight(origin.X + position.X, origin.Z + position.Z);
+            if (height > origin.Y + chunkSize.Y || height < origin.Y)
+            {
+                continue;
+            }
+
+            position.Y = height - origin.Y;
+
+            voxelTool.Value = (ulong)Library.GetModelIndexFromResourceName(Blocks.Important);
+            voxelTool.DoSphere(position, 3);
         }
     }
 
@@ -94,5 +118,6 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript
         public const string Stone = "stone";
         public const string Grass = "grass";
         public const string Dirt = "dirt";
+        public const string Important = "important";
     }
 }

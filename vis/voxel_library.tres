@@ -1,4 +1,4 @@
-[gd_resource type="VoxelBlockyLibrary" load_steps=5 format=3 uid="uid://cbghhwq48nb1x"]
+[gd_resource type="VoxelBlockyLibrary" load_steps=6 format=3 uid="uid://cbghhwq48nb1x"]
 
 [sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_80ftu"]
 resource_name = "air"
@@ -16,5 +16,9 @@ color = Color(0.172549, 0.552941, 0, 1)
 resource_name = "dirt"
 color = Color(0.501961, 0.137255, 0, 1)
 
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_508ry"]
+resource_name = "important"
+color = Color(1, 0, 0, 1)
+
 [resource]
-models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_80ftu"), SubResource("VoxelBlockyModelCube_80ftu"), SubResource("VoxelBlockyModelCube_slcdn"), SubResource("VoxelBlockyModelCube_o2oqi")])
+models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_80ftu"), SubResource("VoxelBlockyModelCube_80ftu"), SubResource("VoxelBlockyModelCube_slcdn"), SubResource("VoxelBlockyModelCube_o2oqi"), SubResource("VoxelBlockyModelCube_508ry")])
