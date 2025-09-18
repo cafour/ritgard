@@ -78,5 +78,4 @@ public partial class Overlord : Node3D
             existing.QueueFree();
         }
     }
-
 }
