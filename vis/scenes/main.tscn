@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=9 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
+[ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/test_structure.tscn" id="2_jyhfs"]
 [ext_resource type="VoxelGeneratorScript" uid="uid://cyvkjh7cp6kjh" path="res://voxel_generator.tres" id="2_sugp2"]
 [ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_sugp2"]
 
@@ -19,6 +20,7 @@ sky = SubResource("Sky_85g3d")
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_o5qli")
+TestStructure = ExtResource("2_jyhfs")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
@@ -39,3 +41,5 @@ environment = SubResource("Environment_choun")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.0794593, 0.375, -0.923613, -0.5, 0.786566, 0.362372, 0.862373, 0.4906, 0.125, 0, 100, 0)
+
+[connection signal="mesh_block_entered" from="VoxelTerrain" to="." method="_OnMeshBlockEntered"]
