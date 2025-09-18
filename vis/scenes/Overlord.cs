@@ -1,10 +1,14 @@
 using Godot;
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Ritgard;
 
 public partial class Overlord : Node3D
 {
+    private ConcurrentDictionary<Vector3I, HashSet<Node3D>> structures = [];
+
     [Export]
     public PackedScene TestStructure;
 
@@ -23,6 +27,12 @@ public partial class Overlord : Node3D
     {
         var origin = terrain.DataBlockToVoxel(blockPos);
         var structCount = rng.RandiRange(0, 2);
+        if (structCount == 0)
+        {
+            return;
+        }
+
+        var set = new HashSet<Node3D>();
         for (int i = 0; i < structCount; ++i)
         {
             var position = new Vector3I(
@@ -39,6 +49,33 @@ public partial class Overlord : Node3D
             var instance = TestStructure.Instantiate<Node3D>();
             instance.Position = new Vector3(origin.X + position.X, height, origin.Z + position.Z);
             AddChild(instance);
+            set.Add(instance);
+        }
+        structures.AddOrUpdate(blockPos, _ => set, (_, e) =>
+        {
+            foreach (var existing in e)
+            {
+                e.Remove(existing);
+                RemoveChild(existing);
+                existing.QueueFree();
+            }
+            return set;
+        });
+    }
+
+    public void _OnMeshBlockExited(Vector3I blockPos)
+    {
+        var set = structures.GetValueOrDefault(blockPos);
+        if (set is null || set.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var existing in set)
+        {
+            set.Remove(existing);
+            RemoveChild(existing);
+            existing.QueueFree();
         }
     }
 

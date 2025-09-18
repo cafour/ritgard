@@ -48,3 +48,4 @@ environment = SubResource("Environment_choun")
 transform = Transform3D(-0.0794593, 0.375, -0.923613, -0.5, 0.786566, 0.362372, 0.862373, 0.4906, 0.125, 0, 100, 0)
 
 [connection signal="mesh_block_entered" from="VoxelTerrain" to="." method="_OnMeshBlockEntered"]
+[connection signal="mesh_block_exited" from="VoxelTerrain" to="." method="_OnMeshBlockExited"]
