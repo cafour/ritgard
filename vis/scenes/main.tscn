@@ -22,6 +22,7 @@ sky = SubResource("Sky_85g3d")
 [node name="Main" type="Node3D"]
 script = ExtResource("1_o5qli")
 TestStructure = ExtResource("2_jyhfs")
+DataCsvPath = "res://sample/prmr_JetUML.csv"
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
@@ -36,6 +37,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
 script = ExtResource("5_tbgi4")
 LookaroundSpeed = 0.004
 MoveSpeed = 20.0
+ZoomStep = 3.0
 
 [node name="Camera" type="Camera3D" parent="Player"]
 

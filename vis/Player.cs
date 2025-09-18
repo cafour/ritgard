@@ -116,13 +116,18 @@ public partial class Player : Node3D
 
     private void InputTopDown(InputEvent @event)
     {
+        var step = ZoomStep;
+        if (Input.IsActionPressed("move_run"))
+        {
+            step *= 2;
+        }
         if (@event.IsAction("zoom_in") && @event.IsPressed())
         {
-            zoomLevel -= ZoomStep;
+            zoomLevel -= step;
         }
         else if (@event.IsAction("zoom_out") && @event.IsPressed())
         {
-            zoomLevel += ZoomStep;
+            zoomLevel += step;
         }
     }
 
