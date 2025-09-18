@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace Ritgard;
 
-public partial class Overlord : Node3D
+public partial class Overlord : Node
 {
     private ConcurrentDictionary<Vector3I, HashSet<Node3D>> structures = [];
 
@@ -21,13 +21,21 @@ public partial class Overlord : Node3D
     [Export]
     public string DataCsvPath { get; set; }
 
+    [Export]
+    public Label ItemDescriptionLabel { get; set; }
+
+    [Export]
+    public RayCast3D PlayerRayCast { get; set; }
+
     private VoxelTerrain terrain;
     private VoxelGenerator generator;
     private RandomNumberGenerator rng;
     private ImmutableDictionary<(Guid id, string absoluteLink), DocumentationItem> data;
     private ImmutableDictionary<(Guid id, string absoluteLink), Vector2I> itemPositions;
+    private TestStructure currentItem;
 
     public const float ItemRadius = 256.0f;
+    public const string DefaultHint = "Hover over a structure to see its description...";
 
     public override void _EnterTree()
     {
@@ -38,6 +46,8 @@ public partial class Overlord : Node3D
 
     public override void _Ready()
     {
+        ItemDescriptionLabel.Text = DefaultHint;
+        
         using var stream = new FileAccessStream(DataCsvPath, FileAccess.ModeFlags.Read);
         using var reader = new System.IO.StreamReader(stream);
         using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -71,12 +81,50 @@ public partial class Overlord : Node3D
         foreach (var (identifier, position) in itemPositions)
         {
             var height = generator.GetHeight(position.X, position.Y);
-            var instance = TestStructure.Instantiate<Node3D>();
+            var instance = TestStructure.Instantiate<TestStructure>();
+            instance.Identifier = identifier;
             instance.Position = new Vector3(position.X, height, position.Y);
             AddChild(instance);
         }
     }
 
+    public override void _Process(double delta)
+    {
+        if (PlayerRayCast.IsColliding())
+        {
+            var structure = (PlayerRayCast.GetCollider() as StaticBody3D)
+                ?.GetParent<MeshInstance3D>()
+                ?.GetParent<TestStructure>();
+            if (structure is not null
+                && structure != currentItem
+                && structure.Identifier is not null
+                && data.TryGetValue(structure.Identifier.Value, out var item)
+            )
+            {
+                currentItem = structure;
+                if (string.IsNullOrEmpty(item.LinkText))
+                {
+                    ItemDescriptionLabel.Text = $"`{item.ShortRepresentation}` at `{item.Url}`";
+                }
+                else
+                {
+                    ItemDescriptionLabel.Text = $"`{item.LinkText ?? item.RelativeLink}` from "
+                        + $"`{item.ShortRepresentation}` at `{item.Url}`";
+                }
+            }
+
+            if (structure is null)
+            {
+                currentItem = null;
+                ItemDescriptionLabel.Text = DefaultHint;
+            }
+        }
+        else if (currentItem is not null)
+        {
+            currentItem = null;
+            ItemDescriptionLabel.Text = DefaultHint;
+        }
+    }
 
     public void _OnMeshBlockEntered(Vector3I blockPos)
     {

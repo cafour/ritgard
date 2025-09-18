@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://bx4226wl622ht"]
+[gd_scene load_steps=5 format=3 uid="uid://bx4226wl622ht"]
 
 [ext_resource type="Script" uid="uid://d2hce27v0el6e" path="res://scenes/TestStructure.cs" id="1_kiqts"]
 [ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="2_v15mh"]
@@ -6,9 +6,19 @@
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fjski"]
 vertex_color_use_as_albedo = true
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_v15mh"]
+radius = 3.0
+
 [node name="TestStructure" type="Node3D"]
 script = ExtResource("1_kiqts")
 Library = ExtResource("2_v15mh")
 Material = SubResource("StandardMaterial3D_fjski")
 
 [node name="Mesh" type="MeshInstance3D" parent="."]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Mesh"]
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Mesh/StaticBody3D"]
+shape = SubResource("SphereShape3D_v15mh")

@@ -14,6 +14,8 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
 
     [Export]
     public Material Material { get; set; }
+    
+    public (Guid id, string absoluteLink)? Identifier { get; set; }
 
     public override void _EnterTree()
     {

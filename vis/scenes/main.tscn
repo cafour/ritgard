@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=13 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/test_structure.tscn" id="2_jyhfs"]
 [ext_resource type="VoxelGeneratorScript" uid="uid://cyvkjh7cp6kjh" path="res://voxel_generator.tres" id="2_sugp2"]
 [ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_sugp2"]
 [ext_resource type="Script" uid="uid://b10trqwqp37xq" path="res://Player.cs" id="5_tbgi4"]
+[ext_resource type="FontFile" uid="uid://dmxjwe62r0f6c" path="res://fonts/IBMPlexMono-SemiBold.otf" id="6_tefeu"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o6xl0"]
 vertex_color_use_as_albedo = true
@@ -19,10 +20,24 @@ sky_material = SubResource("ProceduralSkyMaterial_tipki")
 background_mode = 2
 sky = SubResource("Sky_85g3d")
 
-[node name="Main" type="Node3D"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o6xl0"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.12549, 0.12549, 0.12549, 1)
+corner_detail = 1
+
+[sub_resource type="LabelSettings" id="LabelSettings_tipki"]
+font = ExtResource("6_tefeu")
+font_size = 24
+
+[node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "PlayerRayCast")]
 script = ExtResource("1_o5qli")
 TestStructure = ExtResource("2_jyhfs")
 DataCsvPath = "res://sample/prmr_JetUML.csv"
+ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
+PlayerRayCast = NodePath("Player/Camera/RayCast3D")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
@@ -40,15 +55,48 @@ MoveSpeed = 20.0
 ZoomStep = 3.0
 
 [node name="Camera" type="Camera3D" parent="Player"]
+current = true
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player/Camera"]
 view_distance = 256
+
+[node name="RayCast3D" type="RayCast3D" parent="Player/Camera"]
+target_position = Vector3(0, 0, -200)
+collision_mask = 2
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_choun")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.0794593, 0.375, -0.923613, -0.5, 0.786566, 0.362372, 0.862373, 0.4906, 0.125, 0, 100, 0)
+
+[node name="UI" type="Node" parent="."]
+
+[node name="Container" type="PanelContainer" parent="UI"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 23.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_o6xl0")
+
+[node name="ItemDescriptionLabel" type="Label" parent="UI/Container"]
+layout_mode = 2
+text = "`Some link` from `Some text file` at `https:\\\\some.url`"
+label_settings = SubResource("LabelSettings_tipki")
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="CenterContainer" type="CenterContainer" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="UI/CenterContainer"]
+custom_minimum_size = Vector2(4, 4)
+layout_mode = 2
+color = Color(0, 0, 0, 1)
 
 [connection signal="mesh_block_entered" from="VoxelTerrain" to="." method="_OnMeshBlockEntered"]
 [connection signal="mesh_block_exited" from="VoxelTerrain" to="." method="_OnMeshBlockExited"]
