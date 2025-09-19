@@ -32,9 +32,11 @@ public partial class Overlord : Node
     private RandomNumberGenerator rng;
     private ImmutableDictionary<(Guid id, string absoluteLink), DocumentationItem> data;
     private ImmutableDictionary<(Guid id, string absoluteLink), Vector2I> itemPositions;
+    private ImmutableDictionary<string, int> edgeCounts;
     private TestStructure currentItem;
 
     public const float ItemRadius = 256.0f;
+    public const int HeightmapSize = 512;
     public const string DefaultHint = "Hover over a structure to see its description...";
 
     public override void _EnterTree()
@@ -42,6 +44,7 @@ public partial class Overlord : Node
         terrain = GetNode<VoxelTerrain>("VoxelTerrain");
         generator = (VoxelGenerator)terrain.Generator;
         rng = new RandomNumberGenerator();
+        generator.Heightmap = Image.CreateEmpty(HeightmapSize, HeightmapSize, false, Image.Format.L8);
     }
 
     public override void _Ready()
@@ -78,6 +81,35 @@ public partial class Overlord : Node
         }
         itemPositions = positionsBuilder.ToImmutable();
 
+        var edgeCountBuilder = ImmutableDictionary.CreateBuilder<string, int>();
+        foreach (var record in records)
+        {
+            edgeCountBuilder[record.Url] = edgeCountBuilder.TryGetValue(record.Url, out var count)
+                ? count + 1 : 1;
+            if (!string.IsNullOrEmpty(record.AbsoluteLink))
+            {
+                edgeCountBuilder[record.AbsoluteLink] =
+                    edgeCountBuilder.TryGetValue(record.AbsoluteLink, out var aCount)
+                        ? aCount + 1
+                        : 1;
+            }
+        }
+        edgeCounts = edgeCountBuilder.ToImmutable();
+
+        foreach (var (identifier, item) in data)
+        {
+            var edgeCount = edgeCounts.GetValueOrDefault(Utils.Coalesce(item.AbsoluteLink, item.Url));
+            if (edgeCount == 0)
+            {
+                continue;
+            }
+            var position = itemPositions[identifier] + new Vector2I(256, 256);
+            generator.Heightmap.FillRect(
+                new Rect2I(position - new Vector2I(3, 3), new Vector2I(5, 5)),
+                new Color() { R8 = Math.Clamp(edgeCount, 0, 255) }
+            );
+        }
+
         foreach (var (identifier, position) in itemPositions)
         {
             var height = generator.GetHeight(position.X, position.Y);
@@ -103,7 +135,7 @@ public partial class Overlord : Node
         }
     }
 
-    
+
     private void OnHoverChanged(CollisionObject3D hoveree)
     {
         var structure = hoveree?.GetParent<TestStructure>();

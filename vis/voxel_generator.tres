@@ -14,3 +14,5 @@ domain_warp_fractal_octaves = 1
 script = ExtResource("1_8oohy")
 Library = ExtResource("1_rtxxi")
 Noise = SubResource("FastNoiseLite_rtxxi")
+NoiseMultiplier = 2
+HeightmapMultiplier = 3

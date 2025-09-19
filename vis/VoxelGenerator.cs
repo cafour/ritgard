@@ -14,6 +14,15 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript, IWithVoxelLib
     [Export]
     public Noise Noise { get; set; }
 
+    [Export]
+    public int NoiseMultiplier { get; set; } = 1;
+
+    [Export]
+    public int HeightmapMultiplier { get; set; } = 10;
+
+    public Image Heightmap { get; set; }
+
+
     public override void _GenerateBlock(VoxelBuffer buffer, Vector3I origin, int lod)
     {
         // if (origin.Y < 0)
@@ -80,9 +89,22 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript, IWithVoxelLib
         //     voxelTool.DoSphere(position, 3);
         // }
     }
-    
+
     public int GetHeight(int gx, int gz)
     {
-        return (int)Mathf.Round((Noise.GetNoise2D(gx, gz) + 1.0f) * 0.5f * 100f);
+        var value = 0;
+        if (Heightmap is not null)
+        {
+            var size = Heightmap.GetSize().X;
+            var hx = gx + size / 2;
+            var hy = gz + size / 2;
+            if (hx >= 0 && hx < size && hy >= 0 && hy < size)
+            {
+                value += Heightmap.GetPixel(hx, hy).R8 * HeightmapMultiplier;
+            }
+        }
+
+        value += (int)Mathf.Round((Noise.GetNoise2D(gx, gz) + 1.0f) * NoiseMultiplier);
+        return value;
     }
 }

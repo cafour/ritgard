@@ -58,9 +58,10 @@ Player = NodePath("Player")
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
 generator = ExtResource("2_sugp2")
 mesher = ExtResource("3_sugp2")
-max_view_distance = 256
+max_view_distance = 512
 material_override = SubResource("StandardMaterial3D_o6xl0")
 run_stream_in_editor = false
+mesh_block_size = 32
 
 [node name="Player" type="Node3D" parent="." node_paths=PackedStringArray("Crosshair")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
@@ -74,7 +75,7 @@ Crosshair = NodePath("../UI/CenterContainer/Crosshair")
 current = true
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player/Camera"]
-view_distance = 256
+view_distance = 512
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_choun")
@@ -114,6 +115,7 @@ color = Color(0, 0, 0, 1)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
+visible = false
 mesh = SubResource("PrismMesh_choun")
 
 [connection signal="mesh_block_entered" from="VoxelTerrain" to="." method="_OnMeshBlockEntered"]
