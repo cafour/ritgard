@@ -47,12 +47,12 @@ albedo_color = Color(0.67451, 0.0862745, 0.172549, 1)
 material = SubResource("StandardMaterial3D_85g3d")
 size = Vector3(10, 10, 10)
 
-[node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "PlayerRayCast")]
+[node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player")]
 script = ExtResource("1_o5qli")
 TestStructure = ExtResource("2_jyhfs")
 DataCsvPath = "res://sample/prmr_JetUML.csv"
 ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
-PlayerRayCast = NodePath("Player/Camera/RayCast3D")
+Player = NodePath("Player")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
@@ -62,22 +62,19 @@ max_view_distance = 256
 material_override = SubResource("StandardMaterial3D_o6xl0")
 run_stream_in_editor = false
 
-[node name="Player" type="Node3D" parent="."]
+[node name="Player" type="Node3D" parent="." node_paths=PackedStringArray("Crosshair")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
 script = ExtResource("5_tbgi4")
 LookaroundSpeed = 0.004
 MoveSpeed = 20.0
 ZoomStep = 3.0
+Crosshair = NodePath("../UI/CenterContainer/Crosshair")
 
 [node name="Camera" type="Camera3D" parent="Player"]
 current = true
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player/Camera"]
 view_distance = 256
-
-[node name="RayCast3D" type="RayCast3D" parent="Player/Camera"]
-target_position = Vector3(0, 0, -200)
-collision_mask = 2
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_choun")
@@ -92,6 +89,7 @@ anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 23.0
 grow_horizontal = 2
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_o6xl0")
 
 [node name="ItemDescriptionLabel" type="Label" parent="UI/Container"]
@@ -107,14 +105,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
-[node name="ColorRect" type="ColorRect" parent="UI/CenterContainer"]
+[node name="Crosshair" type="ColorRect" parent="UI/CenterContainer"]
 custom_minimum_size = Vector2(4, 4)
 layout_mode = 2
 color = Color(0, 0, 0, 1)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
 mesh = SubResource("PrismMesh_choun")
 
 [connection signal="mesh_block_entered" from="VoxelTerrain" to="." method="_OnMeshBlockEntered"]

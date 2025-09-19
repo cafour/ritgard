@@ -25,7 +25,7 @@ public partial class Overlord : Node
     public Label ItemDescriptionLabel { get; set; }
 
     [Export]
-    public RayCast3D PlayerRayCast { get; set; }
+    public Player Player { get; set; }
 
     private VoxelTerrain terrain;
     private VoxelGenerator generator;
@@ -86,43 +86,43 @@ public partial class Overlord : Node
             instance.Position = new Vector3(position.X, height, position.Y);
             AddChild(instance);
         }
+
+        Player.HoverChanged += OnHoverChanged;
     }
-
-    public override void _Process(double delta)
+    
+    private void OnHoverChanged(CollisionObject3D hoveree)
     {
-        if (PlayerRayCast.IsColliding())
+        var structure = hoveree?.GetParent<TestStructure>();
+        if (structure is not null
+            && structure != currentItem
+            && structure.Identifier is not null
+            && data.TryGetValue(structure.Identifier.Value, out var item)
+        )
         {
-            var structure = (PlayerRayCast.GetCollider() as StaticBody3D)
-                ?.GetParent<MeshInstance3D>()
-                ?.GetParent<TestStructure>();
-            if (structure is not null
-                && structure != currentItem
-                && structure.Identifier is not null
-                && data.TryGetValue(structure.Identifier.Value, out var item)
-            )
+            currentItem?.ToggleHighlight(false);
+            currentItem = structure;
+            currentItem.ToggleHighlight(true);
+
+            if (string.IsNullOrEmpty(item.LinkText))
             {
-                currentItem = structure;
-                if (string.IsNullOrEmpty(item.LinkText))
-                {
-                    ItemDescriptionLabel.Text = $"`{item.ShortRepresentation}` at `{item.Url}`";
-                }
-                else
-                {
-                    ItemDescriptionLabel.Text = $"`{item.LinkText ?? item.RelativeLink}` from "
-                        + $"`{item.ShortRepresentation}` at `{item.Url}`";
-                }
+                ItemDescriptionLabel.Text = $"`{item.ShortRepresentation}` at `{item.Url}`";
+            }
+            else
+            {
+                ItemDescriptionLabel.Text = $"`{item.LinkText ?? item.RelativeLink}` from "
+                    + $"`{item.ShortRepresentation}` at `{item.Url}`";
             }
 
-            if (structure is null)
-            {
-                currentItem = null;
-                ItemDescriptionLabel.Text = DefaultHint;
-            }
+            Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
         }
-        else if (currentItem is not null)
+
+        if (structure is null)
         {
+            currentItem.ToggleHighlight(false);
             currentItem = null;
             ItemDescriptionLabel.Text = DefaultHint;
+
+            Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
         }
     }
 

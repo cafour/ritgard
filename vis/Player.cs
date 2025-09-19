@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 
 namespace Ritgard;
@@ -6,6 +7,7 @@ namespace Ritgard;
 public partial class Player : Node3D
 {
     public const float BaseHeight = 100f;
+    public const float HoverReach = 512f;
 
     private Camera3D camera;
     private float pitch;
@@ -26,19 +28,31 @@ public partial class Player : Node3D
 
     [Export]
     public ControlMode ControlMode { get; set; }
+    
+    [Export]
+    public ColorRect Crosshair { get; set; }
+
+    [Signal]
+    public delegate void HoverChangedEventHandler(CollisionObject3D hoveree);
+    
+    public CollisionObject3D Hoveree { get; set; }
 
     public override void _EnterTree()
     {
         camera = GetNode<Camera3D>("Camera");
+
         zoomLevel = BaseHeight;
-        if (ControlMode == ControlMode.Flying)
+        switch (ControlMode)
         {
-            InitFlying();
-        }
-        else if (ControlMode == ControlMode.TopDown)
-        {
-            Position = Position with { Y = BaseHeight };
-            InitTopDown();
+            case ControlMode.TopDown:
+                Position = Position with { Y = BaseHeight };
+                InitTopDown();
+                break;
+            case ControlMode.Flying:
+                InitFlying();
+                break;
+            default:
+                throw new NotSupportedException();
         }
     }
 
@@ -51,6 +65,19 @@ public partial class Player : Node3D
         else
         {
             MoveFlying(delta);
+        }
+    }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        switch (ControlMode)
+        {
+            case ControlMode.TopDown:
+                Hover(camera.GetViewport().GetMousePosition());
+                break;
+            case ControlMode.Flying:
+                Hover(null);
+                break;
         }
     }
 
@@ -92,6 +119,7 @@ public partial class Player : Node3D
         camera.Basis = Basis.Identity;
         camera.RotateObjectLocal(Vector3.Right, -Mathf.Pi / 3);
         Position = Position with { Y = zoomLevel };
+        Crosshair.Visible = false;
     }
 
     private void MoveTopDown(double delta)
@@ -134,6 +162,7 @@ public partial class Player : Node3D
     private void InitFlying()
     {
         Input.MouseMode = Input.MouseModeEnum.Captured;
+        Crosshair.Visible = true;
     }
 
     private void MoveFlying(double delta)
@@ -162,6 +191,30 @@ public partial class Player : Node3D
             camera.Basis = Basis.Identity;
             camera.RotateObjectLocal(Vector3.Up, yaw);
             camera.RotateObjectLocal(Vector3.Right, pitch);
+        }
+    }
+
+    public void Hover(Vector2? viewportPos)
+    {
+        var space = GetWorld3D().DirectSpaceState;
+        var from = viewportPos is not null
+            ? camera.ProjectRayOrigin(viewportPos.Value)
+            : camera.GlobalPosition;
+        var to = viewportPos is not null
+            ? from + HoverReach * camera.ProjectRayNormal(viewportPos.Value)
+            : from + camera.Transform * Vector3.Forward * HoverReach;
+        var query = PhysicsRayQueryParameters3D.Create(
+            from,
+            to,
+            1 << 1 // Items
+        );
+        query.CollideWithAreas = true;
+        var result = space.IntersectRay(query);
+        var collider = result.GetValueOrDefault("collider").As<CollisionObject3D>();
+        if (collider != Hoveree)
+        {
+            Hoveree = collider;
+            EmitSignalHoverChanged(Hoveree);
         }
     }
 }
