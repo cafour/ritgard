@@ -89,6 +89,20 @@ public partial class Overlord : Node
 
         Player.HoverChanged += OnHoverChanged;
     }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (@event.IsAction("interact") && @event.IsPressed() && currentItem is not null)
+        {
+            var item = data.GetValueOrDefault(currentItem.Identifier.Value);
+            var url = Utils.Coalesce(item?.AbsoluteLink, item?.Url);
+            if (url is not null)
+            {
+                OS.ShellOpen(url);
+            }
+        }
+    }
+
     
     private void OnHoverChanged(CollisionObject3D hoveree)
     {
