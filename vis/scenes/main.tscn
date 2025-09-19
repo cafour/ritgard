@@ -1,10 +1,11 @@
-[gd_scene load_steps=13 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=17 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/test_structure.tscn" id="2_jyhfs"]
 [ext_resource type="VoxelGeneratorScript" uid="uid://cyvkjh7cp6kjh" path="res://voxel_generator.tres" id="2_sugp2"]
 [ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_sugp2"]
 [ext_resource type="Script" uid="uid://b10trqwqp37xq" path="res://Player.cs" id="5_tbgi4"]
+[ext_resource type="Shader" uid="uid://bnqc2iav2loar" path="res://shaders/outline.gdshader" id="6_o6xl0"]
 [ext_resource type="FontFile" uid="uid://dmxjwe62r0f6c" path="res://fonts/IBMPlexMono-SemiBold.otf" id="6_tefeu"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o6xl0"]
@@ -31,6 +32,20 @@ corner_detail = 1
 [sub_resource type="LabelSettings" id="LabelSettings_tipki"]
 font = ExtResource("6_tefeu")
 font_size = 24
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tipki"]
+render_priority = 0
+shader = ExtResource("6_o6xl0")
+shader_parameter/color = Color(1, 0.772549, 0, 1)
+shader_parameter/thickness = 0.1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_85g3d"]
+next_pass = SubResource("ShaderMaterial_tipki")
+albedo_color = Color(0.67451, 0.0862745, 0.172549, 1)
+
+[sub_resource type="PrismMesh" id="PrismMesh_choun"]
+material = SubResource("StandardMaterial3D_85g3d")
+size = Vector3(10, 10, 10)
 
 [node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "PlayerRayCast")]
 script = ExtResource("1_o5qli")
@@ -97,6 +112,10 @@ grow_vertical = 2
 custom_minimum_size = Vector2(4, 4)
 layout_mode = 2
 color = Color(0, 0, 0, 1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
+mesh = SubResource("PrismMesh_choun")
 
 [connection signal="mesh_block_entered" from="VoxelTerrain" to="." method="_OnMeshBlockEntered"]
 [connection signal="mesh_block_exited" from="VoxelTerrain" to="." method="_OnMeshBlockExited"]

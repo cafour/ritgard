@@ -47,7 +47,7 @@ public partial class Overlord : Node
     public override void _Ready()
     {
         ItemDescriptionLabel.Text = DefaultHint;
-        
+
         using var stream = new FileAccessStream(DataCsvPath, FileAccess.ModeFlags.Read);
         using var reader = new System.IO.StreamReader(stream);
         using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
