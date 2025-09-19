@@ -41,7 +41,7 @@ public record DocumentationItem
     public string? ResourceType { get; set; }
 
     [Name("Resource Availability")]
-    public string? IsAvailable { get; set; }
+    public bool? IsAvailable { get; set; }
 
     [Name("Unavailability Reason")]
     public string? UnavailabilityReason { get; set; }
