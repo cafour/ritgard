@@ -58,7 +58,7 @@ Player = NodePath("Player")
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
 generator = ExtResource("2_sugp2")
 mesher = ExtResource("3_sugp2")
-max_view_distance = 512
+max_view_distance = 256
 material_override = SubResource("StandardMaterial3D_o6xl0")
 run_stream_in_editor = false
 mesh_block_size = 32
@@ -75,13 +75,16 @@ Crosshair = NodePath("../UI/CenterContainer/Crosshair")
 current = true
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player/Camera"]
-view_distance = 512
+view_distance = 256
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_choun")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.0794593, 0.375, -0.923613, -0.5, 0.786566, 0.362372, 0.862373, 0.4906, 0.125, 0, 100, 0)
+shadow_enabled = true
+directional_shadow_mode = 0
+directional_shadow_max_distance = 512.0
 
 [node name="UI" type="Node" parent="."]
 

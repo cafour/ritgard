@@ -96,19 +96,19 @@ public partial class Overlord : Node
         }
         edgeCounts = edgeCountBuilder.ToImmutable();
 
-        foreach (var (identifier, item) in data)
-        {
-            var edgeCount = edgeCounts.GetValueOrDefault(Utils.Coalesce(item.AbsoluteLink, item.Url));
-            if (edgeCount == 0)
-            {
-                continue;
-            }
-            var position = itemPositions[identifier] + new Vector2I(256, 256);
-            generator.Heightmap.FillRect(
-                new Rect2I(position - new Vector2I(3, 3), new Vector2I(5, 5)),
-                new Color() { R8 = Math.Clamp(edgeCount, 0, 255) }
-            );
-        }
+        // foreach (var (identifier, item) in data)
+        // {
+        //     var edgeCount = edgeCounts.GetValueOrDefault(Utils.Coalesce(item.AbsoluteLink, item.Url));
+        //     if (edgeCount == 0)
+        //     {
+        //         continue;
+        //     }
+        //     var position = itemPositions[identifier] + new Vector2I(256, 256);
+        //     generator.Heightmap.FillRect(
+        //         new Rect2I(position - new Vector2I(3, 3), new Vector2I(5, 5)),
+        //         new Color() { R8 = Math.Clamp(edgeCount, 0, 255) }
+        //     );
+        // }
 
         foreach (var (identifier, position) in itemPositions)
         {
