@@ -2,9 +2,9 @@
 
 using System.Collections.Generic;
 
-namespace System;
+namespace Ritgard;
 
-public static class Utils
+public static partial class Utils
 {
     public static string? Coalesce(params IEnumerable<string> strings)
     {
