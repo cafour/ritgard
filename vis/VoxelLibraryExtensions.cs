@@ -1,9 +1,12 @@
+using System.Reflection;
 using Godot;
 
 namespace Ritgard;
 
 public static class VoxelLibraryExtensions
 {
+    public const string MissingBlockTypeName = "missing";
+
     public static void SetBlock(this IWithVoxelLibrary self, VoxelBuffer buffer, string blockType, int x, int y, int z)
     {
         buffer.SetVoxel(
@@ -41,6 +44,17 @@ public static class VoxelLibraryExtensions
         string blockType
     )
     {
-        return (ulong)self.Library.GetModelIndexFromResourceName(blockType);
+        var result = self.Library.GetModelIndexFromResourceName(blockType);
+        if (result == -1u)
+        {
+            result = self.Library.GetModelIndexFromResourceName(MissingBlockTypeName);
+        }
+
+        if (result == -1u)
+        {
+            result = 0;
+        }
+
+        return (ulong)result;
     }
 }
