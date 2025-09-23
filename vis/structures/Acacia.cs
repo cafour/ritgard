@@ -62,7 +62,7 @@ public sealed class Acacia : IStructure
 
         if (Breadth > 0)
         {
-            buffer.FillSpottyCylinder(Vector3I.Up * (Height - 1), Breadth, 1, Blocks.Leaves, Leafiness);
+            buffer.FillSpottyCylinder(Vector3I.Up * (Height - 1), Breadth, 1, Blocks.AcaciaLeaves, Leafiness);
             // buffer.FillSpottyCylinder(Vector3I.Up * (Height - 2), Breadth, 1, Blocks.Leaves, Leafiness);
         }
     }

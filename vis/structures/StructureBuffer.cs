@@ -130,33 +130,25 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillCone(Vector3I top, int height, int radius, string blockType)
+    public StructureBuffer FillCone(Vector3I pos, int height, int radius, string blockType)
     {
         if (height == 0 || radius == 0)
         {
             return this;
         }
 
-        var (sin, cos) = Mathf.SinCos(Mathf.Atan(radius * 2 / (float)height));
-        var c = new Vector2(sin, cos);
-
-        float Sdf(Vector3 pos)
+        for (int h = 0; h < height; ++h)
         {
-            var q = new Vector2(pos.X, pos.Z).Length();
-            return Mathf.Max(c.Dot(new Vector2(q, pos.Y)), -height - pos.Y);
-        }
-
-        for (int h = -height + 1; h <= 0; ++h)
-        {
+            var r = radius / (float)height * h;
+            var rSquared = r * r;
             for (int x = -radius + 1; x < radius; ++x)
             {
                 for (int z = -radius + 1; z < radius; ++z)
                 {
-                    var current = new Vector3(x + Mathf.Sign(x) * 1f, h, z + Mathf.Sign(z) * 1f);
-                    if (Sdf(current) < 0.0f)
+                    if (x * x + z * z < rSquared)
                     {
                         Tool.SetVoxel(
-                            top + new Vector3I(x, h, z) + OriginOffset,
+                            pos + new Vector3I(x, height - h, z) + OriginOffset,
                             this.GetBlockTypeIndex(blockType)
                         );
                     }

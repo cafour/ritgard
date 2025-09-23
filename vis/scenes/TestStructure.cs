@@ -43,6 +43,11 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
                 // Leafiness = rng.RandfRange(0.1f, 1.0f)
                 Leafiness = 1.0f
             },
+            "GitHub Resource" => new Confifer
+            {
+                Breadth = (int?)Item.WordLength ?? rng.RandiRange(2, 5),
+                Height = (int?)Item.ByteLength ?? rng.RandiRange(5, 15)
+            },
             _ => new Broadleaf
             {
                 Breadth = (int?)Item.WordLength ?? rng.RandiRange(2, 5),
@@ -50,13 +55,6 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
                 // Leafiness = rng.RandfRange(0.1f, 1.0f)
                 Leafiness = 1.0f
             }
-        };
-        structure = new Confifer
-        {
-            Breadth = (int?)Item.WordLength ?? rng.RandiRange(2, 5),
-            Height = (int?)Item.ByteLength ?? rng.RandiRange(5, 15),
-            // Leafiness = rng.RandfRange(0.1f, 1.0f)
-            Leafiness = 1.0f
         };
         
         var (min, max) = structure.Measure();

@@ -4,7 +4,7 @@ namespace Ritgard.Structures;
 
 public sealed class Confifer : IStructure
 {
-    public const float BarkGrowth = 0.8f;
+    public const float BarkGrowth = 0.4f;
 
     public int Height { get; set; }
 
@@ -24,14 +24,12 @@ public sealed class Confifer : IStructure
     {
         var trunk = (int)Mathf.Log(Height * BarkGrowth);
         buffer.FillLine(Vector3I.Zero, Vector3I.Up * (Height - 2), trunk, 1, Blocks.Bark);
-
-        var h = Height / 3.0f * 2.0f;
-
+        var coneHeight = Mathf.RoundToInt(Height / 3.0f * 2.0f);
         buffer.FillCone(
-            Vector3I.Up * Height,
-            Mathf.FloorToInt(h),
+            Vector3I.Up * (Height - coneHeight),
+            coneHeight,
             Breadth,
-            Blocks.Leaves
+            Blocks.ConiferLeaves
         );
     }
 
