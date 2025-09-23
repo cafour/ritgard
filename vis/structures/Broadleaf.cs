@@ -25,7 +25,7 @@ public class Broadleaf : IStructure
     public void Build(StructureBuffer buffer)
     {
         var trunk = (int)Mathf.Log(Height * BarkGrowth);
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * Height, trunk, 1, Blocks.Bark);
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * (Height - 1), trunk, 1, Blocks.Bark);
         buffer.FillSphere(Vector3I.Up * (Height - Breadth + 1), Breadth, Blocks.Leaves);
     }
 }
