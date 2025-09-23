@@ -25,8 +25,8 @@ public class Broadleaf : IStructure
     public void Build(StructureBuffer buffer)
     {
         var totalHeight = TrunkHeight + CrownBreadth * 2 - 1;
-        var trunk = (int)Mathf.Log(totalHeight * BarkGrowth);
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, trunk, Mathf.RoundToInt(trunk / 2.0f), Blocks.Bark);
+        var trunk = Mathf.RoundToInt(Mathf.Log(totalHeight * BarkGrowth));
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, trunk, Mathf.CeilToInt(trunk / 2.0f), Blocks.Bark);
         buffer.FillSpottySphere(Vector3I.Up * (TrunkHeight + CrownBreadth), CrownBreadth, Blocks.Leaves, Leafiness);
     }
 }

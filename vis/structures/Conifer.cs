@@ -6,29 +6,30 @@ public sealed class Confifer : IStructure
 {
     public const float BarkGrowth = 0.4f;
 
-    public int Height { get; set; }
+    public int TrunkHeight { get; set; }
 
-    public int Breadth { get; set; }
+    public int CrownBreadth { get; set; }
 
     public float Leafiness { get; set; } = 1.0f;
 
     public (Vector3I min, Vector3I max) Measure()
     {
         return (
-            new(-Breadth, 0, -Breadth),
-            new(Breadth, Height + 1, Breadth)
+            new(-CrownBreadth, 0, -CrownBreadth),
+            new(CrownBreadth, TrunkHeight + Mathf.RoundToInt(CrownBreadth * 2f), CrownBreadth)
         );
     }
 
     public void Build(StructureBuffer buffer)
     {
-        var coneHeight = Mathf.RoundToInt(Height / 3.0f * 2.0f);
-        var trunk = (int)Mathf.Log((Height - coneHeight) * BarkGrowth);
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * (Height - coneHeight), trunk, 1, Blocks.Bark);
+        var coneHeight = Mathf.RoundToInt(CrownBreadth * 2f);
+        var totalHeight = TrunkHeight + coneHeight;
+        var trunk = Mathf.RoundToInt(Mathf.Log(totalHeight * BarkGrowth));
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, trunk, Mathf.CeilToInt(trunk / 2f), Blocks.Bark);
         buffer.FillCone(
-            Vector3I.Up * (Height - coneHeight),
+            Vector3I.Up * (TrunkHeight - 1),
             coneHeight,
-            Breadth,
+            CrownBreadth,
             Blocks.ConiferLeaves
         );
     }
