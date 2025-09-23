@@ -102,6 +102,7 @@ color = Color(0, 0, 0, 1)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
+visible = false
 mesh = SubResource("PrismMesh_choun")
 
 [connection signal="mesh_block_entered" from="VoxelTerrain" to="." method="_OnMeshBlockEntered"]

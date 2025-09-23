@@ -115,6 +115,7 @@ public partial class Overlord : Node
             var height = generator.GetHeight(position.X, position.Y);
             var instance = TestStructure.Instantiate<TestStructure>();
             instance.Identifier = identifier;
+            instance.Item = data[identifier];
             instance.Position = new Vector3(position.X, height, position.Y);
             AddChild(instance);
         }

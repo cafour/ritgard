@@ -42,6 +42,41 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
+    public StructureBuffer FillSpottySphere(Vector3I pos, int radius, string blockType, float spottiness)
+    {
+        spottiness = Mathf.Clamp(spottiness, 0.0f, 1.0f);
+        if (spottiness == 0.0f)
+        {
+            return this;
+        }
+        else if (spottiness == 1.0f)
+        {
+            return FillSphere(pos, radius, blockType);
+        }
+
+        var rng = new RandomNumberGenerator();
+
+        pos += OriginOffset;
+
+        float radiusSquared = radius * radius;
+
+        for (int x = -radius + 1; x < radius; x++)
+        {
+            for (int y = -radius + 1; y < radius; y++)
+            {
+                for (int z = -radius + 1; z < radius; z++)
+                {
+                    if (x * x + y * y + z * z < radiusSquared && rng.Randf() < spottiness)
+                    {
+                        Tool.SetVoxel(pos + new Vector3I(x, y, z), this.GetBlockTypeIndex(blockType));
+                    }
+                }
+            }
+        }
+
+        return this;
+    }
+
     public StructureBuffer FillLine(Vector3I from, Vector3I to, int fromRadius, int toRadius, string blockType)
     {
         ResetTool();
@@ -55,6 +90,43 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         radii[0] = fromRadius;
         radii[1] = toRadius;
         Tool.DoPath(points, radii);
+        return this;
+    }
+
+    public StructureBuffer FillSpottyCylinder(Vector3I pos, int radius, int height, string blockType, float spottiness)
+    {
+        if (radius <= 0 || height <= 0)
+        {
+            return this;
+        }
+
+        spottiness = Mathf.Clamp(spottiness, 0.0f, 1.0f);
+        if (spottiness == 0.0f)
+        {
+            return this;
+        }
+
+        var rng = new RandomNumberGenerator();
+        pos += OriginOffset;
+        var radiusSquared = radius * radius;
+
+        for (int x = -radius + 1; x < radius; ++x)
+        {
+            for (int z = -radius + 1; z < radius; ++z)
+            {
+                if (x * x + z * z < radiusSquared)
+                {
+                    for (int h = 0; h < height; ++h)
+                    {
+                        if (spottiness == 1.0f || spottiness < rng.Randf())
+                        {
+                            Tool.SetVoxel(pos + new Vector3I(x, h, z), this.GetBlockTypeIndex(blockType));
+                        }
+                    }
+                }
+            }
+        }
+
         return this;
     }
 

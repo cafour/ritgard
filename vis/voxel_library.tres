@@ -26,7 +26,7 @@ color = Color(0.571266, 0.00302011, 0.869848, 1)
 
 [sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_6qcw4"]
 resource_name = "leaves"
-color = Color(0.560784, 0.737255, 0.247059, 1)
+color = Color(0.560784, 0.737255, 0.247059, 0.784314)
 
 [sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_7kxxd"]
 resource_name = "bark"

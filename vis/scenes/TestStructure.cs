@@ -1,4 +1,5 @@
 using Godot;
+using Ritgard.Data;
 using Ritgard.Structures;
 using System;
 
@@ -20,28 +21,42 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
 
     [Export]
     public Material HighlightMaterial { get; set; }
+    
+    public (Guid id, string? absoluteLink)? Identifier { get; set; }
 
-    public (Guid id, string absoluteLink)? Identifier { get; set; }
+    public DocumentationItem? Item { get; set; }
 
     public bool IsHighlighted { get; set; }
 
-    public override void _EnterTree()
+    public override void _Ready()
     {
         mesh = GetNode<MeshInstance3D>("Mesh");
         body = GetNode<StaticBody3D>("Body");
         // GenerateSphere();
 
-        var broadleaf = new Broadleaf
+        IStructure structure = Item?.ResourceType switch
         {
-            Breadth = rng.RandiRange(2, 5),
-            Height = rng.RandiRange(5, 15),
-            Leafiness = rng.Randf()
+            "Text" or "MarkDown" or "HTML" => new Acacia
+            {
+                Breadth = (int?)Item.WordLength ?? rng.RandiRange(2, 5),
+                Height = (int?)Item.ByteLength ?? rng.RandiRange(5, 15),
+                // Leafiness = rng.RandfRange(0.1f, 1.0f)
+                Leafiness = 1.0f
+            },
+            _ => new Broadleaf
+            {
+                Breadth = (int?)Item.WordLength ?? rng.RandiRange(2, 5),
+                Height = (int?)Item.ByteLength ?? rng.RandiRange(5, 15),
+                // Leafiness = rng.RandfRange(0.1f, 1.0f)
+                Leafiness = 1.0f
+            }
         };
-        var (min, max) = broadleaf.Measure();
+        
+        var (min, max) = structure.Measure();
         // NB: + Vector3.One is the margin so that all surfaces get properly meshed.
         var size = max - min + Vector3I.One;
         var buffer = new StructureBuffer(size, Library);
-        broadleaf.Build(buffer);
+        structure.Build(buffer);
         var mesher = new VoxelMesherBlocky
         {
             Library = Library
