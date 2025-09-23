@@ -22,9 +22,9 @@ public sealed class Confifer : IStructure
 
     public void Build(StructureBuffer buffer)
     {
-        var trunk = (int)Mathf.Log(Height * BarkGrowth);
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * (Height - 2), trunk, 1, Blocks.Bark);
         var coneHeight = Mathf.RoundToInt(Height / 3.0f * 2.0f);
+        var trunk = (int)Mathf.Log((Height - coneHeight) * BarkGrowth);
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * (Height - coneHeight), trunk, 1, Blocks.Bark);
         buffer.FillCone(
             Vector3I.Up * (Height - coneHeight),
             coneHeight,

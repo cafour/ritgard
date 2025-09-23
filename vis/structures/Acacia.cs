@@ -5,7 +5,7 @@ namespace Ritgard.Structures;
 
 public sealed class Acacia : IStructure
 {
-    public const float BarkGrowth = 0.8f;
+    public const float BarkGrowth = 0.4f;
 
     public int Height { get; set; }
 

@@ -6,7 +6,7 @@ namespace Ritgard.Structures;
 
 public class Broadleaf : IStructure
 {
-    public const float BarkGrowth = 0.8f;
+    public const float BarkGrowth = 0.4f;
     
     public int Height { get; set; }
     
@@ -24,8 +24,9 @@ public class Broadleaf : IStructure
 
     public void Build(StructureBuffer buffer)
     {
-        var trunk = (int)Mathf.Log(Height * BarkGrowth);
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * (Height - 1), trunk, 1, Blocks.Bark);
+        var trunkHeight = Height - 2 * Breadth + 1;
+        var trunk = (int)Mathf.Log(trunkHeight * BarkGrowth);
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * trunkHeight, trunk, 1, Blocks.Bark);
         buffer.FillSpottySphere(Vector3I.Up * (Height - Breadth + 1), Breadth, Blocks.Leaves, Leafiness);
     }
 }
