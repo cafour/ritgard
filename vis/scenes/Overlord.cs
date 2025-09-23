@@ -13,6 +13,8 @@ namespace Ritgard;
 
 public partial class Overlord : Node
 {
+    public static Overlord Instance { get; private set; }
+    
     private ConcurrentDictionary<Vector3I, HashSet<Node3D>> structures = [];
 
     [Export]
@@ -26,6 +28,17 @@ public partial class Overlord : Node
 
     [Export]
     public Player Player { get; set; }
+
+    public const int ByteLengthMappingMin = 3;
+    public const int ByteLengthMappingMax = 20;
+    public const int WordLengthMappingMin = 3;
+    public const int WordLengthMappingMax = 20;
+    public const int TagsLengthMappingMin = 3;
+    public const int TagsLengthMappingMax = 20;
+
+    public Func<long, int> ByteLengthMapping { get; private set; }
+    public Func<long, int> WordLengthMapping { get; private set; }
+    public Func<long, int> TagCountMapping { get; private set; }
 
     private VoxelTerrain terrain;
     private VoxelGenerator generator;
@@ -41,6 +54,12 @@ public partial class Overlord : Node
 
     public override void _EnterTree()
     {
+        if (Instance is not null)
+        {
+            Instance.QueueFree();
+        }
+        Instance = this;
+
         terrain = GetNode<VoxelTerrain>("VoxelTerrain");
         generator = (VoxelGenerator)terrain.Generator;
         rng = new RandomNumberGenerator();
@@ -68,6 +87,36 @@ public partial class Overlord : Node
             }
         }
         data = dataBuilder.ToImmutable();
+
+        var minBytes = data.Values.Min(v => v.ByteLength) ?? 0;
+        var maxBytes = data.Values.Max(v => v.ByteLength) ?? 1;
+        ByteLengthMapping = b => Mathf.RoundToInt(Mathf.Remap(
+            b,
+            minBytes,
+            maxBytes,
+            ByteLengthMappingMin,
+            ByteLengthMappingMax
+        ));
+
+        var minWords = data.Values.Min(v => v.WordLength) ?? 0;
+        var maxWords = data.Values.Max(v => v.WordLength) ?? 1;
+        WordLengthMapping = w => Mathf.RoundToInt(Mathf.Remap(
+            w,
+            minWords,
+            maxWords,
+            WordLengthMappingMin,
+            WordLengthMappingMax
+        ));
+
+        var minTags = data.Values.Min(v => v.TagCount) ?? 0;
+        var maxTags = data.Values.Max(v => v.TagCount) ?? 1;
+        TagCountMapping = t => Mathf.RoundToInt(Mathf.Remap(
+            t,
+            minTags,
+            maxTags,
+            TagsLengthMappingMin,
+            TagsLengthMappingMax
+        ));
 
         var positionsBuilder = ImmutableDictionary.CreateBuilder<(Guid id, string absoluteLink), Vector2I>();
         foreach (var (identifier, item) in data)

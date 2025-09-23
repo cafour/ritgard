@@ -47,11 +47,11 @@ public record DocumentationItem
     public string? UnavailabilityReason { get; set; }
 
     [Name("Bytes")]
-    public int? ByteLength;
+    public long? ByteLength { get; set; }
 
     [Name("Words")]
-    public int? WordLength;
+    public long? WordLength { get; set; }
 
     [Name("Tags")]
-    public int? TagCount;
+    public long? TagCount { get; set; }
 }
