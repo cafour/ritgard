@@ -58,10 +58,10 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
             },
             _ => new Broadleaf
             {
-                Breadth = Item.WordLength.HasValue
+                CrownBreadth = Item.WordLength.HasValue
                     ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
                     : Overlord.WordLengthMappingMin,
-                Height = Item.ByteLength.HasValue
+                TrunkHeight = Item.ByteLength.HasValue
                     ? Overlord.Instance.ByteLengthMapping(Item.ByteLength.Value)
                     : Overlord.ByteLengthMappingMin,
                 // Leafiness = rng.RandfRange(0.1f, 1.0f)
