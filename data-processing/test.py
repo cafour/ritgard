@@ -8,7 +8,7 @@ import csv
 import hdbscan
 
 # Load a pretrained SBERT model
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('all-mpnet-base-v2')
 
 # Read issue titles
 issue_titles = []
@@ -37,13 +37,13 @@ colors = [palette(l) if l != -1 else (0.7, 0.7, 0.7, 0.5) for l in labels]
 
 plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=colors, s=80, alpha=0.8, edgecolors='k')
 
-# Add labels (article names) slightly offset
-for i, name in enumerate(issue_titles):
-    plt.text(embeddings_2d[i, 0] + 0.02, embeddings_2d[i, 1] + 0.02, name, fontsize=9)
+# Add labels
+# for i, name in enumerate(issue_titles):
+#     plt.text(embeddings_2d[i, 0] + 0.02, embeddings_2d[i, 1] + 0.02, name, fontsize=9)
 
-plt.title("Article Titles Clustered by Topic (SBERT + UMAP + HDBSCAN)")
+plt.title("Issue Titles")
 plt.show()
 
-# Print cluster assignments
-for name, label in zip(issue_titles, labels):
-    print(f"{name:50} -> Cluster {label}")
+# # Print cluster assignments
+# for name, label in zip(issue_titles, labels):
+#     print(f"{name:50} -> Cluster {label}")
