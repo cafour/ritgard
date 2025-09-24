@@ -1,6 +1,9 @@
 ﻿using System.Collections.Immutable;
+using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ConsoleAppFramework;
+using CsvHelper;
 using Markdig;
 using Markdig.Syntax;
 using Octokit;
@@ -21,6 +24,15 @@ await ConsoleApp.RunAsync(args, async (string repo) =>
     var (owner, repoName) = (repoParts[0], repoParts[1]);
     Console.WriteLine($"owner={owner}; repo={repoName}");
     var repoInfo = await github.Repository.Get(owner, repoName);
+
+    var issues = await GetIssues(github, repoInfo);
+    using var writer = new StreamWriter("./issues.csv");
+    using var cvs = new CsvWriter(writer, CultureInfo.InvariantCulture);
+    cvs.WriteRecords(issues);
+});
+
+async Task PrintLinks(GitHubClient github, Repository repoInfo)
+{
     var readme = await github.Repository.Content.GetReadme(repoInfo.Id);
     var fileExtension = Path.GetExtension(new Uri(readme.Url).AbsolutePath);
     Console.WriteLine($"Found README at: {readme.Url} with the {fileExtension} file extension.");
@@ -31,7 +43,7 @@ await ConsoleApp.RunAsync(args, async (string repo) =>
     {
         Console.WriteLine($"\t{link}");
     }
-});
+}
 
 ImmutableArray<string> GetLinks(string content, string fileExtension)
 {
@@ -84,6 +96,23 @@ ImmutableArray<string> GetMarkdownLinks(string content)
     return links.ToImmutable();
 }
 
+async Task<ImmutableArray<GitHubIssue>> GetIssues(GitHubClient gh, Repository repository)
+{
+    var issues = await gh.Issue.GetAllForRepository(repository.Id, new RepositoryIssueRequest
+    {
+        State = ItemStateFilter.All
+    });
+    return issues.Select(i => new GitHubIssue(
+        Id: i.Id,
+        Number: i.Number,
+        Title: i.Title,
+        Author: i.User.Login,
+        CreatedAt: i.CreatedAt,
+        UpdatedAt: i.UpdatedAt,
+        ClosedAt: i.ClosedAt
+    )).ToImmutableArray();
+}
+
 partial class Program
 {
     [GeneratedRegex(
@@ -91,3 +120,13 @@ partial class Program
     )]
     private static partial Regex GetUrlRegex();
 }
+
+public record GitHubIssue(
+    long Id,
+    int Number,
+    string Title,
+    string Author,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? UpdatedAt,
+    DateTimeOffset? ClosedAt
+);
