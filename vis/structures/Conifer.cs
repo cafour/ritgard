@@ -2,7 +2,7 @@ using Godot;
 
 namespace Ritgard.Structures;
 
-public sealed class Confifer : IStructure
+public sealed class Conifer : IStructure
 {
     public const float BarkGrowth = 0.4f;
 

@@ -47,7 +47,7 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
                 // Leafiness = rng.RandfRange(0.1f, 1.0f)
                 Leafiness = 1.0f
             },
-            "GitHub Resource" => new Confifer
+            "GitHub Resource" => new Conifer
             {
                 CrownBreadth = Item.WordLength.HasValue
                     ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
