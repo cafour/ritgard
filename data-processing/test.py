@@ -1,14 +1,9 @@
-# Install dependencies if needed:
-# pip install sentence-transformers umap-learn matplotlib
-
-from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
 import umap.umap_ as umap
 import matplotlib.pyplot as plt
 import csv
 import hdbscan
-
-# Load a pretrained SBERT model
-model = SentenceTransformer('all-mpnet-base-v2')
 
 # Read issue titles
 issue_titles = []
@@ -17,16 +12,21 @@ with open('issues.csv', 'r') as csv_file:
     for issue in reader:
         issue_titles.append(issue['Title'])
 
-# Encode article titles into embeddings
-embeddings = model.encode(issue_titles)
+vectorizer = TfidfVectorizer(stop_words="english")
+tfidf_matrix = vectorizer.fit_transform(issue_titles)
 
-# Reduce dimensions to 2D using UMAP
-reducer = umap.UMAP(n_neighbors=5, min_dist=0.3, random_state=42)
-embeddings_2d = reducer.fit_transform(embeddings)
+# Latent Semantic Indexing (LSI) via TruncatedSVD
+n_components = 100  # latent dimensions (tune as needed)
+svd = TruncatedSVD(n_components=n_components, random_state=42)
+embeddings = svd.fit_transform(tfidf_matrix)
 
 # Cluster with HDBSCAN
 clusterer = hdbscan.HDBSCAN(min_cluster_size=2, gen_min_span_tree=True)
 labels = clusterer.fit_predict(embeddings)  # cluster in high-dimensional space (better!)
+
+# Reduce dimensions to 2D using UMAP
+reducer = umap.UMAP(n_neighbors=5, min_dist=0.3, random_state=42)
+embeddings_2d = reducer.fit_transform(embeddings)
 
 # Plot
 plt.figure(figsize=(10, 7))
@@ -41,7 +41,7 @@ plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=colors, s=80, alpha=0.8,
 # for i, name in enumerate(issue_titles):
 #     plt.text(embeddings_2d[i, 0] + 0.02, embeddings_2d[i, 1] + 0.02, name, fontsize=9)
 
-plt.title("Issue Titles")
+plt.title("Issue Titles (LSI + HDBSCAN + UMAP)")
 plt.show()
 
 # # Print cluster assignments
