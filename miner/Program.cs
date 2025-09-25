@@ -6,6 +6,7 @@ using ConsoleAppFramework;
 using CsvHelper;
 using Markdig;
 using Markdig.Syntax;
+using Microsoft.Extensions.Configuration;
 using Octokit;
 
 var urlRegex = GetUrlRegex();
@@ -14,7 +15,14 @@ var mdPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 
 await ConsoleApp.RunAsync(args, async (string repo) =>
 {
+    var configBuilder = new ConfigurationBuilder();
+    configBuilder
+        .AddJsonFile("appsettings.json")
+        .AddUserSecrets<Program>();
+    var config = configBuilder.Build();
+
     var github = new GitHubClient(new ProductHeaderValue("ritgard"));
+    github.Credentials = new Credentials(config["GitHubToken"]);
 
     var repoParts = repo.Split(['/']).Select(s => s.Trim()).ToArray();
     if (repoParts.Length != 2)

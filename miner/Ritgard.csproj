@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
+    <UserSecretsId>0fcf9f43-54dc-45c2-a2bb-4d1ecfb24a18</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +16,14 @@
     </PackageReference>
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Markdig" Version="0.41.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.9" />
     <PackageReference Include="Octokit" Version="14.0.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Content CopyToOutputDirectory="Always" Include="appsettings.json" />
   </ItemGroup>
 
 </Project>
