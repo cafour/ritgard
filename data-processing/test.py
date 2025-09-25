@@ -29,8 +29,9 @@ def get_top_keywords(tfidf_matrix, labels, feature_names, top_n=5):
     return clusters
 
 
-def read_issues(filename: str, project_name: str) -> list[str]:
+def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]:
     print("Reading " + filename)
+    training_data = []
     issue_titles = []
     with open(filename, "r", encoding="utf8") as csv_file:
         reader = csv.DictReader(csv_file)
@@ -41,10 +42,12 @@ def read_issues(filename: str, project_name: str) -> list[str]:
                 for label in labels:
                     title += f"[{label}] "
             title += issue["Title"]
+            title = title.lower().replace(project_name, "")
+            issue_titles.append(title)
+            training_data.append(title)
             if issue["Body"] != None and issue["Body"] != "":
-                title += issue["Body"]
-            issue_titles.append(title.lower().replace(project_name, ""))
-    return issue_titles
+                training_data.extend(issue["Body"].lower().split("\n\n"))
+    return (training_data, issue_titles)
 
 
 def embed_sbert(strings: list[str]):
@@ -149,9 +152,9 @@ def show_plot(titles: list[str], labels, positions, title):
     plt.show()
 
 
-def use_bertopic(titles: list[str]):
+def use_bertopic(training_data: list[str], titles: list[str], project_name):
     embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    embeddings = embedding_model.encode(titles, show_progress_bar=True)
+    embeddings = embedding_model.encode(training_data, show_progress_bar=True)
     umap_model = umap.UMAP(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
     )
@@ -172,16 +175,19 @@ def use_bertopic(titles: list[str]):
         umap_model=umap_model,
         hdbscan_model=hdbscan_model,
         vectorizer_model=vectorizer_model,
-        ctfidf_model=ctfidf_model, 
-        representation_model=representation_model,
+        ctfidf_model=ctfidf_model,
+        representation_model=representation_model,  # type: ignore
         top_n_words=10,
         verbose=True,
         # calculate_probabilities=True
     )
-    topics, probs = topic_model.fit_transform(titles, embeddings=embeddings)
-    reduced_embeddings = umap.UMAP(
+    topic_model.fit(training_data, embeddings=embeddings)
+    reduction_umap = umap.UMAP(
         n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42
-    ).fit_transform(embeddings)
+    )
+    reduced_embeddings = reduction_umap.fit_transform(embeddings)
+
+    # topics, probs = topic_model.transform(titles)
 
     keybert_topic_labels = {
         topic: list(zip(*values))[0][0]
@@ -194,14 +200,17 @@ def use_bertopic(titles: list[str]):
     # )
     # topic_model.update_topics(titles, topics=new_topics)
 
+    # title_topics, probs = topic_model.transform(titles, embeddings=title_embeddings)
     fig = topic_model.visualize_documents(
-        titles,
-        reduced_embeddings=reduced_embeddings,
+        training_data,
+        embeddings=embeddings,
+        reduced_embeddings=reduced_embeddings,  # type: ignore
         custom_labels=True,
         hide_annotations=True,
+        title=project_name,
     )
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
-    fig.write_html(f"./issues_{formatted_datetime}.html")
+    fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
 
 
 # Print cluster assignments with keywords
@@ -211,10 +220,11 @@ def use_bertopic(titles: list[str]):
 #         if label == cluster_id:
 #             print(f"   - {name}")
 
-issues_filename = "dotvvm-bodies.csv"
-issue_titles = read_issues(issues_filename, "dotvvm")
+project_name = "lume"
+issues_filename = "lume.csv"
+training_data, issue_titles = read_issues(issues_filename, project_name)
 # embeddings = embed_sbert(issue_titles)
 # positions = reduce_umap(embeddings)
 # labels = cluster_hdbscan(embeddings)
 # show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
-use_bertopic(issue_titles)
+use_bertopic(training_data, issue_titles, project_name)
