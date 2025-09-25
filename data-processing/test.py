@@ -29,25 +29,23 @@ def get_top_keywords(tfidf_matrix, labels, feature_names, top_n=5):
     return clusters
 
 
-def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]:
+def read_issues(filename: str, project_name: str) -> list[str]:
     print("Reading " + filename)
-    training_data = []
-    issue_titles = []
+    docs = []
     with open(filename, "r", encoding="utf8") as csv_file:
         reader = csv.DictReader(csv_file)
         for issue in reader:
-            title = ""
+            doc = ""
             if issue["Labels"] != None and issue["Labels"] != "":
                 labels = sorted(issue["Labels"].lower().split(";")) or []
                 for label in labels:
-                    title += f"[{label}] "
-            title += issue["Title"]
-            title = title.lower().replace(project_name, "")
-            issue_titles.append(title)
-            training_data.append(title)
+                    doc += f"[{label}] "
+            doc += issue["Title"]
             if issue["Body"] != None and issue["Body"] != "":
-                training_data.extend(issue["Body"].lower().split("\n\n"))
-    return (training_data, issue_titles)
+                doc += " " + issue["Body"]
+            doc = doc.lower().replace(project_name, "")
+            docs.append(doc)
+    return docs
 
 
 def embed_sbert(strings: list[str]):
@@ -136,8 +134,8 @@ def show_plot(titles: list[str], labels, positions, title):
         if event.inaxes == ax:
             contains, index = scatter.contains(event)
             if contains:
-                pos = scatter.get_offsets()[index["ind"][0]]
-                annot.xy = pos
+                pos = scatter.get_offsets()[index["ind"][0]] # type: ignore
+                annot.xy = pos # type: ignore
                 annot.set_text(titles[index["ind"][0]])
                 annot.set_visible(True)
                 fig.canvas.draw_idle()
@@ -152,9 +150,9 @@ def show_plot(titles: list[str], labels, positions, title):
     plt.show()
 
 
-def use_bertopic(training_data: list[str], titles: list[str], project_name):
+def use_bertopic(docs: list[str], project_name):
     embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    embeddings = embedding_model.encode(training_data, show_progress_bar=True)
+    embeddings = embedding_model.encode(docs, show_progress_bar=True)
     umap_model = umap.UMAP(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
     )
@@ -181,13 +179,11 @@ def use_bertopic(training_data: list[str], titles: list[str], project_name):
         verbose=True,
         # calculate_probabilities=True
     )
-    topic_model.fit(training_data, embeddings=embeddings)
+    topic_model.fit(docs, embeddings=embeddings)
     reduction_umap = umap.UMAP(
         n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42
     )
     reduced_embeddings = reduction_umap.fit_transform(embeddings)
-
-    # topics, probs = topic_model.transform(titles)
 
     keybert_topic_labels = {
         topic: list(zip(*values))[0][0]
@@ -202,7 +198,7 @@ def use_bertopic(training_data: list[str], titles: list[str], project_name):
 
     # title_topics, probs = topic_model.transform(titles, embeddings=title_embeddings)
     fig = topic_model.visualize_documents(
-        training_data,
+        docs,
         embeddings=embeddings,
         reduced_embeddings=reduced_embeddings,  # type: ignore
         custom_labels=True,
@@ -222,9 +218,9 @@ def use_bertopic(training_data: list[str], titles: list[str], project_name):
 
 project_name = "lume"
 issues_filename = "lume.csv"
-training_data, issue_titles = read_issues(issues_filename, project_name)
+docs = read_issues(issues_filename, project_name)
 # embeddings = embed_sbert(issue_titles)
 # positions = reduce_umap(embeddings)
 # labels = cluster_hdbscan(embeddings)
 # show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
-use_bertopic(training_data, issue_titles, project_name)
+use_bertopic(docs, project_name)
