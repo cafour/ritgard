@@ -117,7 +117,9 @@ async Task<ImmutableArray<GitHubIssue>> GetIssues(GitHubClient gh, Repository re
         Author: i.User.Login,
         CreatedAt: i.CreatedAt,
         UpdatedAt: i.UpdatedAt,
-        ClosedAt: i.ClosedAt
+        ClosedAt: i.ClosedAt,
+        Labels: string.Join(';', i.Labels.Select(l => l.Name)),
+        Body: i.Body
     )).ToImmutableArray();
 }
 
@@ -136,5 +138,7 @@ public record GitHubIssue(
     string Author,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    DateTimeOffset? ClosedAt
+    DateTimeOffset? ClosedAt,
+    string Labels,
+    string Body
 );
