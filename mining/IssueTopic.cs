@@ -4,5 +4,7 @@ public record IssueTopic(
     long Id,
     double X,
     double Y,
-    string Topic
+    string Topic,
+    int NearestNeighbor,
+    double NearestNeighborDistance
 );

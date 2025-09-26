@@ -1,5 +1,6 @@
 using Godot;
 using Ritgard.Data;
+using Ritgard.Mining;
 using Ritgard.Structures;
 using System;
 
@@ -22,9 +23,9 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
     [Export]
     public Material HighlightMaterial { get; set; }
     
-    public (Guid id, string? absoluteLink)? Identifier { get; set; }
+    public long? Id { get; set; }
 
-    public DocumentationItem? Item { get; set; }
+    public Issue? Item { get; set; }
 
     public bool IsHighlighted { get; set; }
 
@@ -34,41 +35,46 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         body = GetNode<StaticBody3D>("Body");
         // GenerateSphere();
 
-        IStructure structure = Item?.ResourceType switch
+        // IStructure structure = Item?.ResourceType switch
+        // {
+        //     "Text" or "MarkDown" or "HTML" => new Acacia
+        //     {
+        //         CrownBreadth = Item.WordLength.HasValue
+        //             ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
+        //             : Overlord.WordLengthMappingMin,
+        //         TrunkHeight = Item.ByteLength.HasValue
+        //             ? Overlord.Instance.ByteLengthMapping(Item.ByteLength.Value)
+        //             : Overlord.ByteLengthMappingMin,
+        //         // Leafiness = rng.RandfRange(0.1f, 1.0f)
+        //         Leafiness = 1.0f
+        //     },
+        //     "GitHub Resource" => new Conifer
+        //     {
+        //         CrownBreadth = Item.WordLength.HasValue
+        //             ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
+        //             : Overlord.WordLengthMappingMin,
+        //         TrunkHeight = Item.ByteLength.HasValue
+        //             ? Overlord.Instance.ByteLengthMapping(Item.ByteLength.Value)
+        //             : Overlord.ByteLengthMappingMin,
+        //     },
+        //     _ => new Broadleaf
+        //     {
+        //         CrownBreadth = Item.WordLength.HasValue
+        //             ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
+        //             : Overlord.WordLengthMappingMin,
+        //         TrunkHeight = Item.ByteLength.HasValue
+        //             ? Overlord.Instance.ByteLengthMapping(Item.ByteLength.Value)
+        //             : Overlord.ByteLengthMappingMin,
+        //         // Leafiness = rng.RandfRange(0.1f, 1.0f)
+        //         Leafiness = 1.0f
+        //     }
+        // };
+        var structure = new Conifer
         {
-            "Text" or "MarkDown" or "HTML" => new Acacia
-            {
-                CrownBreadth = Item.WordLength.HasValue
-                    ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
-                    : Overlord.WordLengthMappingMin,
-                TrunkHeight = Item.ByteLength.HasValue
-                    ? Overlord.Instance.ByteLengthMapping(Item.ByteLength.Value)
-                    : Overlord.ByteLengthMappingMin,
-                // Leafiness = rng.RandfRange(0.1f, 1.0f)
-                Leafiness = 1.0f
-            },
-            "GitHub Resource" => new Conifer
-            {
-                CrownBreadth = Item.WordLength.HasValue
-                    ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
-                    : Overlord.WordLengthMappingMin,
-                TrunkHeight = Item.ByteLength.HasValue
-                    ? Overlord.Instance.ByteLengthMapping(Item.ByteLength.Value)
-                    : Overlord.ByteLengthMappingMin,
-            },
-            _ => new Broadleaf
-            {
-                CrownBreadth = Item.WordLength.HasValue
-                    ? Overlord.Instance.WordLengthMapping(Item.WordLength.Value)
-                    : Overlord.WordLengthMappingMin,
-                TrunkHeight = Item.ByteLength.HasValue
-                    ? Overlord.Instance.ByteLengthMapping(Item.ByteLength.Value)
-                    : Overlord.ByteLengthMappingMin,
-                // Leafiness = rng.RandfRange(0.1f, 1.0f)
-                Leafiness = 1.0f
-            }
+            CrownBreadth = 3,
+            TrunkHeight = 3
         };
-        
+
         var (min, max) = structure.Measure();
         // NB: + Vector3.One is the margin so that all surfaces get properly meshed.
         var size = max - min + Vector3I.One;

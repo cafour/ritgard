@@ -7,12 +7,12 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/console/Ritgard.Console.csproj",
+                "${workspaceFolder}/Ritgard.sln",
                 "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
             "problemMatcher": "$msCompile"
-        },
+        }
     ]
 }
 

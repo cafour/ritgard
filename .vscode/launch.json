@@ -21,6 +21,18 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/data-processing",
             "justMyCode": true
-        }
+        },
+        {
+            "name": "Godot",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "C:\\dev\\ext\\godot\\voxel-441\\godot.windows.editor.x86_64.mono.exe",
+            "args": [
+                "scenes/main.tscn"
+            ],
+            "cwd": "${workspaceFolder}/vis",
+            "stopAtEntry": false
+        },
     ]
 }

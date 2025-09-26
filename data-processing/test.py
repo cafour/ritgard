@@ -273,8 +273,7 @@ def get_nearest_neighbor_distances(
 ):
     neighbors = NearestNeighbors(n_neighbors=2).fit(positions)
     distances, indices = neighbors.kneighbors(positions, n_neighbors=2)
-    return (distances[0:, 1], indices[0:1])
-
+    return (distances[0:, 1], indices[0:, 1])
 
 project_name = "lume"
 issues_filename = "lume.csv"
@@ -285,7 +284,7 @@ ids, docs = read_issues(issues_filename, project_name)
 # show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
 positions, topics = use_bertopic(docs, project_name)
 distances, indices = get_nearest_neighbor_distances(positions)
-write_topics(ids, positions, topics, distances, indices, project_name)
+write_topics(ids, positions, topics, indices, distances, project_name)
 
 min_distance = np.min(distances)
 max_distance = np.max(distances)

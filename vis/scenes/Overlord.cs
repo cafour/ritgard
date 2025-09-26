@@ -2,6 +2,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using Godot;
 using Ritgard.Data;
+using Ritgard.Mining;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace Ritgard;
 public partial class Overlord : Node
 {
     public static Overlord Instance { get; private set; }
-    
+
     private ConcurrentDictionary<Vector3I, HashSet<Node3D>> structures = [];
 
     [Export]
@@ -22,6 +23,9 @@ public partial class Overlord : Node
 
     [Export]
     public string DataCsvPath { get; set; }
+
+    [Export]
+    public string PositionsCsvPath { get; set; }
 
     [Export]
     public Label ItemDescriptionLabel { get; set; }
@@ -39,11 +43,12 @@ public partial class Overlord : Node
     public Func<long, int> ByteLengthMapping { get; private set; }
     public Func<long, int> WordLengthMapping { get; private set; }
     public Func<long, int> TagCountMapping { get; private set; }
+    public ImmutableDictionary<long, Issue> Data { get; private set; }
+    public ImmutableDictionary<long, IssueTopic> Positions { get; private set; }
 
     private VoxelTerrain terrain;
     private VoxelGenerator generator;
     private RandomNumberGenerator rng;
-    private ImmutableDictionary<(Guid id, string absoluteLink), DocumentationItem> data;
     private ImmutableDictionary<(Guid id, string absoluteLink), Vector2I> itemPositions;
     private ImmutableDictionary<string, int> edgeCounts;
     private TestStructure currentItem;
@@ -70,80 +75,54 @@ public partial class Overlord : Node
     {
         ItemDescriptionLabel.Text = DefaultHint;
 
-        using var stream = new FileAccessStream(DataCsvPath, FileAccess.ModeFlags.Read);
-        using var reader = new System.IO.StreamReader(stream);
-        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+        var records = Utils.ReadGodotCsv<Issue>(DataCsvPath);
+        Data = records.ToImmutableDictionary(i => i.Id);
+
+        // var minBytes = data.Values.Min(v => v.ByteLength) ?? 0;
+        // var maxBytes = data.Values.Max(v => v.ByteLength) ?? 1;
+        // ByteLengthMapping = b => Mathf.RoundToInt(Mathf.Remap(
+        //     b,
+        //     minBytes,
+        //     maxBytes,
+        //     ByteLengthMappingMin,
+        //     ByteLengthMappingMax
+        // ));
+
+        // var minWords = data.Values.Min(v => v.WordLength) ?? 0;
+        // var maxWords = data.Values.Max(v => v.WordLength) ?? 1;
+        // WordLengthMapping = w => Mathf.RoundToInt(Mathf.Remap(
+        //     w,
+        //     minWords,
+        //     maxWords,
+        //     WordLengthMappingMin,
+        //     WordLengthMappingMax
+        // ));
+
+        // var minTags = data.Values.Min(v => v.TagCount) ?? 0;
+        // var maxTags = data.Values.Max(v => v.TagCount) ?? 1;
+        // TagCountMapping = t => Mathf.RoundToInt(Mathf.Remap(
+        //     t,
+        //     minTags,
+        //     maxTags,
+        //     TagsLengthMappingMin,
+        //     TagsLengthMappingMax
+        // ));
+
+        var positions = Utils.ReadGodotCsv<IssueTopic>(PositionsCsvPath);
+        var averageDistance = positions.Average(i => i.NearestNeighborDistance);
+        var bbox = new Rect2(positions.Min(p => (float)p.X), positions.Min(p => (float)p.Y), Vector2.Zero);
+        foreach (var position in positions)
         {
-            HasHeaderRecord = true,
-            BadDataFound = a => GD.Print($"Found bad data in {a.Field}.")
+            bbox = bbox.Expand(new Vector2((float)position.X, (float)position.Y));
+        }
+        var center = bbox.GetCenter();
+
+        var factor = 5.0 / averageDistance;
+        Positions = positions.ToImmutableDictionary(i => i.Id, i => i with
+        {
+            X = (i.X - center.X) * factor,
+            Y = (i.Y - center.Y) * factor
         });
-        var records = csv.GetRecords<DocumentationItem>().ToList();
-        var dataBuilder = ImmutableDictionary.CreateBuilder<(Guid id, string absoluteLink), DocumentationItem>();
-        foreach (var record in records)
-        {
-            if (!dataBuilder.ContainsKey((record.Id, record.AbsoluteLink)))
-            {
-                dataBuilder.Add((record.Id, record.AbsoluteLink), record);
-            }
-        }
-        data = dataBuilder.ToImmutable();
-
-        var minBytes = data.Values.Min(v => v.ByteLength) ?? 0;
-        var maxBytes = data.Values.Max(v => v.ByteLength) ?? 1;
-        ByteLengthMapping = b => Mathf.RoundToInt(Mathf.Remap(
-            b,
-            minBytes,
-            maxBytes,
-            ByteLengthMappingMin,
-            ByteLengthMappingMax
-        ));
-
-        var minWords = data.Values.Min(v => v.WordLength) ?? 0;
-        var maxWords = data.Values.Max(v => v.WordLength) ?? 1;
-        WordLengthMapping = w => Mathf.RoundToInt(Mathf.Remap(
-            w,
-            minWords,
-            maxWords,
-            WordLengthMappingMin,
-            WordLengthMappingMax
-        ));
-
-        var minTags = data.Values.Min(v => v.TagCount) ?? 0;
-        var maxTags = data.Values.Max(v => v.TagCount) ?? 1;
-        TagCountMapping = t => Mathf.RoundToInt(Mathf.Remap(
-            t,
-            minTags,
-            maxTags,
-            TagsLengthMappingMin,
-            TagsLengthMappingMax
-        ));
-
-        var positionsBuilder = ImmutableDictionary.CreateBuilder<(Guid id, string absoluteLink), Vector2I>();
-        foreach (var (identifier, item) in data)
-        {
-            var radius = ItemRadius * Mathf.Sqrt(rng.Randf());
-            var angle = rng.RandfRange(0, Mathf.Tau);
-            positionsBuilder.Add(identifier, new Vector2I(
-                Mathf.RoundToInt(radius * Mathf.Cos(angle)),
-                Mathf.RoundToInt(radius * Mathf.Sin(angle))
-            ));
-        }
-        itemPositions = positionsBuilder.ToImmutable();
-
-        var edgeCountBuilder = ImmutableDictionary.CreateBuilder<string, int>();
-        foreach (var record in records)
-        {
-            edgeCountBuilder[record.Url] = edgeCountBuilder.TryGetValue(record.Url, out var count)
-                ? count + 1 : 1;
-            if (!string.IsNullOrEmpty(record.AbsoluteLink))
-            {
-                edgeCountBuilder[record.AbsoluteLink] =
-                    edgeCountBuilder.TryGetValue(record.AbsoluteLink, out var aCount)
-                        ? aCount + 1
-                        : 1;
-            }
-        }
-        edgeCounts = edgeCountBuilder.ToImmutable();
 
         // foreach (var (identifier, item) in data)
         // {
@@ -159,13 +138,13 @@ public partial class Overlord : Node
         //     );
         // }
 
-        foreach (var (identifier, position) in itemPositions)
+        foreach (var (id, position) in Positions)
         {
-            var height = generator.GetHeight(position.X, position.Y);
+            var height = generator.GetHeight(Mathf.RoundToInt(position.X), Mathf.RoundToInt(position.Y));
             var instance = TestStructure.Instantiate<TestStructure>();
-            instance.Identifier = identifier;
-            instance.Item = data[identifier];
-            instance.Position = new Vector3(position.X, height, position.Y);
+            instance.Id = id;
+            instance.Item = Data[id];
+            instance.Position = new Vector3((float)position.X, height, (float)position.Y);
             AddChild(instance);
         }
 
@@ -176,8 +155,8 @@ public partial class Overlord : Node
     {
         if (@event.IsAction("interact") && @event.IsPressed() && currentItem is not null)
         {
-            var item = data.GetValueOrDefault(currentItem.Identifier.Value);
-            var url = Utils.Coalesce(item?.AbsoluteLink, item?.Url);
+            var item = Data.GetValueOrDefault(currentItem.Id.Value);
+            var url = $"https://github.com/lumeland/lume/issues/{currentItem.Id.Value}";
             if (url is not null)
             {
                 OS.ShellOpen(url);
@@ -191,23 +170,14 @@ public partial class Overlord : Node
         var structure = hoveree?.GetParent<TestStructure>();
         if (structure is not null
             && structure != currentItem
-            && structure.Identifier is not null
-            && data.TryGetValue(structure.Identifier.Value, out var item)
+            && structure.Id is not null
+            && Data.TryGetValue(structure.Id.Value, out var item)
         )
         {
             currentItem?.ToggleHighlight(false);
             currentItem = structure;
             currentItem.ToggleHighlight(true);
-
-            if (string.IsNullOrEmpty(item.LinkText))
-            {
-                ItemDescriptionLabel.Text = $"`{item.ShortRepresentation}` at `{item.Url}`";
-            }
-            else
-            {
-                ItemDescriptionLabel.Text = $"`{item.LinkText ?? item.RelativeLink}` from "
-                    + $"`{item.ShortRepresentation}` at `{item.Url}`";
-            }
+            ItemDescriptionLabel.Text = $"#{item.Number} {item.Title}";
 
             Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
         }
