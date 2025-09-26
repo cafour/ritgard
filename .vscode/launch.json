@@ -12,6 +12,15 @@
                 "${workspaceFolder}/console/lume.csv",
                 "${workspaceFolder}/console/topics_lume.csv"
             ]
+        },
+        {
+            "name": "test.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/data-processing/test.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/data-processing",
+            "justMyCode": true
         }
     ]
 }

@@ -4,6 +4,7 @@ from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.neighbors import NearestNeighbors
 
 # from sklearn.cluster import HDBSCAN
 from sentence_transformers import SentenceTransformer, SparseEncoder
@@ -213,7 +214,7 @@ def use_bertopic(docs: list[str], project_name):
     )
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
     fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
-    topics = [keybert_topic_labels[topic] for topic in topic_model.topics_] # type: ignore
+    topics = [keybert_topic_labels[topic] for topic in topic_model.topics_]  # type: ignore
     return (reduced_embeddings, topics)
 
 
@@ -229,16 +230,50 @@ def write_topics(
     ids: list[str],
     positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
     topics: list[str],
+    neighbors: np.ndarray[tuple[int], np.dtype[np.int32]],
+    neighbor_distances: np.ndarray[tuple[int], np.dtype[np.float32]],
     project_name: str,
 ):
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
     with open(
-        f"topics_{project_name}_{formatted_datetime}.csv", "w", encoding="utf8", newline=''
+        f"topics_{project_name}_{formatted_datetime}.csv",
+        "w",
+        encoding="utf8",
+        newline="",
     ) as file:
-        writer = csv.DictWriter(file, fieldnames=["Id", "X", "Y", "Topic"])
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "Id",
+                "X",
+                "Y",
+                "Topic",
+                "NearestNeighbor",
+                "NearestNeighborDistance",
+            ],
+        )
         writer.writeheader()
-        for id, pos, topic in zip(ids, positions, topics):
-            writer.writerow({"Id": id, "X": pos[0], "Y": pos[1], "Topic": topic})
+        for id, pos, topic, nn, nn_dist in zip(
+            ids, positions, topics, neighbors, neighbor_distances
+        ):
+            writer.writerow(
+                {
+                    "Id": id,
+                    "X": pos[0],
+                    "Y": pos[1],
+                    "Topic": topic,
+                    "NearestNeighbor": nn,
+                    "NearestNeighborDistance": nn_dist,
+                }
+            )
+
+
+def get_nearest_neighbor_distances(
+    positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
+):
+    neighbors = NearestNeighbors(n_neighbors=2).fit(positions)
+    distances, indices = neighbors.kneighbors(positions, n_neighbors=2)
+    return (distances[0:, 1], indices[0:1])
 
 
 project_name = "lume"
@@ -249,4 +284,15 @@ ids, docs = read_issues(issues_filename, project_name)
 # labels = cluster_hdbscan(embeddings)
 # show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
 positions, topics = use_bertopic(docs, project_name)
-write_topics(ids, positions, topics, project_name)
+distances, indices = get_nearest_neighbor_distances(positions)
+write_topics(ids, positions, topics, distances, indices, project_name)
+
+min_distance = np.min(distances)
+max_distance = np.max(distances)
+avg_distance = np.mean(distances)
+med_distance = np.median(distances)
+
+print(f"Min nearest neighbor distance: {min_distance}")
+print(f"Max nearest neighbor distance: {max_distance}")
+print(f"Average nearest neighbor distance: {avg_distance}")
+print(f"Median nearest neighbor distance: {med_distance}")
