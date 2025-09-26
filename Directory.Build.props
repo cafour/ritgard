@@ -1,0 +1,6 @@
+<Project>
+    <PropertyGroup>
+        <DefaultTargetFramework>net9.0</DefaultTargetFramework>
+        <LangVersion>latest</LangVersion>
+    </PropertyGroup>
+</Project>
