@@ -1,4 +1,6 @@
-﻿using ConsoleAppFramework;
+﻿using System.Threading.Tasks;
+using ConsoleAppFramework;
+using CsvHelper;
 using Microsoft.Extensions.Logging;
 using Ritgard.Mining;
 
@@ -23,7 +25,7 @@ public class Commands
         await miner.Initialize();
         var (owner, repoName) = Utils.ParseRepoString(repo);
         var issues = await miner.MineIssues(owner, repoName);
-        await RepoMiner.WriteIssuesCSV(issues, repoName);
+        await Utils.WriteCsv(issues, repoName);
     }
 
     /// <summary>
@@ -32,18 +34,21 @@ public class Commands
     /// <param name="repo">owner/repo_name</param>
     [Command("readme")]
     public void MineReadme(string repo)
-    {
+    {   
 
     }
 
     /// <summary>
     /// Given a CSV with issues and a CSV with topic per issue, calculate positions suitable for the voxel landscape.
     /// </summary>
-    /// <param name="issueCsv">CSV with issues</param>
-    /// <param name="topicCsv">CSV with topics</param>
-    [Command("layout")]
-    public void ComputeLayout(string issueCsv, string topicCsv)
+    /// <param name="issuesCsv">CSV with issues</param>
+    /// <param name="topicsCsv">CSV with topics</param>
+    [Command("adjust-layout")]
+    public async Task AdjustLayout([Argument] string issuesCsv, [Argument] string topicsCsv)
     {
-
+        var issues = await Utils.ReadCsv<Issue>(issuesCsv);
+        var topics = await Utils.ReadCsv<IssueTopic>(topicsCsv);
+        var adjuster = new LayoutAdjuster(LoggerFactory.CreateLogger<LayoutAdjuster>());
+        var newPositions = adjuster.AdjustPositions(topics);
     }
 }

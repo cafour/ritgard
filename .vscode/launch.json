@@ -2,10 +2,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C#: Ritgard Debug",
-            "type": "dotnet",
+            "name": "Debug Ritgard.Console",
+            "type": "coreclr",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/Ritgard.csproj"
+            "program": "${workspaceFolder}/console/bin/Debug/net9.0/Ritgard.Console.dll",
+            "preLaunchTask": "build",
+            "args": [
+                "adjust-layout",
+                "${workspaceFolder}/console/lume.csv",
+                "${workspaceFolder}/console/topics_lume.csv"
+            ]
         }
     ]
 }

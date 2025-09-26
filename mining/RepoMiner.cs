@@ -56,15 +56,4 @@ public class RepoMiner
             Body: i.Body
         )).ToImmutableArray();
     }
-
-    public static async Task WriteIssuesCSV(
-        ImmutableArray<Issue> issues,
-        string projectName,
-        CancellationToken token = default)
-    {
-        projectName = projectName.ToLower().Replace(" ", "_");
-        using var writer = new StreamWriter($"./{projectName}.csv");
-        using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
-        await csv.WriteRecordsAsync(issues, token);
-    }
 }
