@@ -4,12 +4,14 @@ from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 from sklearn.feature_extraction.text import CountVectorizer
+
 # from sklearn.cluster import HDBSCAN
 from sentence_transformers import SentenceTransformer, SparseEncoder
 import umap.umap_ as umap
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
+import numpy.typing as npt
 from datetime import datetime
 from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
@@ -29,12 +31,14 @@ def get_top_keywords(tfidf_matrix, labels, feature_names, top_n=5):
     return clusters
 
 
-def read_issues(filename: str, project_name: str) -> list[str]:
+def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]:
     print("Reading " + filename)
+    ids = []
     docs = []
     with open(filename, "r", encoding="utf8") as csv_file:
         reader = csv.DictReader(csv_file)
         for issue in reader:
+            ids.append(issue["Id"])
             doc = ""
             if issue["Labels"] != None and issue["Labels"] != "":
                 labels = sorted(issue["Labels"].lower().split(";")) or []
@@ -45,7 +49,7 @@ def read_issues(filename: str, project_name: str) -> list[str]:
                 doc += " " + issue["Body"]
             doc = doc.lower().replace(project_name, "")
             docs.append(doc)
-    return docs
+    return (ids, docs)
 
 
 def embed_sbert(strings: list[str]):
@@ -134,8 +138,8 @@ def show_plot(titles: list[str], labels, positions, title):
         if event.inaxes == ax:
             contains, index = scatter.contains(event)
             if contains:
-                pos = scatter.get_offsets()[index["ind"][0]] # type: ignore
-                annot.xy = pos # type: ignore
+                pos = scatter.get_offsets()[index["ind"][0]]  # type: ignore
+                annot.xy = pos  # type: ignore
                 annot.set_text(titles[index["ind"][0]])
                 annot.set_visible(True)
                 fig.canvas.draw_idle()
@@ -151,7 +155,7 @@ def show_plot(titles: list[str], labels, positions, title):
 
 
 def use_bertopic(docs: list[str], project_name):
-    embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    embedding_model = SentenceTransformer("all-distilroberta-v1")
     embeddings = embedding_model.encode(docs, show_progress_bar=True)
     umap_model = umap.UMAP(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
@@ -183,7 +187,9 @@ def use_bertopic(docs: list[str], project_name):
     reduction_umap = umap.UMAP(
         n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42
     )
-    reduced_embeddings = reduction_umap.fit_transform(embeddings)
+    reduced_embeddings: np.ndarray[tuple[int, int], np.dtype[np.float32]] = (
+        reduction_umap.fit_transform(embeddings)
+    )  # type: ignore
 
     keybert_topic_labels = {
         topic: list(zip(*values))[0][0]
@@ -207,6 +213,8 @@ def use_bertopic(docs: list[str], project_name):
     )
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
     fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
+    topics = [keybert_topic_labels[topic] for topic in topic_model.topics_] # type: ignore
+    return (reduced_embeddings, topics)
 
 
 # Print cluster assignments with keywords
@@ -216,11 +224,29 @@ def use_bertopic(docs: list[str], project_name):
 #         if label == cluster_id:
 #             print(f"   - {name}")
 
+
+def write_topics(
+    ids: list[str],
+    positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
+    topics: list[str],
+    project_name: str,
+):
+    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
+    with open(
+        f"topics_{project_name}_{formatted_datetime}.csv", "w", encoding="utf8", newline=''
+    ) as file:
+        writer = csv.DictWriter(file, fieldnames=["Id", "X", "Y", "Topic"])
+        writer.writeheader()
+        for id, pos, topic in zip(ids, positions, topics):
+            writer.writerow({"Id": id, "X": pos[0], "Y": pos[1], "Topic": topic})
+
+
 project_name = "lume"
 issues_filename = "lume.csv"
-docs = read_issues(issues_filename, project_name)
+ids, docs = read_issues(issues_filename, project_name)
 # embeddings = embed_sbert(issue_titles)
 # positions = reduce_umap(embeddings)
 # labels = cluster_hdbscan(embeddings)
 # show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
-use_bertopic(docs, project_name)
+positions, topics = use_bertopic(docs, project_name)
+write_topics(ids, positions, topics, project_name)
