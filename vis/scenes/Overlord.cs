@@ -1,6 +1,9 @@
 using CsvHelper;
 using CsvHelper.Configuration;
 using Godot;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Triangulate;
+using NetTopologySuite.Triangulate.QuadEdge;
 using Ritgard.Data;
 using Ritgard.Mining;
 using System;
@@ -69,7 +72,7 @@ public partial class Overlord : Node
         terrain = GetNode<VoxelTerrain>("VoxelTerrain");
         generator = (VoxelGenerator)terrain.Generator;
         rng = new RandomNumberGenerator();
-        generator.Heightmap = Image.CreateEmpty(HeightmapSize, HeightmapSize, false, Image.Format.L8);
+        generator.Heightmap = new byte[HeightmapSize, HeightmapSize];
     }
 
     public override void _Ready()
@@ -138,6 +141,64 @@ public partial class Overlord : Node
         //         new Color() { R8 = Math.Clamp(edgeCount, 0, 255) }
         //     );
         // }
+        var inversePositions = Positions.ToImmutableDictionary(
+            t => new Coordinate(t.Value.X, t.Value.Y),
+            t => t.Key
+        );
+        var triangulationBuilder = new DelaunayTriangulationBuilder();
+        triangulationBuilder.SetSites([.. inversePositions.Keys]);
+        var subdivision = triangulationBuilder.GetSubdivision();
+        var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
+        var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
+        var dateLength = maxDate - minDate;
+
+        double GetHeightAtPoint(double x, double y)
+        {
+            if (!inversePositions.TryGetValue(new Coordinate(x, y), out var id))
+            {
+                return 0.0;
+            }
+            var issue = Data[id];
+            var date = issue.UpdatedAt ?? issue.CreatedAt;
+            return (date - minDate) / dateLength * 100.0;
+        }
+
+        for (int y = -HeightmapSize / 2; y < HeightmapSize / 2; ++y)
+        {
+            for (int x = -HeightmapSize / 2; x < HeightmapSize / 2; ++x)
+            {
+                var hx = x + HeightmapSize / 2;
+                var hy = y + HeightmapSize / 2;
+                QuadEdge? edge = null;
+                try
+                {
+                    edge = subdivision.Locate(new Coordinate(x, y));
+                }
+                catch (LocateFailureException)
+                {
+                }
+
+                if (edge is null)
+                {
+                    // generator.Heightmap.SetPixel(hx, hy, new Color() { R8 = 0 });
+                    generator.Heightmap[hy, hx] = 0;
+                    continue;
+                }
+
+                var p1 = edge.Orig;
+                var p2 = edge.Dest;
+                var p3 = edge.ONext.Dest;
+                var height = InterpolateBarycentric(
+                    x, y,
+                    p1.X, p1.Y, GetHeightAtPoint(p1.X, p1.Y),
+                    p2.X, p2.Y, GetHeightAtPoint(p2.X, p2.Y),
+                    p3.X, p3.Y, GetHeightAtPoint(p3.X, p3.Y)
+                );
+                height = Mathf.Max(height, 0.0);
+                // generator.Heightmap.SetPixel(hx, hy, new Color { R8 = Mathf.RoundToInt(height) });
+                generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
+            }
+        }
 
         foreach (var (id, position) in Positions)
         {
@@ -249,5 +310,26 @@ public partial class Overlord : Node
             RemoveChild(existing);
             existing.QueueFree();
         }
+    }
+
+    public static double InterpolateBarycentric(
+        double x,
+        double y,
+        double x1,
+        double y1,
+        double z1,
+        double x2,
+        double y2,
+        double z2,
+        double x3,
+        double y3,
+        double z3
+    )
+    {
+        double detT = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
+        double alpha = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / detT;
+        double beta = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / detT;
+        double gamma = 1.0 - alpha - beta;
+        return alpha * z1 + beta * z2 + gamma * z3;
     }
 }

@@ -18,9 +18,9 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript, IWithVoxelLib
     public int NoiseMultiplier { get; set; } = 1;
 
     [Export]
-    public int HeightmapMultiplier { get; set; } = 10;
+    public int HeightmapMultiplier { get; set; } = 1;
 
-    public Image Heightmap { get; set; }
+    public byte[,] Heightmap { get; set; }
 
 
     public override void _GenerateBlock(VoxelBuffer buffer, Vector3I origin, int lod)
@@ -93,14 +93,14 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript, IWithVoxelLib
     public int GetHeight(int gx, int gz)
     {
         var value = 0;
+        var size = Heightmap.GetLength(0);
         if (Heightmap is not null)
         {
-            var size = Heightmap.GetSize().X;
             var hx = gx + size / 2;
             var hy = gz + size / 2;
             if (hx >= 0 && hx < size && hy >= 0 && hy < size)
             {
-                value += Heightmap.GetPixel(hx, hy).R8 * HeightmapMultiplier;
+                value += Heightmap[hy, hx] * HeightmapMultiplier;
             }
         }
 
