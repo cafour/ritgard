@@ -56,4 +56,9 @@ public class RepoMiner
             Body: i.Body
         )).ToImmutableArray();
     }
+
+    private async Task<Issue> MineIssueComments(long repoId, int issueNumber)
+    {
+        var comments = await GH.Issue.Comment.GetAllForIssue(repoId, issueNumber);
+    }
 }

@@ -156,9 +156,9 @@ public partial class Overlord : Node
         if (@event.IsAction("interact") && @event.IsPressed() && currentItem is not null)
         {
             var item = Data.GetValueOrDefault(currentItem.Id.Value);
-            var url = $"https://github.com/lumeland/lume/issues/{currentItem.Id.Value}";
-            if (url is not null)
+            if (item is not null)
             {
+                var url = $"https://github.com/lumeland/lume/issues/{item.Number}";
                 OS.ShellOpen(url);
             }
         }
