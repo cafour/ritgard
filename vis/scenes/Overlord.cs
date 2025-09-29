@@ -49,6 +49,9 @@ public partial class Overlord : Node
     public MiningResult MiningResult { get; private set; }
     public ImmutableDictionary<long, Issue> Data { get; private set; }
     public ImmutableDictionary<long, IssueTopic> Positions { get; private set; }
+    public DateTimeOffset MinDate { get; private set; }
+    public DateTimeOffset MaxDate { get; private set; }
+    public TimeSpan AvgIssueLength { get; private set; }
 
     private VoxelTerrain terrain;
     private VoxelGenerator generator;
@@ -58,7 +61,8 @@ public partial class Overlord : Node
     private TestStructure currentItem;
 
     public const float ItemRadius = 256.0f;
-    public const int HeightmapSize = 512;
+    public const float StructureRadius = 7f;
+    public const int HeightmapSize = 1024;
     public const string DefaultHint = "Hover over a structure to see its description...";
 
     public override void _EnterTree()
@@ -121,7 +125,7 @@ public partial class Overlord : Node
         }
         var center = bbox.GetCenter();
 
-        var factor = 5.0 / averageDistance;
+        var factor = StructureRadius / averageDistance;
         Positions = positions.ToImmutableDictionary(i => i.Id, i => i with
         {
             X = (i.X - center.X) * factor,
@@ -142,7 +146,11 @@ public partial class Overlord : Node
         //     );
         // }
 
-        ComputeHeighmapCircles();
+        MaxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
+        MinDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
+        AvgIssueLength = TimeSpan.FromSeconds(Data.Values.Average(i => i.GetTimeSpan().TotalSeconds));
+
+        ComputeHeighmapCircles(Mathf.RoundToInt(StructureRadius));
 
         foreach (var (id, position) in Positions)
         {
@@ -179,9 +187,7 @@ public partial class Overlord : Node
         var triangulationBuilder = new DelaunayTriangulationBuilder();
         triangulationBuilder.SetSites([.. inversePositions.Keys]);
         var subdivision = triangulationBuilder.GetSubdivision();
-        var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
-        var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
-        var dateLength = maxDate - minDate;
+        var dateLength = MaxDate - MinDate;
 
         double GetHeightAtPoint(double x, double y)
         {
@@ -191,7 +197,7 @@ public partial class Overlord : Node
             }
             var issue = Data[id];
             var date = issue.UpdatedAt ?? issue.CreatedAt;
-            return (date - minDate) / dateLength * 100.0;
+            return (date - MinDate) / dateLength * 100.0;
         }
 
         for (int y = -HeightmapSize / 2; y < HeightmapSize / 2; ++y)
@@ -232,7 +238,7 @@ public partial class Overlord : Node
         }
     }
 
-    private void ComputeHeighmapCircles(int circleRadius = 5)
+    private void ComputeHeighmapCircles(int circleRadius)
     {
         var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
         var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
@@ -244,7 +250,7 @@ public partial class Overlord : Node
             var date = issue.UpdatedAt ?? issue.CreatedAt;
             return (byte)Mathf.RoundToInt(Math.Clamp((date - minDate) / dateLength * 50.0, 0.0, 255.0));
         }
-        
+
         byte GetLevelForIssue(long id)
         {
             var issue = Data[id];

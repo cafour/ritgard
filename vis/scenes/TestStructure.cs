@@ -3,6 +3,8 @@ using Ritgard.Data;
 using Ritgard.Mining;
 using Ritgard.Structures;
 using System;
+using System.Collections;
+using System.Linq;
 
 namespace Ritgard;
 
@@ -13,6 +15,7 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
     private static RandomNumberGenerator rng = new();
 
     public const int Radius = 3;
+    public const int MaxConeHeight = 20;
 
     [Export]
     public VoxelBlockyLibrary Library { get; set; }
@@ -22,7 +25,7 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
 
     [Export]
     public Material HighlightMaterial { get; set; }
-    
+
     public long? Id { get; set; }
 
     public Issue? Item { get; set; }
@@ -69,10 +72,36 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         //         Leafiness = 1.0f
         //     }
         // };
-        var structure = new Conifer
+        var contributorCount = Item.Comments
+            .Select(c => c.Author)
+            .Concat([Item.Author])
+            .Where(a => a is not null)
+            .Distinct()
+            .Count();
+        var issueLength = Item.GetTimeSpan();
+        var coneHeight = Mathf.Clamp(
+            Mathf.CeilToInt(issueLength / Overlord.Instance.AvgIssueLength * MaxConeHeight),
+            1,
+            MaxConeHeight
+        );
+        var step = coneHeight > 0 ? issueLength / coneHeight : TimeSpan.Zero;
+        var layers = new BitArray(coneHeight);
+        // layers.Set(0, true); // it was created
+        // layers.Set(coneHeight - 1, true); // it was updated or there must be a comment
+        for (int i = 0; i < coneHeight; ++i)
         {
-            CrownBreadth = 3,
-            TrunkHeight = 3
+            var start = Item.CreatedAt + i * step;
+            var end = Item.CreatedAt + (i + 1) * step;
+            if (Item.Comments.Any(c => c.CreatedAt >= start && c.CreatedAt < end))
+            {
+                layers.Set(i, true);
+            }
+        }
+
+        var structure = new LayeredConifer
+        {
+            TrunkHeight = contributorCount,
+            Layers = layers
         };
 
         var (min, max) = structure.Measure();

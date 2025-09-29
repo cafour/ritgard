@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace Ritgard.Mining;
 
@@ -24,4 +25,20 @@ public record Issue(
     long? PullRequestId,
     int CommentCount,
     ImmutableArray<Comment> Comments
-);
+)
+{
+    public DateTimeOffset GetLastCommentDate()
+    {
+        if (Comments.IsDefaultOrEmpty)
+        {
+            return default;
+        }
+
+        return Comments.Max(i => i.CreatedAt);
+    }
+
+    public TimeSpan GetTimeSpan()
+    {
+        return Utils.Max(UpdatedAt ?? default, GetLastCommentDate()) - CreatedAt;
+    }
+}

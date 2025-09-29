@@ -77,7 +77,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillLine(Vector3I from, Vector3I to, int fromRadius, int toRadius, string blockType)
+    public StructureBuffer FillLine(Vector3I from, Vector3I to, float fromRadius, float toRadius, string blockType)
     {
         ResetTool();
         Tool.Channel = VoxelBuffer.ChannelId.ChannelType;

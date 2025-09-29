@@ -77,4 +77,14 @@ public static class Utils
 
         await JsonSerializer.SerializeAsync(stream, value, JsonSerializerOptions, cancellationToken: token);
     }
+
+    public static DateTimeOffset Max(DateTimeOffset lhs, DateTimeOffset rhs)
+    {
+        return lhs > rhs ? lhs : rhs;
+    }
+    
+    public static DateTimeOffset Min(DateTimeOffset lhs, DateTimeOffset rhs)
+    {
+        return lhs < rhs ? lhs : rhs;
+    }
 }
