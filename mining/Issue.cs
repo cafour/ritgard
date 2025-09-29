@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Immutable;
-using Octokit;
 
 namespace Ritgard.Mining;
 
@@ -15,10 +14,10 @@ public record Issue(
     DateTimeOffset? ClosedAt,
     ImmutableArray<string> Labels,
     string Body,
-    ItemState State,
-    ItemStateReason? StateReason,
+    IssueState State,
+    IssueStateReason? StateReason,
     string? ClosedBy,
-    string? Assignee,
+    ImmutableArray<string> Assignees,
     bool IsLocked,
     LockReason? LockReason,
     long? MilestoneId,

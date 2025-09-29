@@ -5,15 +5,26 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using CsvHelper;
 using Microsoft.Extensions.Configuration;
+using NetTopologySuite.Index;
 
 namespace Ritgard.Mining;
 
 public static class Utils
 {
+    public static readonly JsonSerializerOptions JsonSerializerOptions;
+
+    static Utils()
+    {
+        JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerOptions.Default);
+        JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    }
+
     public static IConfiguration BuildConfiguration()
     {
         var configBuilder = new ConfigurationBuilder();
@@ -53,5 +64,16 @@ public static class Utils
         using var reader = new StreamReader(path);
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
         return (await csv.GetRecordsAsync<T>(token).ToArrayAsync()).ToImmutableArray();
+    }
+
+    public static async Task WriteJson<T>(
+        T value,
+        string path,
+        CancellationToken token = default
+    )
+    {
+        using var stream = new FileStream(path, FileMode.Create);
+
+        await JsonSerializer.SerializeAsync(stream, value, JsonSerializerOptions, cancellationToken: token);
     }
 }

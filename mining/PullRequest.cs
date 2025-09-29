@@ -12,7 +12,7 @@ public record PullRequest(
     string Body,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    DateTimeOffset? ClasedAt,
+    DateTimeOffset? ClosedAt,
     DateTimeOffset? MergedAt,
     GitReference Head,
     GitReference Base,
@@ -34,5 +34,6 @@ public record PullRequest(
     LockReason? LockReason,
     ImmutableArray<string> RequestedReviewers,
     ImmutableArray<string> RequestedTeams,
-    ImmutableArray<string> Labels
+    ImmutableArray<string> Labels,
+    ImmutableArray<Comment> Comments
 );

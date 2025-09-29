@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Ritgard.Console",
+            "name": "CLI: adjust-layout",
             "type": "coreclr",
             "request": "launch",
             "program": "${workspaceFolder}/console/bin/Debug/net9.0/Ritgard.Console.dll",
@@ -11,6 +11,17 @@
                 "adjust-layout",
                 "${workspaceFolder}/console/lume.csv",
                 "${workspaceFolder}/console/topics_lume.csv"
+            ]
+        },
+        {
+            "name": "CLI: repo",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/console/bin/Debug/net9.0/Ritgard.Console.dll",
+            "preLaunchTask": "build",
+            "args": [
+                "repo",
+                "lumeland/lume"
             ]
         },
         {

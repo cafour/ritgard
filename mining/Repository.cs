@@ -17,7 +17,7 @@ public record Repository(
     bool IsFork,
     bool IsArchived,
     int ForkCount,
-    int StargazersCount,
+    int StargazerCount,
     int OpenIssuesCount,
     string DefaultBranch,
     DateTimeOffset CreatedAt,

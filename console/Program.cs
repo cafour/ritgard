@@ -24,8 +24,28 @@ public class Commands
         var miner = new RepoMiner(LoggerFactory.CreateLogger<RepoMiner>());
         await miner.Initialize();
         var (owner, repoName) = Utils.ParseRepoString(repo);
-        var issues = await miner.MineIssues(owner, repoName);
-        await Utils.WriteCsv(issues, repoName);
+        var result = await miner.MineRepo(owner, repoName);
+        if (result is not null)
+        {
+            await Utils.WriteCsv(result.Issues, repoName);
+        }
+    }
+
+    /// <summary>
+    /// Mine a GitHub repo.
+    /// </summary>
+    /// <param name="repo">owner/repo_name</param>
+    [Command("repo")]
+    public async Task MineRepo([Argument] string repo)
+    {
+        var miner = new RepoMiner(LoggerFactory.CreateLogger<RepoMiner>());
+        await miner.Initialize();
+        var (owner, repoName) = Utils.ParseRepoString(repo);
+        var result = await miner.MineRepo(owner, repoName);
+        if (result is not null)
+        {
+            await Utils.WriteJson(result, $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json");
+        }
     }
 
     /// <summary>
