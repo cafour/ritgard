@@ -22,7 +22,7 @@ public partial class Overlord : Node
     public PackedScene TestStructure { get; set; }
 
     [Export]
-    public string DataCsvPath { get; set; }
+    public string DataJsonPath { get; set; }
 
     [Export]
     public string PositionsCsvPath { get; set; }
@@ -43,6 +43,7 @@ public partial class Overlord : Node
     public Func<long, int> ByteLengthMapping { get; private set; }
     public Func<long, int> WordLengthMapping { get; private set; }
     public Func<long, int> TagCountMapping { get; private set; }
+    public MiningResult MiningResult { get; private set; }
     public ImmutableDictionary<long, Issue> Data { get; private set; }
     public ImmutableDictionary<long, IssueTopic> Positions { get; private set; }
 
@@ -75,8 +76,8 @@ public partial class Overlord : Node
     {
         ItemDescriptionLabel.Text = DefaultHint;
 
-        var records = Utils.ReadGodotCsv<Issue>(DataCsvPath);
-        Data = records.ToImmutableDictionary(i => i.Id);
+        MiningResult = Utils.ReadGodotJson<MiningResult>(DataJsonPath);
+        Data = MiningResult.Issues;
 
         // var minBytes = data.Values.Min(v => v.ByteLength) ?? 0;
         // var maxBytes = data.Values.Max(v => v.ByteLength) ?? 1;
