@@ -141,6 +141,37 @@ public partial class Overlord : Node
         //         new Color() { R8 = Math.Clamp(edgeCount, 0, 255) }
         //     );
         // }
+
+        ComputeHeighmapTriangularization();
+
+        foreach (var (id, position) in Positions)
+        {
+            var height = generator.GetHeight(Mathf.RoundToInt(position.X), Mathf.RoundToInt(position.Y));
+            var instance = TestStructure.Instantiate<TestStructure>();
+            instance.Id = id;
+            instance.Item = Data[id];
+            instance.Position = new Vector3((float)position.X, height, (float)position.Y);
+            AddChild(instance);
+        }
+
+        Player.HoverChanged += OnHoverChanged;
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (@event.IsAction("interact") && @event.IsPressed() && currentItem is not null)
+        {
+            var item = Data.GetValueOrDefault(currentItem.Id.Value);
+            if (item is not null)
+            {
+                var url = $"https://github.com/lumeland/lume/issues/{item.Number}";
+                OS.ShellOpen(url);
+            }
+        }
+    }
+
+    private void ComputeHeighmapTriangularization()
+    {
         var inversePositions = Positions.ToImmutableDictionary(
             t => new Coordinate(t.Value.X, t.Value.Y),
             t => t.Key
@@ -197,31 +228,6 @@ public partial class Overlord : Node
                 height = Mathf.Max(height, 0.0);
                 // generator.Heightmap.SetPixel(hx, hy, new Color { R8 = Mathf.RoundToInt(height) });
                 generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
-            }
-        }
-
-        foreach (var (id, position) in Positions)
-        {
-            var height = generator.GetHeight(Mathf.RoundToInt(position.X), Mathf.RoundToInt(position.Y));
-            var instance = TestStructure.Instantiate<TestStructure>();
-            instance.Id = id;
-            instance.Item = Data[id];
-            instance.Position = new Vector3((float)position.X, height, (float)position.Y);
-            AddChild(instance);
-        }
-
-        Player.HoverChanged += OnHoverChanged;
-    }
-
-    public override void _Input(InputEvent @event)
-    {
-        if (@event.IsAction("interact") && @event.IsPressed() && currentItem is not null)
-        {
-            var item = Data.GetValueOrDefault(currentItem.Id.Value);
-            if (item is not null)
-            {
-                var url = $"https://github.com/lumeland/lume/issues/{item.Number}";
-                OS.ShellOpen(url);
             }
         }
     }
