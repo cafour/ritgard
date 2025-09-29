@@ -5,12 +5,11 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neighbors import NearestNeighbors
-
-# from sklearn.cluster import HDBSCAN
 from sentence_transformers import SentenceTransformer, SparseEncoder
 import umap.umap_ as umap
 import matplotlib.pyplot as plt
 import csv
+import json
 import numpy as np
 import numpy.typing as npt
 from datetime import datetime
@@ -36,17 +35,17 @@ def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]
     print("Reading " + filename)
     ids = []
     docs = []
-    with open(filename, "r", encoding="utf8") as csv_file:
-        reader = csv.DictReader(csv_file)
-        for issue in reader:
+    with open(filename, "r", encoding="utf8") as json_file:
+        data = json.load(json_file)
+        for issue_id in data["Issues"]:
+            issue = data["Issues"][issue_id]
             ids.append(issue["Id"])
             doc = ""
-            if issue["Labels"] != None and issue["Labels"] != "":
-                labels = sorted(issue["Labels"].lower().split(";")) or []
-                for label in labels:
+            if "Labels" in issue and issue["Labels"] != None:
+                for label in issue["Labels"]:
                     doc += f"[{label}] "
             doc += issue["Title"]
-            if issue["Body"] != None and issue["Body"] != "":
+            if "Body" in issue and issue["Body"] != None and issue["Body"] != "":
                 doc += " " + issue["Body"]
             doc = doc.lower().replace(project_name, "")
             docs.append(doc)
@@ -275,8 +274,9 @@ def get_nearest_neighbor_distances(
     distances, indices = neighbors.kneighbors(positions, n_neighbors=2)
     return (distances[0:, 1], indices[0:, 1])
 
+
 project_name = "lume"
-issues_filename = "lume.csv"
+issues_filename = "lume.json"
 ids, docs = read_issues(issues_filename, project_name)
 # embeddings = embed_sbert(issue_titles)
 # positions = reduce_umap(embeddings)
