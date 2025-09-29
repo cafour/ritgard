@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using ConsoleAppFramework;
-using CsvHelper;
 using Microsoft.Extensions.Logging;
 using Ritgard.Mining;
 
@@ -13,23 +12,6 @@ public class Commands
 {
     public static readonly ILoggerFactory LoggerFactory
         = Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddConsole());
-
-    /// <summary>
-    /// Mine issues from a GitHub repo.
-    /// </summary>
-    /// <param name="repo">owner/repo_name</param>
-    [Command("issues")]
-    public async Task MineIssues([Argument] string repo)
-    {
-        var miner = new RepoMiner(LoggerFactory.CreateLogger<RepoMiner>());
-        await miner.Initialize();
-        var (owner, repoName) = Utils.ParseRepoString(repo);
-        var result = await miner.MineRepo(owner, repoName);
-        if (result is not null)
-        {
-            await Utils.WriteCsv(result.Issues, repoName);
-        }
-    }
 
     /// <summary>
     /// Mine a GitHub repo.
