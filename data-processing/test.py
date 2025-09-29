@@ -275,8 +275,8 @@ def get_nearest_neighbor_distances(
     return (distances[0:, 1], indices[0:, 1])
 
 
-project_name = "lume"
-issues_filename = "lume.json"
+project_name = "jetuml"
+issues_filename = "jetuml.json"
 ids, docs = read_issues(issues_filename, project_name)
 # embeddings = embed_sbert(issue_titles)
 # positions = reduce_umap(embeddings)

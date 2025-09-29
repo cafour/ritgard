@@ -33,8 +33,8 @@ size = Vector3(10, 10, 10)
 [node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player")]
 script = ExtResource("1_o5qli")
 TestStructure = ExtResource("2_jyhfs")
-DataJsonPath = "res://sample/lume.json"
-PositionsCsvPath = "res://sample/lume_pos.csv"
+DataJsonPath = "res://sample/jetuml.json"
+PositionsCsvPath = "res://sample/jetuml_pos.csv"
 ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
 Player = NodePath("Player")
 
