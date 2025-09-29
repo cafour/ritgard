@@ -142,7 +142,7 @@ public partial class Overlord : Node
         //     );
         // }
 
-        ComputeHeighmapTriangularization();
+        ComputeHeighmapCircles();
 
         foreach (var (id, position) in Positions)
         {
@@ -228,6 +228,70 @@ public partial class Overlord : Node
                 height = Mathf.Max(height, 0.0);
                 // generator.Heightmap.SetPixel(hx, hy, new Color { R8 = Mathf.RoundToInt(height) });
                 generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
+            }
+        }
+    }
+
+    private void ComputeHeighmapCircles(int circleRadius = 5)
+    {
+        var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
+        var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
+        var dateLength = maxDate - minDate;
+
+        byte GetHeightForIssue(long id)
+        {
+            var issue = Data[id];
+            var date = issue.UpdatedAt ?? issue.CreatedAt;
+            return (byte)Mathf.RoundToInt(Math.Clamp((date - minDate) / dateLength * 50.0, 0.0, 255.0));
+        }
+        
+        byte GetLevelForIssue(long id)
+        {
+            var issue = Data[id];
+            var date = issue.UpdatedAt ?? issue.CreatedAt;
+            if (date.Date == maxDate.Date)
+            {
+                return 5;
+            }
+            else if (date > maxDate - TimeSpan.FromDays(7))
+            {
+                return 4;
+            }
+            else if (date > maxDate - TimeSpan.FromDays(30))
+            {
+                return 3;
+            }
+            else if (date > maxDate - TimeSpan.FromDays(365))
+            {
+                return 2;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+
+        var radiusSquared = circleRadius * circleRadius;
+        foreach (var (id, pos) in Positions)
+        {
+            // var height = GetHeightForIssue(id);
+            var height = (byte)(GetLevelForIssue(id) * 10);
+            for (int y = -circleRadius + 1; y < circleRadius; ++y)
+            {
+                for (int x = -circleRadius + 1; x < circleRadius; ++x)
+                {
+                    var hx = Mathf.RoundToInt(pos.X) + HeightmapSize / 2 + x;
+                    var hy = Mathf.RoundToInt(pos.Y) + HeightmapSize / 2 + y;
+
+                    if (x * x + y * y < radiusSquared + 1)
+                    {
+                        generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], height);
+                    }
+                    else
+                    {
+                        generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], (byte)0);
+                    }
+                }
             }
         }
     }
