@@ -70,12 +70,9 @@ public class RepoMiner
 
             issues.TryAdd(octoIssue.Id, issue);
 
-            if (octoIssue.Comments > 0)
-            {
-                var comments = await MineComments(octoRepo.Id, octoIssue.Number);
-                issue = issue with { Comments = comments };
-                issues.AddOrUpdate(octoIssue.Id, issue, (id, i) => i with { Comments = comments });
-            }
+            var comments = await MineComments(octoRepo.Id, octoIssue.Number);
+            issue = issue with { Comments = comments };
+            issues.AddOrUpdate(octoIssue.Id, issue, (id, i) => i with { Comments = comments });
         }
 
         logger.LogInformation("Mining pull requests");
@@ -89,12 +86,9 @@ public class RepoMiner
             var pr = OctokitMapping.MapPullRequest(octoPR);
             pullRequests.TryAdd(octoPR.Id, pr);
 
-            if (octoPR.Comments > 0)
-            {
-                var comments = await MineComments(octoRepo.Id, octoPR.Number);
-                pr = pr with { Comments = comments };
-                pullRequests.AddOrUpdate(octoPR.Id, pr, (id, p) => p with { Comments = comments });
-            }
+            var comments = await MineComments(octoRepo.Id, octoPR.Number);
+            pr = pr with { Comments = comments };
+            pullRequests.AddOrUpdate(octoPR.Id, pr, (id, p) => p with { Comments = comments });
         }
 
         logger.LogInformation("Mining milestones");

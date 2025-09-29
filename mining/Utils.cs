@@ -22,6 +22,7 @@ public static class Utils
     static Utils()
     {
         JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerOptions.Default);
+        JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
         JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
