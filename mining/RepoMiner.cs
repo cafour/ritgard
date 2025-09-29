@@ -116,6 +116,10 @@ public class RepoMiner
     {
         logger.LogInformation("Mining comments for #{Number}", number);
         var comments = await GH.Issue.Comment.GetAllForIssue(repoId, number);
+        if (comments is null)
+        {
+            return [];
+        }
         return [.. comments.Select(c => OctokitMapping.MapIssueComment(c))];
     }
 

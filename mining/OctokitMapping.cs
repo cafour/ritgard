@@ -109,7 +109,7 @@ public static class OctokitMapping
             MilestoneId: value.Milestone?.Id,
             PullRequestId: value.PullRequest?.Id,
             CommentCount: value.Comments,
-            Comments: ImmutableArray<Comment>.Empty
+            Comments: []
         );
     }
 
@@ -153,7 +153,7 @@ public static class OctokitMapping
             RequestedReviewers: [.. value.RequestedReviewers.Select(r => r.Login)],
             RequestedTeams: [.. value.RequestedTeams.Select(t => t.Slug)],
             Labels: [.. value.Labels.Select(l => l.Name)],
-            Comments: ImmutableArray<Comment>.Empty
+            Comments: []
         );
     }
 
