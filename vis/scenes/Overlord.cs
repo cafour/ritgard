@@ -1,5 +1,3 @@
-using CsvHelper;
-using CsvHelper.Configuration;
 using Godot;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Triangulate;
@@ -35,6 +33,9 @@ public partial class Overlord : Node
 
     [Export]
     public Player Player { get; set; }
+
+    [Export]
+    public Control ControlsContainer { get; set; }
 
     public const int ByteLengthMappingMin = 3;
     public const int ByteLengthMappingMax = 20;
@@ -157,6 +158,7 @@ public partial class Overlord : Node
             var height = generator.GetHeight(Mathf.RoundToInt(position.X), Mathf.RoundToInt(position.Y));
             var instance = TestStructure.Instantiate<TestStructure>();
             instance.Id = id;
+            instance.ControlsContainer = ControlsContainer;
             instance.Item = Data[id];
             instance.Position = new Vector3((float)position.X, height, (float)position.Y);
             AddChild(instance);

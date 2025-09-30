@@ -32,12 +32,34 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
 
     public bool IsHighlighted { get; set; }
 
+    public Control ControlsContainer { get; set; }
+
+    private CheckBox isClampedCheckbox;
+    private Slider clampHeightSlider;
+    private Slider averageHeightSlider;
+    private Slider maxBreadthSlider;
+
     public override void _Ready()
     {
         mesh = GetNode<MeshInstance3D>("Mesh");
         body = GetNode<StaticBody3D>("Body");
         // GenerateSphere();
+        if (ControlsContainer is not null)
+        {
+            isClampedCheckbox = ControlsContainer.GetNode<CheckBox>("IsClamped");
+            isClampedCheckbox.Toggled += _ => GenerateMesh();
+            clampHeightSlider = ControlsContainer.GetNode<Slider>("ClampedHeight");
+            clampHeightSlider.ValueChanged += _ => GenerateMesh();
+            averageHeightSlider = ControlsContainer.GetNode<Slider>("AverageHeight");
+            averageHeightSlider.ValueChanged += _ => GenerateMesh();
+            maxBreadthSlider = ControlsContainer.GetNode<Slider>("MaxBreadth");
+            maxBreadthSlider.ValueChanged += _ => GenerateMesh();
+        }
+        GenerateMesh();
+    }
 
+    private void GenerateMesh()
+    {
         // IStructure structure = Item?.ResourceType switch
         // {
         //     "Text" or "MarkDown" or "HTML" => new Acacia
@@ -79,11 +101,12 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
             .Distinct()
             .Count();
         var issueLength = Item.GetTimeSpan();
-        var coneHeight = Mathf.Clamp(
-            Mathf.CeilToInt(issueLength / Overlord.Instance.AvgIssueLength * MaxConeHeight),
-            1,
-            MaxConeHeight
-        );
+        var coneHeight = Mathf.CeilToInt(issueLength / Overlord.Instance.AvgIssueLength * averageHeightSlider.Value);
+        if (isClampedCheckbox.ButtonPressed)
+        {
+            coneHeight = Mathf.Clamp(coneHeight, 1, (int)clampHeightSlider.Value);
+        }
+
         var step = coneHeight > 0 ? issueLength / coneHeight : TimeSpan.Zero;
         var layers = new BitArray(coneHeight);
         // layers.Set(0, true); // it was created
@@ -101,7 +124,9 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         var structure = new LayeredConifer
         {
             TrunkHeight = contributorCount,
-            Layers = layers
+            Layers = layers,
+            HasCap = Item.State == IssueState.Closed,
+            MaxBreadth = (int)maxBreadthSlider.Value
         };
 
         var (min, max) = structure.Measure();

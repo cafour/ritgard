@@ -12,13 +12,17 @@ public sealed class LayeredConifer : IStructure
     public int TrunkHeight { get; set; }
 
     public BitArray Layers { get; set; }
+    
+    public bool HasCap { get; set; }
+
+    public int MaxBreadth { get; set; } = int.MaxValue;
 
     public (Vector3I min, Vector3I max) Measure()
     {
-        var breadth = Math.Max(3, Layers.Length / 4);
+        var breadth = Math.Min(Math.Max(2, Layers.Length / 4), MaxBreadth);
         return (
             new(-breadth, 0, -breadth),
-            new(breadth, TrunkHeight + Layers.Length + 1, breadth)
+            new(breadth, TrunkHeight + Layers.Length + 1 + (HasCap ? 2 : 0), breadth)
         );
     }
 
@@ -34,8 +38,13 @@ public sealed class LayeredConifer : IStructure
                 continue;
             }
 
-            var currentBreadth = Math.Max(1, (coneHeight - i) / 4);
+            var currentBreadth = Math.Min(Math.Max(2, (coneHeight - i) / 4), MaxBreadth);
             buffer.FillSpottyCylinder(Vector3I.Up * (TrunkHeight + i), currentBreadth, 1, Blocks.ConiferLeaves, 1);
+        }
+
+        if (HasCap)
+        {
+            buffer.FillCone(Vector3I.Up * totalHeight, 2, 2, Blocks.ConiferLeaves);
         }
     }
 

@@ -139,7 +139,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
 
         for (int h = 0; h < height; ++h)
         {
-            var r = radius / (float)height * h;
+            var r = radius / (float)height * (h + 1);
             var rSquared = r * r;
             for (int x = -radius + 1; x < radius; ++x)
             {

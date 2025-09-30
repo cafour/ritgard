@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=14 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/test_structure.tscn" id="2_jyhfs"]
@@ -23,6 +23,14 @@ corner_detail = 1
 font = ExtResource("6_tefeu")
 font_size = 24
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tipki"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.374139, 0.374139, 0.374139, 1)
+corner_detail = 1
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_85g3d"]
 albedo_color = Color(0.67451, 0.0862745, 0.172549, 1)
 
@@ -30,13 +38,14 @@ albedo_color = Color(0.67451, 0.0862745, 0.172549, 1)
 material = SubResource("StandardMaterial3D_85g3d")
 size = Vector3(10, 10, 10)
 
-[node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player")]
+[node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player", "ControlsContainer")]
 script = ExtResource("1_o5qli")
 TestStructure = ExtResource("2_jyhfs")
 DataJsonPath = "res://sample/jetuml.json"
 PositionsCsvPath = "res://sample/jetuml_pos.csv"
 ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
 Player = NodePath("Player")
+ControlsContainer = NodePath("UI/Controls/ControlsContainer")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
@@ -100,6 +109,51 @@ mouse_filter = 2
 custom_minimum_size = Vector2(4, 4)
 layout_mode = 2
 color = Color(0, 0, 0, 1)
+
+[node name="Controls" type="PanelContainer" parent="UI"]
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 70.0
+offset_bottom = 40.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_tipki")
+
+[node name="ControlsContainer" type="VBoxContainer" parent="UI/Controls"]
+layout_mode = 2
+
+[node name="IsClamped" type="CheckBox" parent="UI/Controls/ControlsContainer"]
+layout_mode = 2
+button_pressed = true
+text = "Clamp tree height"
+
+[node name="ClampedHeightLabel" type="Label" parent="UI/Controls/ControlsContainer"]
+layout_mode = 2
+text = "Clamp height"
+
+[node name="ClampedHeight" type="HSlider" parent="UI/Controls/ControlsContainer"]
+layout_mode = 2
+min_value = 1.0
+value = 20.0
+
+[node name="AverageHeightLabel" type="Label" parent="UI/Controls/ControlsContainer"]
+layout_mode = 2
+text = "Average height"
+
+[node name="AverageHeight" type="HSlider" parent="UI/Controls/ControlsContainer"]
+layout_mode = 2
+min_value = 1.0
+value = 20.0
+
+[node name="MaxBreadthLabel" type="Label" parent="UI/Controls/ControlsContainer"]
+layout_mode = 2
+text = "Max breadth"
+
+[node name="MaxBreadth" type="HSlider" parent="UI/Controls/ControlsContainer"]
+layout_mode = 2
+min_value = 1.0
+value = 10.0
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
