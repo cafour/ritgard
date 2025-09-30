@@ -109,7 +109,7 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
 
         var step = coneHeight > 0 ? issueLength / coneHeight : TimeSpan.Zero;
         var layers = new BitArray(coneHeight);
-        // layers.Set(0, true); // it was created
+        layers.Set(0, true); // it was created
         // layers.Set(coneHeight - 1, true); // it was updated or there must be a comment
         for (int i = 0; i < coneHeight; ++i)
         {
@@ -130,8 +130,7 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         };
 
         var (min, max) = structure.Measure();
-        // NB: + Vector3.One is the margin so that all surfaces get properly meshed.
-        var size = max - min + Vector3I.One;
+        var size = max - min;
         var buffer = new StructureBuffer(size, Library);
         structure.Build(buffer);
         var mesher = new VoxelMesherBlocky

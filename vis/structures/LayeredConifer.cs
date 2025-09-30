@@ -22,15 +22,17 @@ public sealed class LayeredConifer : IStructure
         var breadth = Math.Min(Math.Max(2, Layers.Length / 4), MaxBreadth);
         return (
             new(-breadth, 0, -breadth),
-            new(breadth, TrunkHeight + Layers.Length + 1 + (HasCap ? 2 : 0), breadth)
+            new(breadth, TrunkHeight + Layers.Length + (HasCap ? 2 : 0) + 1, breadth)
         );
     }
 
     public void Build(StructureBuffer buffer)
     {
+        // buffer.FillBresenhamLine(Vector3I.Zero, Vector3I.Zero, Blocks.Bark);
         var coneHeight = Layers.Length;
         var totalHeight = TrunkHeight + coneHeight;
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * totalHeight, 0.5f, 0.5f, Blocks.Bark);
+        buffer.FillBresenhamLine(Vector3I.Zero, Vector3I.Up * (totalHeight - 1), Blocks.Bark);
+
         for (int i = 0; i < Layers.Length; ++i)
         {
             if (!Layers[i])
@@ -44,7 +46,7 @@ public sealed class LayeredConifer : IStructure
 
         if (HasCap)
         {
-            buffer.FillCone(Vector3I.Up * totalHeight, 2, 2, Blocks.ConiferLeaves);
+            buffer.FillCone(Vector3I.Up * (totalHeight - 1), 2, 2, Blocks.ConiferLeaves);
         }
     }
 

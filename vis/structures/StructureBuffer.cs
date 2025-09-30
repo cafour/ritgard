@@ -21,14 +21,20 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         Size = size;
         Library = library;
         Data = new VoxelBuffer();
-        Data.Create(size.X, size.Y, size.Z);
+        Data.Create(size.X + 2, size.Y + 1, size.Z + 2);
         Tool = Data.GetVoxelTool();
-        OriginOffset = new Vector3I(size.X / 2, 0, size.Z / 2);
+        OriginOffset = new Vector3I(size.X / 2, 1, size.Z / 2);
     }
 
     public StructureBuffer SetAt(Vector3I pos, string blockType)
     {
         this.SetBlock(Data, blockType, pos.X + OriginOffset.X, pos.Y + OriginOffset.Y, pos.Z + OriginOffset.Z);
+        return this;
+    }
+
+    public StructureBuffer SetRaw(Vector3I pos, ulong value)
+    {
+        Data.SetVoxel(value, pos.X, pos.Y, pos.Z, (uint)VoxelBuffer.ChannelId.ChannelType);
         return this;
     }
 
@@ -93,6 +99,115 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
+    public StructureBuffer FillBresenhamLine(Vector3I from, Vector3I to, string blockType)
+    {
+        from += OriginOffset;
+        to += OriginOffset;
+
+        // deltas
+        int dx = Math.Abs(from.X - to.X);
+        int dy = Math.Abs(from.Y - to.Y);
+        int dz = Math.Abs(from.Z - to.Z);
+
+        // steps
+        int xs = Math.Sign(to.X - from.X);
+        int ys = Math.Sign(to.Y - from.Y);
+        int zs = Math.Sign(to.Z - from.Z);
+
+        Vector3I current = from;
+        var blockValue = this.GetBlockTypeIndex(blockType);
+        void Set(Vector3I p)
+        {
+            Data.SetVoxel(blockValue, p.X, p.Y, p.Z, (uint)VoxelBuffer.ChannelId.ChannelType);
+        }
+        Set(from);
+
+        if (dx >= dy && dx >= dz)
+        {
+            int p1 = 2 * dy - dx;
+            int p2 = 2 * dz - dx;
+            while (current.X != to.X)
+            {
+                current.X += xs;
+                if (p1 >= 0)
+                {
+                    current.Y += ys;
+                    p1 -= 2 * dx;
+                }
+                if (p2 >= 0)
+                {
+                    current.Z += zs;
+                    p2 -= 2 * dx;
+                }
+                p1 += 2 * dy;
+                p2 += 2 * dz;
+
+                if (current.X >= Size.X || current.Y >= Size.Y || current.Z >= Size.Z)
+                {
+                    return this;
+                }
+                Set(current);
+            }
+        }
+        else if (dy >= dx && dy >= dz)
+        {
+            int p1 = 2 * dx - dy;
+            int p2 = 2 * dz - dy;
+            while (current.Y != to.Y)
+            {
+                current.Y += ys;
+                if (p1 >= 0)
+                {
+                    current.X += xs;
+                    p1 -= 2 * dy;
+                }
+                if (p2 >= 0)
+                {
+                    current.Z += zs;
+                    p2 -= 2 * dy;
+                }
+                p1 += 2 * dx;
+                p2 += 2 * dz;
+
+                if (current.X >= Size.X || current.Y >= Size.Y || current.Z >= Size.Z)
+                {
+                    return this;
+                }
+                Set(current);
+            }
+        }
+        else if (dz >= dx && dz >= dy)
+        {
+            int p1 = 2 * dy - dz;
+            int p2 = 2 * dx - dz;
+            while (current.Z != to.Z)
+            {
+                current.Z += zs;
+                if (p1 >= 0)
+                {
+                    current.Y += ys;
+                    p1 -= 2 * dz;
+                }
+                if (p2 >= 0)
+                {
+                    current.Z += xs;
+                    p2 -= 2 * dz;
+                }
+                p1 += 2 * dy;
+                p2 += 2 * dx;
+
+                if (current.X >= Size.X || current.Y >= Size.Y || current.Z >= Size.Z)
+                {
+                    return this;
+                }
+                Set(current);
+            }
+        }
+
+        Set(to);
+        return this;
+    }
+
     public StructureBuffer FillSpottyCylinder(Vector3I pos, int radius, int height, string blockType, float spottiness)
     {
         if (radius <= 0 || height <= 0)
@@ -109,6 +224,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         var rng = new RandomNumberGenerator();
         pos += OriginOffset;
         var radiusSquared = radius * radius;
+        var blockValue = this.GetBlockTypeIndex(blockType);
 
         for (int x = -radius + 1; x < radius; ++x)
         {
@@ -120,7 +236,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                     {
                         if (spottiness == 1.0f || spottiness < rng.Randf())
                         {
-                            Tool.SetVoxel(pos + new Vector3I(x, h, z), this.GetBlockTypeIndex(blockType));
+                            SetRaw(pos + new Vector3I(x, h, z), blockValue);
                         }
                     }
                 }
