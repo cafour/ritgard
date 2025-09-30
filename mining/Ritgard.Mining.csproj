@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
     <PackageReference Include="NetTopologySuite" Version="2.6.0" />
     <PackageReference Include="Octokit" Version="14.0.0" />
+    <PackageReference Include="StrawberryShake.Server" Version="15.1.10" />
     <PackageReference Include="System.Linq.Async" Version="6.0.3" />
   </ItemGroup>
 

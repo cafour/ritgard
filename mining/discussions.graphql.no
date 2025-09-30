@@ -1,0 +1,95 @@
+"""Get $max_discussions latest discussions (first:$max_discussions -- reverse chronological order)
+with first $max_labels labels and first $max_comments comments each
+Needed variables: $repo_owner, $repo_name, $max_discussions, $max_comments, $max_labels
+"""
+query getDiscussions($repo_owner: String!, $repo_name: String!, $max_discussions: Int!, $max_comments: Int!, $max_labels: Int!) {
+  repository(owner: $repo_owner, name: $repo_name) {
+    discussions(first: $max_discussions) {
+      totalCount
+      edges {
+        node {
+          id
+          author {
+            ... on User {
+              id
+              login
+              name
+              email
+            }
+          }
+          answer {
+            author {
+              ... on User {
+                id
+                login
+                name
+                email
+              }
+            }
+          }
+          answerChosenAt
+          labels(first: $max_labels) {
+            totalCount
+            edges {
+              node {
+                id
+                name
+                description
+                isDefault
+              }
+            }
+          }
+          poll {
+            id
+          }
+          title
+          body
+          bodyHTML
+          bodyText
+          upvoteCount
+          comments(first: $max_comments) {
+            totalCount
+            edges {
+              node {
+                author {
+                  ... on User {
+                    id
+                    login
+                    name
+                    email
+                  }
+                }
+                id
+                isAnswer
+                body
+                bodyHTML
+                bodyText
+                createdAt
+                publishedAt
+                lastEditedAt
+                updatedAt
+              }
+            }
+          }
+          createdAt
+          publishedAt
+          lastEditedAt
+          updatedAt
+          url
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+  rateLimit {
+    cost
+    limit
+    nodeCount
+    remaining
+    resetAt
+    used
+  }
+}
