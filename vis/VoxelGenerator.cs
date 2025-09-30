@@ -104,7 +104,7 @@ public sealed partial class VoxelGenerator : VoxelGeneratorScript, IWithVoxelLib
             }
         }
 
-        value += (int)Mathf.Round((Noise.GetNoise2D(gx, gz) + 1.0f) * NoiseMultiplier);
+        // value += (int)Mathf.Round((Noise.GetNoise2D(gx, gz) + 1.0f) * NoiseMultiplier);
         return value;
     }
 }

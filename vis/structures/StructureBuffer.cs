@@ -28,7 +28,8 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
 
     public StructureBuffer SetAt(Vector3I pos, string blockType)
     {
-        this.SetBlock(Data, blockType, pos.X + OriginOffset.X, pos.Y + OriginOffset.Y, pos.Z + OriginOffset.Z);
+        pos += OriginOffset;
+        SetRaw(pos, this.GetBlockTypeIndex(blockType));
         return this;
     }
 
@@ -253,6 +254,8 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
             return this;
         }
 
+        var blockValue = this.GetBlockTypeIndex(blockType);
+
         for (int h = 0; h < height; ++h)
         {
             var r = radius / (float)height * (h + 1);
@@ -263,10 +266,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     if (x * x + z * z < rSquared)
                     {
-                        Tool.SetVoxel(
-                            pos + new Vector3I(x, height - h, z) + OriginOffset,
-                            this.GetBlockTypeIndex(blockType)
-                        );
+                        SetRaw(pos + new Vector3I(x, height - h - 1, z) + OriginOffset, blockValue);
                     }
                 }
             }

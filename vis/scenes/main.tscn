@@ -69,7 +69,7 @@ environment = ExtResource("6_tipki")
 current = true
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player/Camera"]
-view_distance = 386
+view_distance = 512
 
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = ExtResource("6_tipki")

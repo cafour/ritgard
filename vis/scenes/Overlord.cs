@@ -316,7 +316,7 @@ public partial class Overlord : Node
             currentItem?.ToggleHighlight(false);
             currentItem = structure;
             currentItem.ToggleHighlight(true);
-            ItemDescriptionLabel.Text = $"#{item.Number} {item.Title}";
+            ItemDescriptionLabel.Text = $"#{item.Number} {item.Title}\n\t{item.CreatedAt:s}--{item.UpdatedAt:s} ({item.UpdatedAt - item.CreatedAt:c}, {item.CommentCount} comments)";
 
             Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
         }
