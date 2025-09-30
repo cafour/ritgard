@@ -1,7 +1,3 @@
-"""Get $max_discussions latest discussions (first:$max_discussions -- reverse chronological order)
-with first $max_labels labels and first $max_comments comments each
-Needed variables: $repo_owner, $repo_name, $max_discussions, $max_comments, $max_labels
-"""
 query getDiscussions($repo_owner: String!, $repo_name: String!, $max_discussions: Int!, $max_comments: Int!, $max_labels: Int!) {
   repository(owner: $repo_owner, name: $repo_name) {
     discussions(first: $max_discussions) {
