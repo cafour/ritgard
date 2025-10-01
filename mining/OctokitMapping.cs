@@ -375,6 +375,9 @@ public static class OctokitMapping
             EventInfoState.Unpinned => IssueEventKind.Unpinned,
             EventInfoState.Unsubscribed => IssueEventKind.Unsubscribed,
             EventInfoState.UserBlocked => IssueEventKind.UserBlocked,
+            EventInfoState.LineCommented => IssueEventKind.LineCommented,
+            EventInfoState.CommitCommented => IssueEventKind.CommitCommented,
+            EventInfoState.CommentDeleted => IssueEventKind.CommentDeleted,
             _ => throw new NotSupportedException()
         };
     }

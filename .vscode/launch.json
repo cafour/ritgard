@@ -21,7 +21,7 @@
             "preLaunchTask": "build",
             "args": [
                 "repo",
-                "lumeland/lume"
+                "prmr/jetuml"
             ]
         },
         {

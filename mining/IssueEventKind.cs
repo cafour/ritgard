@@ -45,5 +45,8 @@ public enum IssueEventKind
     UnmarkedAsDuplicate,
     Unpinned,
     Unsubscribed,
-    UserBlocked
+    UserBlocked,
+    LineCommented,
+    CommitCommented,
+    CommentDeleted
 }
