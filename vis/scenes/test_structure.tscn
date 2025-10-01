@@ -2,11 +2,8 @@
 
 [ext_resource type="Script" uid="uid://d2hce27v0el6e" path="res://scenes/TestStructure.cs" id="1_kiqts"]
 [ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="2_v15mh"]
+[ext_resource type="Material" uid="uid://cep2p2lt1vumq" path="res://voxel_material.tres" id="3_38n5f"]
 [ext_resource type="Shader" uid="uid://bnqc2iav2loar" path="res://shaders/outline.gdshader" id="3_fjski"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fjski"]
-resource_local_to_scene = true
-vertex_color_use_as_albedo = true
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_38n5f"]
 render_priority = 0
@@ -24,7 +21,7 @@ height = 6.0
 [node name="TestStructure" type="Node3D"]
 script = ExtResource("1_kiqts")
 Library = ExtResource("2_v15mh")
-Material = SubResource("StandardMaterial3D_fjski")
+Material = ExtResource("3_38n5f")
 HighlightMaterial = SubResource("ShaderMaterial_38n5f")
 
 [node name="Body" type="StaticBody3D" parent="."]

@@ -4,10 +4,12 @@ using NetTopologySuite.Triangulate;
 using NetTopologySuite.Triangulate.QuadEdge;
 using Ritgard.Data;
 using Ritgard.Mining;
+using Ritgard.Structures;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 
@@ -21,6 +23,9 @@ public partial class Overlord : Node
 
     [Export]
     public PackedScene TestStructure { get; set; }
+
+    [Export]
+    public PackedScene TopicIslandScene { get; set; }
 
     [Export]
     public string DataJsonPath { get; set; }
@@ -49,7 +54,8 @@ public partial class Overlord : Node
     public Func<long, int> TagCountMapping { get; private set; }
     public MiningResult MiningResult { get; private set; }
     public ImmutableDictionary<long, Issue> Data { get; private set; }
-    public ImmutableDictionary<long, IssueTopic> Positions { get; private set; }
+    public ImmutableDictionary<string, Topic> Topics { get; private set; }
+    public ImmutableDictionary<long, Vector3> Positions { get; private set; }
     public DateTimeOffset MinDate { get; private set; }
     public DateTimeOffset MaxDate { get; private set; }
     public TimeSpan AvgIssueLength { get; private set; }
@@ -57,14 +63,13 @@ public partial class Overlord : Node
     private VoxelTerrain terrain;
     private VoxelGenerator generator;
     private RandomNumberGenerator rng;
-    private ImmutableDictionary<(Guid id, string absoluteLink), Vector2I> itemPositions;
-    private ImmutableDictionary<string, int> edgeCounts;
     private TestStructure currentItem;
 
     public const float ItemRadius = 256.0f;
     public const float StructureRadius = 7f;
     public const int HeightmapSize = 1024;
     public const string DefaultHint = "Hover over a structure to see its description...";
+    public const byte MaxTerrainHeight = 50;
 
     public override void _EnterTree()
     {
@@ -86,6 +91,9 @@ public partial class Overlord : Node
 
         MiningResult = Utils.ReadGodotJson<MiningResult>(DataJsonPath);
         Data = MiningResult.Issues;
+        MaxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
+        MinDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
+        AvgIssueLength = TimeSpan.FromSeconds(Data.Values.Average(i => i.GetTimeSpan().TotalSeconds));
 
         // var minBytes = data.Values.Min(v => v.ByteLength) ?? 0;
         // var maxBytes = data.Values.Max(v => v.ByteLength) ?? 1;
@@ -117,21 +125,33 @@ public partial class Overlord : Node
         //     TagsLengthMappingMax
         // ));
 
-        var positions = Utils.ReadGodotCsv<IssueTopic>(PositionsCsvPath);
-        var averageDistance = positions.Average(i => i.NearestNeighborDistance);
-        var bbox = new Rect2(positions.Min(p => (float)p.X), positions.Min(p => (float)p.Y), Vector2.Zero);
-        foreach (var position in positions)
+        var issueTopics = Utils.ReadGodotCsv<IssueTopic>(PositionsCsvPath);
+        var averageDistance = issueTopics.Average(i => i.NearestNeighborDistance);
+        var bbox = new Rect2(issueTopics.Min(p => (float)p.X), issueTopics.Min(p => (float)p.Y), Vector2.Zero);
+        foreach (var position in issueTopics)
         {
             bbox = bbox.Expand(new Vector2((float)position.X, (float)position.Y));
         }
         var center = bbox.GetCenter();
 
         var factor = StructureRadius / averageDistance;
-        Positions = positions.ToImmutableDictionary(i => i.Id, i => i with
-        {
-            X = (i.X - center.X) * factor,
-            Y = (i.Y - center.Y) * factor
-        });
+        Positions = issueTopics.ToImmutableDictionary(i => i.Id, i => new Vector3(
+            (float)((i.X - center.X) * factor),
+            GetLevelForIssue(i.Id),
+            (float)((i.Y - center.Y) * factor)
+        ));
+        Topics = issueTopics.GroupBy(i => i.Topic)
+            .ToImmutableDictionary(g => g.Key, g => new Topic(g.Key, g.Select(i => i.Id).ToImmutableHashSet()));
+        // foreach (var topic in Topics.Values)
+        // {
+        //     var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
+        //     topicIsland.Topic = topic;
+        // }
+
+        var firstTopic = Topics.Values.OrderBy(t => t.Title).First();
+        var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
+        topicIsland.Topic = firstTopic;
+        AddChild(topicIsland);
 
         // foreach (var (identifier, item) in data)
         // {
@@ -147,10 +167,6 @@ public partial class Overlord : Node
         //     );
         // }
 
-        MaxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
-        MinDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
-        AvgIssueLength = TimeSpan.FromSeconds(Data.Values.Average(i => i.GetTimeSpan().TotalSeconds));
-
         ComputeHeighmapCircles(Mathf.RoundToInt(StructureRadius));
 
         foreach (var (id, position) in Positions)
@@ -160,7 +176,7 @@ public partial class Overlord : Node
             instance.Id = id;
             instance.ControlsContainer = ControlsContainer;
             instance.Item = Data[id];
-            instance.Position = new Vector3((float)position.X, height, (float)position.Y);
+            instance.Position = position;
             AddChild(instance);
         }
 
@@ -244,39 +260,6 @@ public partial class Overlord : Node
         var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
         var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
         var dateLength = maxDate - minDate;
-
-        byte GetHeightForIssue(long id)
-        {
-            var issue = Data[id];
-            var date = issue.UpdatedAt ?? issue.CreatedAt;
-            return (byte)Mathf.RoundToInt(Math.Clamp((date - minDate) / dateLength * 50.0, 0.0, 255.0));
-        }
-
-        byte GetLevelForIssue(long id)
-        {
-            var issue = Data[id];
-            var date = issue.UpdatedAt ?? issue.CreatedAt;
-            if (date.Date == maxDate.Date)
-            {
-                return 5;
-            }
-            else if (date > maxDate - TimeSpan.FromDays(7))
-            {
-                return 4;
-            }
-            else if (date > maxDate - TimeSpan.FromDays(30))
-            {
-                return 3;
-            }
-            else if (date > maxDate - TimeSpan.FromDays(365))
-            {
-                return 2;
-            }
-            else
-            {
-                return 1;
-            }
-        }
 
         var radiusSquared = circleRadius * circleRadius;
         foreach (var (id, pos) in Positions)
@@ -408,5 +391,39 @@ public partial class Overlord : Node
         double beta = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / detT;
         double gamma = 1.0 - alpha - beta;
         return alpha * z1 + beta * z2 + gamma * z3;
+    }
+
+    private byte GetHeightForIssue(long id)
+    {
+        var issue = Data[id];
+        var date = issue.UpdatedAt ?? issue.CreatedAt;
+        var dateLength = MaxDate - MinDate;
+        return (byte)Mathf.RoundToInt(Math.Clamp((date - MinDate) / dateLength * MaxTerrainHeight, 0.0, 255.0));
+    }
+    
+    private byte GetLevelForIssue(long id)
+    {
+        var issue = Data[id];
+        var date = issue.UpdatedAt ?? issue.CreatedAt;
+        if (date.Date == MaxDate.Date)
+        {
+            return 50;
+        }
+        else if (date > MaxDate - TimeSpan.FromDays(7))
+        {
+            return 40;
+        }
+        else if (date > MaxDate - TimeSpan.FromDays(30))
+        {
+            return 30;
+        }
+        else if (date > MaxDate - TimeSpan.FromDays(365))
+        {
+            return 20;
+        }
+        else
+        {
+            return 10;
+        }
     }
 }

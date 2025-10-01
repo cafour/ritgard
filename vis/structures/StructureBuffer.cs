@@ -11,19 +11,19 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
     public VoxelBlockyLibrary Library { get; }
     public Vector3I OriginOffset { get; }
 
-    public StructureBuffer(Vector3I size, VoxelBlockyLibrary library)
+    public StructureBuffer(Vector3I size, VoxelBlockyLibrary library, Vector3I? offset = default)
     {
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
         {
-            throw new ArgumentException($"All components of size muse be positive integers.", nameof(size));
+            throw new ArgumentException($"All components of size must be positive integers.", nameof(size));
         }
 
         Size = size;
         Library = library;
         Data = new VoxelBuffer();
-        Data.Create(size.X + 2, size.Y + 1, size.Z + 2);
+        Data.Create(size.X + 2, size.Y + 2, size.Z + 2);
         Tool = Data.GetVoxelTool();
-        OriginOffset = new Vector3I(size.X / 2, 1, size.Z / 2);
+        OriginOffset = offset ?? new Vector3I(size.X / 2, 1, size.Z / 2);
     }
 
     public StructureBuffer SetAt(Vector3I pos, string blockType)
@@ -272,6 +272,24 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
             }
         }
 
+        return this;
+    }
+
+    public StructureBuffer FillArea(Vector3I min, Vector3I max, string blockType)
+    {
+        min = (min + OriginOffset).Clamp(Vector3I.Zero, Size - new Vector3I(1, 1, 1));
+        max = (max + OriginOffset).Clamp(Vector3I.Zero, Size - new Vector3I(1, 1, 1));
+        if (max < min)
+        {
+            return this;
+        }
+
+        Data.FillArea(
+            value: this.GetBlockTypeIndex(blockType),
+            min: min,
+            max: max,
+            channel: (int)VoxelBuffer.ChannelId.ChannelType
+        );
         return this;
     }
 

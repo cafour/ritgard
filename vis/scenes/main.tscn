@@ -1,9 +1,10 @@
-[gd_scene load_steps=14 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=15 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/test_structure.tscn" id="2_jyhfs"]
 [ext_resource type="VoxelGeneratorScript" uid="uid://cyvkjh7cp6kjh" path="res://voxel_generator.tres" id="2_sugp2"]
 [ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_sugp2"]
+[ext_resource type="PackedScene" uid="uid://rvdfdq5klsk4" path="res://scenes/topic_island.tscn" id="3_tipki"]
 [ext_resource type="Script" uid="uid://b10trqwqp37xq" path="res://Player.cs" id="5_tbgi4"]
 [ext_resource type="FontFile" uid="uid://dmxjwe62r0f6c" path="res://fonts/IBMPlexMono-SemiBold.otf" id="6_tefeu"]
 [ext_resource type="Environment" uid="uid://diyg1ubs8jljh" path="res://environment.tres" id="6_tipki"]
@@ -41,6 +42,7 @@ size = Vector3(10, 10, 10)
 [node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player", "ControlsContainer")]
 script = ExtResource("1_o5qli")
 TestStructure = ExtResource("2_jyhfs")
+TopicIslandScene = ExtResource("3_tipki")
 DataJsonPath = "res://sample/lume.json"
 PositionsCsvPath = "res://sample/lume_pos.csv"
 ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
@@ -49,6 +51,7 @@ ControlsContainer = NodePath("UI/Controls/ControlsContainer")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
+visible = false
 generator = ExtResource("2_sugp2")
 mesher = ExtResource("3_sugp2")
 max_view_distance = 386
