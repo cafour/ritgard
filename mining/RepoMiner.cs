@@ -42,10 +42,16 @@ public class RepoMiner
         return Task.CompletedTask;
     }
 
-    public async Task<MiningResult?> MineRepo(string owner, string repoName)
+    public async Task<MiningResult?> MineRepo(
+        string owner,
+        string repoName,
+        bool shouldMineIssues = true,
+        bool shouldMinePRs = true,
+        bool shouldMineMilestones = true
+    )
     {
         var startedAt = DateTimeOffset.UtcNow;
-        
+
         logger.LogInformation("Mining '{owner}/{repoName}'.", owner, repoName);
         var octoRepo = await GH.Repository.Get(owner, repoName);
         if (octoRepo is null)
@@ -54,52 +60,64 @@ public class RepoMiner
             return null;
         }
 
-        logger.LogInformation("Mining issues");
-        var octoIssues = await GH.Issue.GetAllForRepository(octoRepo.Id, new RepositoryIssueRequest
+        if (shouldMineIssues)
         {
-            State = ItemStateFilter.All
-        });
-
-        foreach (var octoIssue in octoIssues)
-        {
-            var issue = OctokitMapping.MapIssue(octoIssue);
-            if (octoIssue.PullRequest is not null)
+            logger.LogInformation("Mining issues");
+            var octoIssues = await GH.Issue.GetAllForRepository(octoRepo.Id, new RepositoryIssueRequest
             {
-                continue;
+                State = ItemStateFilter.All
+            });
+            foreach (var octoIssue in octoIssues)
+            {
+                var issue = OctokitMapping.MapIssue(octoIssue);
+                if (octoIssue.PullRequest is not null)
+                {
+                    continue;
+                }
+
+                issues.TryAdd(octoIssue.Id, issue);
+
+                var comments = await MineComments(octoRepo.Id, octoIssue.Number);
+                issue = issue with { Comments = comments };
+                issue = issues.AddOrUpdate(octoIssue.Id, issue, (id, i) => i with { Comments = comments });
+
+                var events = await MineIssueEvents(octoRepo.Id, octoIssue.Number);
+                issue = issue with { Events = events };
+                issue = issues.AddOrUpdate(octoIssue.Id, issue, (id, i) => i with { Events = events });
             }
-
-            issues.TryAdd(octoIssue.Id, issue);
-
-            var comments = await MineComments(octoRepo.Id, octoIssue.Number);
-            issue = issue with { Comments = comments };
-            issues.AddOrUpdate(octoIssue.Id, issue, (id, i) => i with { Comments = comments });
         }
 
-        logger.LogInformation("Mining pull requests");
-        var octoPRs = await GH.PullRequest.GetAllForRepository(octoRepo.Id, new PullRequestRequest
+        if (shouldMinePRs)
         {
-            State = ItemStateFilter.All
-        });
+            logger.LogInformation("Mining pull requests");
+            var octoPRs = await GH.PullRequest.GetAllForRepository(octoRepo.Id, new PullRequestRequest
+            {
+                State = ItemStateFilter.All
+            });
 
-        foreach (var octoPR in octoPRs)
-        {
-            var pr = OctokitMapping.MapPullRequest(octoPR);
-            pullRequests.TryAdd(octoPR.Id, pr);
+            foreach (var octoPR in octoPRs)
+            {
+                var pr = OctokitMapping.MapPullRequest(octoPR);
+                pullRequests.TryAdd(octoPR.Id, pr);
 
-            var comments = await MineComments(octoRepo.Id, octoPR.Number);
-            pr = pr with { Comments = comments };
-            pullRequests.AddOrUpdate(octoPR.Id, pr, (id, p) => p with { Comments = comments });
+                var comments = await MineComments(octoRepo.Id, octoPR.Number);
+                pr = pr with { Comments = comments };
+                pullRequests.AddOrUpdate(octoPR.Id, pr, (id, p) => p with { Comments = comments });
+            }
         }
 
-        logger.LogInformation("Mining milestones");
-        var octoMilestones = await GH.Issue.Milestone.GetAllForRepository(octoRepo.Id, new MilestoneRequest
+        if (shouldMineMilestones)
         {
-            State = ItemStateFilter.All
-        });
+            logger.LogInformation("Mining milestones");
+            var octoMilestones = await GH.Issue.Milestone.GetAllForRepository(octoRepo.Id, new MilestoneRequest
+            {
+                State = ItemStateFilter.All
+            });
 
-        foreach (var octoMilestone in octoMilestones)
-        {
-            milestones.TryAdd(octoMilestone.Id, OctokitMapping.MapMilestone(octoMilestone));
+            foreach (var octoMilestone in octoMilestones)
+            {
+                milestones.TryAdd(octoMilestone.Id, OctokitMapping.MapMilestone(octoMilestone));
+            }
         }
 
         return new MiningResult(
@@ -121,6 +139,18 @@ public class RepoMiner
             return [];
         }
         return [.. comments.Select(c => OctokitMapping.MapIssueComment(c))];
+    }
+
+    private async Task<ImmutableArray<IssueEvent>> MineIssueEvents(long repoId, int number)
+    {
+        logger.LogInformation("Mining issue events for #{Number}", number);
+        // var events = await GH.Issue.Events.GetAllForIssue(repoId, number);
+        var events = await GH.Issue.Timeline.GetAllForIssue(repoId, number);
+        if (events is null)
+        {
+            return [];
+        }
+        return [.. events.Select(e => OctokitMapping.MapTimelineEventInfo(e))];
     }
 
 

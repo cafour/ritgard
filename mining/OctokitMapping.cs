@@ -101,7 +101,7 @@ public static class OctokitMapping
             ClosedAt: value.ClosedAt,
             Labels: [.. value.Labels.Select(l => l.Name)],
             Body: value.Body,
-            PlainText: GetIssuePlainText(value),
+            PlainText: GetIssuePlainText(value.Title, value.Body),
             State: MapItemState(UnwrapStringEnum<ItemState>(value.State)) ?? default,
             StateReason: MapItemStateReason(UnwrapStringEnum(value.StateReason)),
             ClosedBy: value.ClosedBy?.Login,
@@ -111,7 +111,8 @@ public static class OctokitMapping
             MilestoneId: value.Milestone?.Id,
             PullRequestId: value.PullRequest?.Id,
             CommentCount: value.Comments,
-            Comments: []
+            Comments: [],
+            Events: []
         );
     }
 
@@ -270,6 +271,114 @@ public static class OctokitMapping
         );
     }
 
+    [return: NotNullIfNotNull(nameof(value))]
+    public static IssueEvent? MapIssueEvent(Octokit.IssueEvent? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        return new IssueEvent(
+            Id: value.Id,
+            Author: value.Actor?.Login,
+            Assignee: value.Assignee?.Login,
+            Label: value.Label?.Name,
+            Kind: MapEventInfoState(UnwrapStringEnum<EventInfoState>(value.Event)),
+            CommitId: value.CommitId,
+            CreatedAt: value.CreatedAt,
+            RenamedFrom: value.Rename?.From,
+            RenamedTo: value.Rename?.To,
+            RequestedReviewer: value.RequestedReviewer?.Login,
+            ReviewRequester: value.ReviewRequester?.Login,
+            Assigner: value.Assigner?.Login,
+            LockReason: MapLockReason(UnwrapStringEnum<Octokit.LockReason>(value.LockReason)),
+            MilestoneId: value.Milestone?.Id,
+            SourceActor: default,
+            SourceIssueId: default
+        );
+    }
+
+    [return: NotNullIfNotNull(nameof(value))]
+    public static IssueEvent? MapTimelineEventInfo(TimelineEventInfo? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        return new IssueEvent(
+            Id: value.Id,
+            Author: value.Actor?.Login,
+            Assignee: value.Assignee?.Login,
+            Label: value.Label?.Name,
+            Kind: MapEventInfoState(UnwrapStringEnum<EventInfoState>(value.Event)),
+            CommitId: value.CommitId,
+            CreatedAt: value.CreatedAt,
+            RenamedFrom: value.Rename?.From,
+            RenamedTo: value.Rename?.To,
+            RequestedReviewer: default,
+            ReviewRequester: default,
+            Assigner: default,
+            LockReason: default,
+            MilestoneId: value.Milestone?.Id,
+            SourceActor: value.Source?.Actor?.Login,
+            SourceIssueId: value.Source?.Issue?.Id
+        );
+    }
+
+    public static IssueEventKind MapEventInfoState(EventInfoState? value)
+    {
+        return value switch
+        {
+            EventInfoState.AddedToProject => IssueEventKind.AddedToProject,
+            EventInfoState.Assigned => IssueEventKind.Assigned,
+            EventInfoState.AutomaticBaseChangeFailed => IssueEventKind.AutomaticBaseChangeFailed,
+            EventInfoState.AutomaticBaseChangeSucceeded => IssueEventKind.AutomaticBaseChangeSucceeded,
+            EventInfoState.BaseRefChanged => IssueEventKind.BaseRefChanged,
+            EventInfoState.Closed => IssueEventKind.Closed,
+            EventInfoState.Commented => IssueEventKind.Commented,
+            EventInfoState.Committed => IssueEventKind.Committed,
+            EventInfoState.Connected => IssueEventKind.Connected,
+            EventInfoState.ConvertToDraft => IssueEventKind.ConvertToDraft,
+            EventInfoState.ConvertedNoteToIssue => IssueEventKind.ConvertedNoteToIssue,
+            EventInfoState.Crossreferenced => IssueEventKind.Crossreferenced,
+            EventInfoState.Demilestoned => IssueEventKind.Demilestoned,
+            EventInfoState.Deployed => IssueEventKind.Deployed,
+            EventInfoState.Disconnected => IssueEventKind.Disconnected,
+            EventInfoState.HeadRefDeleted => IssueEventKind.HeadRefDeleted,
+            EventInfoState.HeadRefRestored => IssueEventKind.HeadRefRestored,
+            EventInfoState.HeadRefForcePushed => IssueEventKind.HeadRefForcePushed,
+            EventInfoState.Labeled => IssueEventKind.Labeled,
+            EventInfoState.Locked => IssueEventKind.Locked,
+            EventInfoState.Mentioned => IssueEventKind.Mentioned,
+            EventInfoState.MarkedAsDuplicate => IssueEventKind.MarkedAsDuplicate,
+            EventInfoState.Merged => IssueEventKind.Merged,
+            EventInfoState.Milestoned => IssueEventKind.Milestoned,
+            EventInfoState.MovedColumnsInProject => IssueEventKind.MovedColumnsInProject,
+            EventInfoState.Pinned => IssueEventKind.Pinned,
+            EventInfoState.ReadyForReview => IssueEventKind.ReadyForReview,
+            EventInfoState.Referenced => IssueEventKind.Referenced,
+            EventInfoState.RemovedFromProject => IssueEventKind.RemovedFromProject,
+            EventInfoState.Renamed => IssueEventKind.Renamed,
+            EventInfoState.Reopened => IssueEventKind.Reopened,
+            EventInfoState.ReviewDismissed => IssueEventKind.ReviewDismissed,
+            EventInfoState.ReviewRequested => IssueEventKind.ReviewRequested,
+            EventInfoState.ReviewRequestRemoved => IssueEventKind.ReviewRequestRemoved,
+            EventInfoState.Reviewed => IssueEventKind.Reviewed,
+            EventInfoState.Subscribed => IssueEventKind.Subscribed,
+            EventInfoState.Transferred => IssueEventKind.Transferred,
+            EventInfoState.Unassigned => IssueEventKind.Unassigned,
+            EventInfoState.Unlabeled => IssueEventKind.Unlabeled,
+            EventInfoState.Unlocked => IssueEventKind.Unlocked,
+            EventInfoState.UnmarkedAsDuplicate => IssueEventKind.UnmarkedAsDuplicate,
+            EventInfoState.Unpinned => IssueEventKind.Unpinned,
+            EventInfoState.Unsubscribed => IssueEventKind.Unsubscribed,
+            EventInfoState.UserBlocked => IssueEventKind.UserBlocked,
+            _ => throw new NotSupportedException()
+        };
+    }
+
     public static TEnum? UnwrapStringEnum<TEnum>(StringEnum<TEnum>? value)
         where TEnum : struct
     {
@@ -286,20 +395,20 @@ public static class OctokitMapping
         return null;
     }
 
-    public static string GetIssuePlainText(Octokit.Issue octoIssue)
+    public static string GetIssuePlainText(string title, string? body)
     {
         var sb = new StringBuilder();
         var sw = new StringWriter(sb);
-        Utils.WriteMarkdownAsPlainText(octoIssue.Title.Trim(), sw);
+        Utils.WriteMarkdownAsPlainText(title.Trim(), sw);
         if (sb[^1] != '.')
         {
             sb.Append('.');
         }
 
-        if (!string.IsNullOrWhiteSpace(octoIssue.Body))
+        if (!string.IsNullOrWhiteSpace(body))
         {
             sb.Append('\n');
-            Utils.WriteMarkdownAsPlainText(octoIssue.Body.Trim(), sw);
+            Utils.WriteMarkdownAsPlainText(body.Trim(), sw);
         }
 
         return sb.ToString();

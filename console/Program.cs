@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Immutable;
+using System.Threading.Tasks;
 using ConsoleAppFramework;
 using Microsoft.Extensions.Logging;
 using Ritgard.Mining;
@@ -18,12 +19,23 @@ public class Commands
     /// </summary>
     /// <param name="repo">owner/repo_name</param>
     [Command("repo")]
-    public async Task MineRepo([Argument] string repo)
+    public async Task MineRepo(
+        [Argument] string repo,
+        bool noIssues,
+        bool noPrs,
+        bool noMilestones
+    )
     {
         var miner = new RepoMiner(LoggerFactory.CreateLogger<RepoMiner>());
         await miner.Initialize();
         var (owner, repoName) = Utils.ParseRepoString(repo);
-        var result = await miner.MineRepo(owner, repoName);
+        var result = await miner.MineRepo(
+            owner,
+            repoName,
+            !noIssues,
+            !noPrs,
+            !noMilestones
+        );
         if (result is not null)
         {
             await Utils.WriteJson(result, $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json");
@@ -36,8 +48,40 @@ public class Commands
     /// <param name="repo">owner/repo_name</param>
     [Command("readme")]
     public void MineReadme(string repo)
-    {   
+    {
 
+    }
+
+    /// <summary>
+    /// Make sure the PlainText property is set properly.
+    /// </summary>
+    public async Task EnsurePlainText([Argument] string path)
+    {
+        var result = await Utils.ReadJson<MiningResult>(path);
+        if (result is null)
+        {
+            throw new ArgumentException("No data found in the provided file.", nameof(path));
+        }
+
+        var issueBuilder = result.Issues.ToBuilder();
+        foreach (var issue in result.Issues.Values)
+        {
+            var plainTextIssue = issue with
+            {
+                PlainText = OctokitMapping.GetIssuePlainText(issue.Title, issue.Body)
+            };
+            issueBuilder[issue.Id] = plainTextIssue;
+        }
+
+        result = result with
+        {
+            Issues = issueBuilder.ToImmutable()
+        };
+
+        await Utils.WriteJson(
+            result,
+            $"{result.Repository.Name.ToLower()}_{DateTimeOffset.UtcNow:yyyy-MM-dd_HH-mm-ss}.json"
+        );
     }
 
     [Command("wtf")]

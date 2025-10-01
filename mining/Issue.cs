@@ -25,7 +25,8 @@ public record Issue(
     long? MilestoneId,
     long? PullRequestId,
     int CommentCount,
-    ImmutableArray<Comment> Comments
+    ImmutableArray<Comment> Comments,
+    ImmutableArray<IssueEvent> Events
 )
 {
     public DateTimeOffset GetLastCommentDate()

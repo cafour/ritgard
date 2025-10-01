@@ -25,7 +25,7 @@ public static partial class Utils
         JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerOptions.Default);
         JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
         JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        
+
         MarkdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
     }
 
@@ -81,11 +81,21 @@ public static partial class Utils
         await JsonSerializer.SerializeAsync(stream, value, JsonSerializerOptions, cancellationToken: token);
     }
 
+    public static async Task<T?> ReadJson<T>(
+        string path,
+        CancellationToken token = default
+    )
+    {
+        using var stream = new FileStream(path, FileMode.Open);
+
+        return await JsonSerializer.DeserializeAsync<T>(stream, JsonSerializerOptions, cancellationToken: token);
+    }
+
     public static DateTimeOffset Max(DateTimeOffset lhs, DateTimeOffset rhs)
     {
         return lhs > rhs ? lhs : rhs;
     }
-    
+
     public static DateTimeOffset Min(DateTimeOffset lhs, DateTimeOffset rhs)
     {
         return lhs < rhs ? lhs : rhs;
