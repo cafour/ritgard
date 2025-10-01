@@ -14,5 +14,7 @@ Material = ExtResource("4_4m8o0")
 [node name="Mesh" type="MeshInstance3D" parent="."]
 
 [node name="Body" type="StaticBody3D" parent="."]
+collision_layer = 2
+collision_mask = 0
 
 [node name="Collider" type="CollisionShape3D" parent="Body"]

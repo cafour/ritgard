@@ -2,12 +2,15 @@
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/test_structure.tscn" id="2_jyhfs"]
-[ext_resource type="VoxelGeneratorScript" uid="uid://cyvkjh7cp6kjh" path="res://voxel_generator.tres" id="2_sugp2"]
 [ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_sugp2"]
 [ext_resource type="PackedScene" uid="uid://rvdfdq5klsk4" path="res://scenes/topic_island.tscn" id="3_tipki"]
 [ext_resource type="Script" uid="uid://b10trqwqp37xq" path="res://Player.cs" id="5_tbgi4"]
 [ext_resource type="FontFile" uid="uid://dmxjwe62r0f6c" path="res://fonts/IBMPlexMono-SemiBold.otf" id="6_tefeu"]
 [ext_resource type="Environment" uid="uid://diyg1ubs8jljh" path="res://environment.tres" id="6_tipki"]
+
+[sub_resource type="VoxelGeneratorFlat" id="VoxelGeneratorFlat_tefeu"]
+channel = 0
+voxel_type = 10
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o6xl0"]
 vertex_color_use_as_albedo = true
@@ -51,8 +54,7 @@ ControlsContainer = NodePath("UI/Controls/ControlsContainer")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]
 transform = Transform3D(1, 0.00025892, 0.000185654, -0.000258682, 0.999999, -0.00128697, -0.000185996, 0.00128691, 0.999999, 0, 0, 0)
-visible = false
-generator = ExtResource("2_sugp2")
+generator = SubResource("VoxelGeneratorFlat_tefeu")
 mesher = ExtResource("3_sugp2")
 max_view_distance = 386
 material_override = SubResource("StandardMaterial3D_o6xl0")

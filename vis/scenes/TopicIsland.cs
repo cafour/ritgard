@@ -136,10 +136,13 @@ public partial class TopicIsland : Node3D
         }
 
         var shape = new ConcavePolygonShape3D();
-        var mesh = Mesher.BuildMesh(buffer.Data, [Material]);
+        var mesher = new VoxelMesherBlocky();
+        mesher.Library = Library;
+        var mesh = mesher.BuildMesh(buffer.Data, [Material]);
         shape.SetFaces(mesh.GetFaces());
         _.Mesh.Mesh = mesh;
         _.Mesh.Position = bbox.Position;
         _.Body.Collider.Shape = shape;
+        _.Body.Get().Position = bbox.Position;
     }
 }

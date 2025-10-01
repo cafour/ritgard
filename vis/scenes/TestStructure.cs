@@ -121,12 +121,17 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
             }
         }
 
-        var structure = new LayeredConifer
+        // var structure = new LayeredConifer
+        // {
+        //     TrunkHeight = contributorCount,
+        //     Layers = layers,
+        //     HasCap = Item.State == IssueState.Closed,
+        //     MaxBreadth = (int)maxBreadthSlider.Value
+        // };
+        var structure = new Conifer
         {
             TrunkHeight = contributorCount,
-            Layers = layers,
-            HasCap = Item.State == IssueState.Closed,
-            MaxBreadth = (int)maxBreadthSlider.Value
+            CrownBreadth = 3
         };
 
         var (min, max) = structure.Measure();

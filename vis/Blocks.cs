@@ -12,4 +12,5 @@ public static class Blocks
     public const string Bark = "bark";
     public const string AcaciaLeaves = "acacia_leaves";
     public const string ConiferLeaves = "conifer_leaves";
+    public const string Water = "water";
 }

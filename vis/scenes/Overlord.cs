@@ -60,8 +60,6 @@ public partial class Overlord : Node
     public DateTimeOffset MaxDate { get; private set; }
     public TimeSpan AvgIssueLength { get; private set; }
 
-    private VoxelTerrain terrain;
-    private VoxelGenerator generator;
     private RandomNumberGenerator rng;
     private TestStructure currentItem;
 
@@ -79,10 +77,7 @@ public partial class Overlord : Node
         }
         Instance = this;
 
-        terrain = GetNode<VoxelTerrain>("VoxelTerrain");
-        generator = (VoxelGenerator)terrain.Generator;
         rng = new RandomNumberGenerator();
-        generator.Heightmap = new byte[HeightmapSize, HeightmapSize];
     }
 
     public override void _Ready()
@@ -167,11 +162,10 @@ public partial class Overlord : Node
         //     );
         // }
 
-        ComputeHeighmapCircles(Mathf.RoundToInt(StructureRadius));
+        // ComputeHeighmapCircles(Mathf.RoundToInt(StructureRadius));
 
         foreach (var (id, position) in Positions)
         {
-            var height = generator.GetHeight(Mathf.RoundToInt(position.X), Mathf.RoundToInt(position.Y));
             var instance = TestStructure.Instantiate<TestStructure>();
             instance.Id = id;
             instance.ControlsContainer = ControlsContainer;
@@ -235,7 +229,7 @@ public partial class Overlord : Node
                 if (edge is null)
                 {
                     // generator.Heightmap.SetPixel(hx, hy, new Color() { R8 = 0 });
-                    generator.Heightmap[hy, hx] = 0;
+                    // generator.Heightmap[hy, hx] = 0;
                     continue;
                 }
 
@@ -250,7 +244,7 @@ public partial class Overlord : Node
                 );
                 height = Mathf.Max(height, 0.0);
                 // generator.Heightmap.SetPixel(hx, hy, new Color { R8 = Mathf.RoundToInt(height) });
-                generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
+                // generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
             }
         }
     }
@@ -275,101 +269,101 @@ public partial class Overlord : Node
 
                     if (x * x + y * y < radiusSquared + 1)
                     {
-                        generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], height);
+                        // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], height);
                     }
                     else
                     {
-                        generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], (byte)0);
+                        // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], (byte)0);
                     }
                 }
             }
         }
     }
 
-
     private void OnHoverChanged(CollisionObject3D hoveree)
     {
-        var structure = hoveree?.GetParent<TestStructure>();
-        if (structure is not null
-            && structure != currentItem
-            && structure.Id is not null
-            && Data.TryGetValue(structure.Id.Value, out var item)
-        )
+        var parent = hoveree?.GetParent();
+        if (parent is TestStructure structure)
+        {
+            if (structure.Id is not null && Data.TryGetValue(structure.Id.Value, out var item))
+            {
+                currentItem?.ToggleHighlight(false);
+                currentItem = structure;
+                currentItem.ToggleHighlight(true);
+                ItemDescriptionLabel.Text = $"#{item.Number} {item.Title}\n\t{item.CreatedAt:s}--{item.UpdatedAt:s} ({item.UpdatedAt - item.CreatedAt:c}, {item.CommentCount} comments)";
+
+                Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
+            }
+        }
+        else if (parent is TopicIsland island)
+        {
+            ItemDescriptionLabel.Text = $"The '{island.Topic.Title}' topic island";
+        }
+        else if (parent is null)
         {
             currentItem?.ToggleHighlight(false);
-            currentItem = structure;
-            currentItem.ToggleHighlight(true);
-            ItemDescriptionLabel.Text = $"#{item.Number} {item.Title}\n\t{item.CreatedAt:s}--{item.UpdatedAt:s} ({item.UpdatedAt - item.CreatedAt:c}, {item.CommentCount} comments)";
-
-            Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
-        }
-
-        if (structure is null)
-        {
-            currentItem.ToggleHighlight(false);
             currentItem = null;
-            ItemDescriptionLabel.Text = DefaultHint;
-
             Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
+            ItemDescriptionLabel.Text = DefaultHint;
         }
     }
 
     public void _OnMeshBlockEntered(Vector3I blockPos)
     {
         return;
-        var origin = terrain.DataBlockToVoxel(blockPos);
-        var structCount = rng.RandiRange(0, 2);
-        if (structCount == 0)
-        {
-            return;
-        }
+        // var origin = terrain.DataBlockToVoxel(blockPos);
+        // var structCount = rng.RandiRange(0, 2);
+        // if (structCount == 0)
+        // {
+        //     return;
+        // }
 
-        var set = new HashSet<Node3D>();
-        for (int i = 0; i < structCount; ++i)
-        {
-            var position = new Vector3I(
-                rng.RandiRange(0, (int)terrain.MeshBlockSize - 1),
-                0,
-                rng.RandiRange(0, (int)terrain.MeshBlockSize - 1)
-            );
-            var height = generator.GetHeight(origin.X + position.X, origin.Z + position.Z);
-            if (height > origin.Y + (int)terrain.MeshBlockSize || height < origin.Y)
-            {
-                continue;
-            }
+        // var set = new HashSet<Node3D>();
+        // for (int i = 0; i < structCount; ++i)
+        // {
+        //     var position = new Vector3I(
+        //         rng.RandiRange(0, (int)terrain.MeshBlockSize - 1),
+        //         0,
+        //         rng.RandiRange(0, (int)terrain.MeshBlockSize - 1)
+        //     );
+        //     var height = generator.GetHeight(origin.X + position.X, origin.Z + position.Z);
+        //     if (height > origin.Y + (int)terrain.MeshBlockSize || height < origin.Y)
+        //     {
+        //         continue;
+        //     }
 
-            var instance = TestStructure.Instantiate<Node3D>();
-            instance.Position = new Vector3(origin.X + position.X, height, origin.Z + position.Z);
-            AddChild(instance);
-            set.Add(instance);
-        }
-        structures.AddOrUpdate(blockPos, _ => set, (_, e) =>
-        {
-            foreach (var existing in e)
-            {
-                e.Remove(existing);
-                RemoveChild(existing);
-                existing.QueueFree();
-            }
-            return set;
-        });
+        //     var instance = TestStructure.Instantiate<Node3D>();
+        //     instance.Position = new Vector3(origin.X + position.X, height, origin.Z + position.Z);
+        //     AddChild(instance);
+        //     set.Add(instance);
+        // }
+        // structures.AddOrUpdate(blockPos, _ => set, (_, e) =>
+        // {
+        //     foreach (var existing in e)
+        //     {
+        //         e.Remove(existing);
+        //         RemoveChild(existing);
+        //         existing.QueueFree();
+        //     }
+        //     return set;
+        // });
     }
 
     public void _OnMeshBlockExited(Vector3I blockPos)
     {
         return;
-        var set = structures.GetValueOrDefault(blockPos);
-        if (set is null || set.Count == 0)
-        {
-            return;
-        }
+        // var set = structures.GetValueOrDefault(blockPos);
+        // if (set is null || set.Count == 0)
+        // {
+        //     return;
+        // }
 
-        foreach (var existing in set)
-        {
-            set.Remove(existing);
-            RemoveChild(existing);
-            existing.QueueFree();
-        }
+        // foreach (var existing in set)
+        // {
+        //     set.Remove(existing);
+        //     RemoveChild(existing);
+        //     existing.QueueFree();
+        // }
     }
 
     public static double InterpolateBarycentric(
