@@ -199,6 +199,7 @@ def use_bertopic(docs: list[str], project_name):
     reduced_embeddings: np.ndarray[tuple[int, int], np.dtype[np.float32]] = (
         reduction_umap.fit_transform(embeddings)
     )  # type: ignore
+    # reduced_embeddings = reduce_mds(topic_model.umap_model.transform(embeddings))
 
     keybert_labels = {
         topic: "; ".join(list(zip(*values))[0][:3])
