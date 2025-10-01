@@ -50,9 +50,7 @@ def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]
             if "Labels" in issue and issue["Labels"] != None:
                 for label in issue["Labels"]:
                     doc += f"[{label}] "
-            doc += issue["Title"]
-            if "Body" in issue and issue["Body"] != None and issue["Body"] != "":
-                doc += " " + issue["Body"]
+            doc += issue["PlainText"]
             doc = doc.lower().replace(project_name, "")
             docs.append(doc)
     return (ids, docs)
@@ -222,7 +220,7 @@ def use_bertopic(docs: list[str], project_name):
         + mms_labels[topic]
         for topic in keybert_labels.keys()
     }
-    topic_model.set_topic_labels(combined_labels)
+    topic_model.set_topic_labels(pos_labels)
 
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
 

@@ -1,7 +1,8 @@
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
+using System.Text;
 using Octokit;
 
 namespace Ritgard.Mining;
@@ -100,6 +101,7 @@ public static class OctokitMapping
             ClosedAt: value.ClosedAt,
             Labels: [.. value.Labels.Select(l => l.Name)],
             Body: value.Body,
+            PlainText: GetIssuePlainText(value),
             State: MapItemState(UnwrapStringEnum<ItemState>(value.State)) ?? default,
             StateReason: MapItemStateReason(UnwrapStringEnum(value.StateReason)),
             ClosedBy: value.ClosedBy?.Login,
@@ -282,5 +284,24 @@ public static class OctokitMapping
         }
 
         return null;
+    }
+
+    public static string GetIssuePlainText(Octokit.Issue octoIssue)
+    {
+        var sb = new StringBuilder();
+        var sw = new StringWriter(sb);
+        Utils.WriteMarkdownAsPlainText(octoIssue.Title.Trim(), sw);
+        if (sb[^1] != '.')
+        {
+            sb.Append('.');
+        }
+
+        if (!string.IsNullOrWhiteSpace(octoIssue.Body))
+        {
+            sb.Append('\n');
+            Utils.WriteMarkdownAsPlainText(octoIssue.Body.Trim(), sw);
+        }
+
+        return sb.ToString();
     }
 }

@@ -10,12 +10,13 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using CsvHelper;
+using Markdig;
 using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Index;
 
 namespace Ritgard.Mining;
 
-public static class Utils
+public static partial class Utils
 {
     public static readonly JsonSerializerOptions JsonSerializerOptions;
 
@@ -24,6 +25,8 @@ public static class Utils
         JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerOptions.Default);
         JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
         JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        
+        MarkdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
     }
 
     public static IConfiguration BuildConfiguration()
