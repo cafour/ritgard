@@ -15,8 +15,13 @@ import numpy.typing as npt
 from datetime import datetime
 from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
+from bertopic.representation import TextGeneration
+from bertopic.representation import PartOfSpeech
+from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
+import transformers
+from torch import bfloat16
 
 
 def get_top_keywords(tfidf_matrix, labels, feature_names, top_n=5):
@@ -171,7 +176,12 @@ def use_bertopic(docs: list[str], project_name):
     )
     ctfidf_model = ClassTfidfTransformer()
     keybert_model = KeyBERTInspired()
-    representation_model = {"KeyBERT": keybert_model}
+
+    representation_model = {
+        "KeyBERT": keybert_model,
+        "POS": PartOfSpeech("en_core_web_sm"),
+        "MMS": MaximalMarginalRelevance(diversity=0.5),
+    }
     topic_model = BERTopic(
         embedding_model=embedding_model,
         umap_model=umap_model,
@@ -191,11 +201,27 @@ def use_bertopic(docs: list[str], project_name):
         reduction_umap.fit_transform(embeddings)
     )  # type: ignore
 
-    keybert_topic_labels = {
-        topic: list(zip(*values))[0][0]
+    keybert_labels = {
+        topic: "; ".join(list(zip(*values))[0][:3])
         for topic, values in topic_model.topic_aspects_["KeyBERT"].items()
     }
-    topic_model.set_topic_labels(keybert_topic_labels)
+    pos_labels = {
+        topic: " ".join(list(zip(*values))[0][:3])
+        for topic, values in topic_model.topic_aspects_["POS"].items()
+    }
+    mms_labels = {
+        topic: " ".join(list(zip(*values))[0][:3])
+        for topic, values in topic_model.topic_aspects_["MMS"].items()
+    }
+    combined_labels = {
+        topic: keybert_labels[topic]
+        + " | "
+        + pos_labels[topic]
+        + " | "
+        + mms_labels[topic]
+        for topic in keybert_labels.keys()
+    }
+    topic_model.set_topic_labels(combined_labels)
 
     # new_topics = topic_model.reduce_outliers(
     #     titles, topics, embeddings=embeddings, strategy="embeddings"
@@ -213,7 +239,7 @@ def use_bertopic(docs: list[str], project_name):
     )
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
     fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
-    topics = [keybert_topic_labels[topic] if topic != -1 else '' for topic in topic_model.topics_]  # type: ignore
+    topics = [combined_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
     return (reduced_embeddings, topics)
 
 
