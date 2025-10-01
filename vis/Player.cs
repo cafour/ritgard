@@ -7,7 +7,7 @@ namespace Ritgard;
 public partial class Player : Node3D
 {
     public const float BaseHeight = 100f;
-    public const float HoverReach = 512f;
+    public const float HoverReach = 2048;
 
     private Camera3D camera;
     private float pitch;

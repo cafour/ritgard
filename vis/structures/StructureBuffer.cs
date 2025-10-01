@@ -278,8 +278,8 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
     public StructureBuffer FillArea(Vector3I min, Vector3I max, string blockType)
     {
         min = (min + OriginOffset).Clamp(Vector3I.Zero, Size - new Vector3I(1, 1, 1));
-        max = (max + OriginOffset).Clamp(Vector3I.Zero, Size - new Vector3I(1, 1, 1));
-        if (max < min)
+        max = (max + OriginOffset).Clamp(Vector3I.Zero, Size);
+        if (max.X < min.X || max.Y < min.Y || max.Z < min.Z)
         {
             return this;
         }

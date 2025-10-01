@@ -15,18 +15,18 @@ public partial class TopicIsland : Node3D
     public const int GrassWidth = 1;
     public const int DirtWidth = 3;
     public const int StructureRadius = 3;
-    
+
     public Topic Topic { get; set; }
 
     [Export]
     public VoxelBlockyLibrary Library { get; set; }
-    
+
     [Export]
     public VoxelMesherBlocky Mesher { get; set; }
 
     [Export]
     public Material Material { get; set; }
-    
+
     public byte[,] Heightmap { get; set; }
 
     public override void _Ready()
