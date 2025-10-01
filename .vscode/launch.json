@@ -25,6 +25,17 @@
             ]
         },
         {
+            "name": "CLI: wtf",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/console/bin/Debug/net9.0/Ritgard.Console.dll",
+            "preLaunchTask": "build",
+            "args": [
+                "wtf"
+            ],
+            "justMyCode": false
+        },
+        {
             "name": "test.py",
             "type": "debugpy",
             "request": "launch",
