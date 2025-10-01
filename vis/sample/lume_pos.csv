@@ -1,452 +1,452 @@
 Id,X,Y,Topic,NearestNeighbor,NearestNeighborDistance
-2154078558,2.229411,-3.6638472,_config ts; cli ts; deno task | deno ts download | deno land https deno download,417,0.1414875648717989
-2167599169,2.1720595,-1.6250913,css import; plugins lightningcss; import css | css color includes | color includes sass,62,0.011050003698066814
-2171507413,4.6658673,-0.5978216,,249,0.05158625440422724
-2187597779,4.096215,0.7905558,pages search; search pages; bug search | search pages page | pages article liquid,36,0.03302598628193413
-2188194317,1.3166332,-0.9288276,init script; cli; cli interface | init enhancement suggestions | option cli site,359,0.0671851647569842
-2197103920,3.9368467,-0.76914024,filter pages; filter; filters | filter page draft | draft page data parcel,232,0.2555067330536558
-2209227733,3.813028,-1.8357886,ts import; template; export default | pug file changes | pug ts head,207,0.040872448652414066
-2219590718,2.1520054,-3.1038082,_config ts; cli ts; deno task | deno ts download | deno land https deno download,377,0.0529112760067718
-2222336077,4.4861817,-0.7810297,site loadassets; html files; loadassets | files copy static files | copy static files static,354,0.09946621784034947
-2226778587,2.6838267,-2.2295392,_config ts; cli ts; deno task | deno ts download | deno land https deno download,48,0.05747619752699708
-2227675080,1.0038898,-3.4686322,_config ts; cli ts; deno task | deno ts download | deno land https deno download,373,0.020474324745147744
-2250434213,3.4776278,2.2493637,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,13,0.04212844943674622
-2254968218,4.1420445,0.7824512,pages search; search pages; bug search | search pages page | pages article liquid,36,0.018205871951926494
-2260941719,3.5105221,2.2230432,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,11,0.04212844943674622
-2265159664,1.3813653,-3.4163547,_config ts; cli ts; deno task | deno ts download | deno land https deno download,199,0.08407737951555734
-2283041462,5.021814,-0.053479202,subdirectory; page src; directory | server data url | server md directory,407,0.24560428267549705
-2290404988,0.68137336,-3.8158717,_config ts; cli ts; deno task | deno ts download | deno land https deno download,362,0.0277423841023965
-2304467044,1.1781625,-3.723534,_config ts; cli ts; deno task | deno ts download | deno land https deno download,104,0.11269549368373075
-2307702650,6.736596,-0.8359983,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,369,0.01280037659553339
-2342297220,3.6584666,0.7492186,page js; pages generated; generated pages | pages page data | data generated pages renderorder,242,0.006929310603649843
-2345400881,0.48358372,0.64195883,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,102,0.034198403358576344
-2349164402,1.9823465,-3.9465735,_config ts; cli ts; deno task | deno ts download | deno land https deno download,192,0.04765663731328129
-2354884082,1.613955,-3.2020109,_config ts; cli ts; deno task | deno ts download | deno land https deno download,150,0.055841970417646124
-2356024285,2.6963313,-2.3616054,_config ts; cli ts; deno task | deno ts download | deno land https deno download,26,0.05001834565528037
-2356825060,3.0474367,0.37045625,template engines; layout layouts; template | layouts export layout | layouts faster export const,33,0.10658077483884609
-2357044529,2.561997,-0.76126236,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,437,0.14975674232044656
-2360464025,2.7091541,-2.4099522,_config ts; cli ts; deno task | deno ts download | deno land https deno download,23,0.05001834565528037
-2370229283,2.6944482,-1.6612681,css import; plugins lightningcss; import css | css color includes | color includes sass,424,0.019347033160108586
-2374960782,2.1662445,1.6178027,,213,0.054505414665257546
-2377925297,3.6660116,0.66170067,page js; pages generated; generated pages | pages page data | data generated pages renderorder,286,0.014289782329278257
-2378738442,1.2404633,-0.60790193,init script; cli; cli interface | init enhancement suggestions | option cli site,312,0.14566343379110774
-2378780827,6.713387,-0.81293964,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,371,0.016766740165525696
-2380743243,6.6916475,-0.7759598,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,371,0.026130642858550455
-2381019325,3.0302467,0.47564164,,351,0.08062277906443235
-2388504142,5.130954,3.3152013,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,425,0.021326504208076736
-2402124114,4.026264,-1.8713795,ts import; template; export default | pug file changes | pug ts head,255,0.03612202855732768
-2422606228,4.1253943,0.7750875,pages search; search pages; bug search | search pages page | pages article liquid,12,0.018205871951926494
-2425047485,1.8153765,1.8769984,plugins pagefind; plugins idea; pagefind plugin | idea pagefind suffix | land discussions related https enhancement plugins,433,0.21068621514413427
-2446919220,3.6417716,2.1029553,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,82,0.06326285044009902
-2455087139,2.289878,-3.2746851,_config ts; cli ts; deno task | deno ts download | deno land https deno download,190,0.09245550172676584
-2459669034,4.7542024,1.254738,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,334,0.004827124514629155
-2460330730,4.7536697,1.7733941,,154,0.0838098602636461
-2460851920,1.3033345,-2.3135624,_config ts; cli ts; deno task | deno ts download | deno land https deno download,173,0.2422493774922042
-2461232229,3.8933694,-1.9634137,ts import; template; export default | pug file changes | pug ts head,289,0.02577723736491998
-2499612816,0.8816832,-3.076827,_config ts; cli ts; deno task | deno ts download | deno land https deno download,188,0.17487253979739042
-2507354179,3.8271766,-1.5085498,ts import; template; export default | pug file changes | pug ts head,400,0.12301280657751072
-2508736226,5.209174,0.15955853,,166,0.02173251627080337
-2510040324,3.5231256,-2.219555,ts import; template; export default | pug file changes | pug ts head,75,0.0919600681511457
-2510715199,2.7202303,-2.274017,_config ts; cli ts; deno task | deno ts download | deno land https deno download,52,0.030891753019226212
-2522986851,4.689595,-0.86767805,,185,0.06605070651867963
-2527617055,1.58856,-3.5519078,_config ts; cli ts; deno task | deno ts download | deno land https deno download,314,0.018550322381586448
-2543510859,2.146611,-3.8795013,_config ts; cli ts; deno task | deno ts download | deno land https deno download,435,0.06682269038355115
-2554576930,2.7444603,-2.2931798,_config ts; cli ts; deno task | deno ts download | deno land https deno download,48,0.030891753019226212
-2568440176,5.1517444,3.3898036,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,432,0.05379579621982428
-2568738691,0.60903144,2.1938493,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,258,0.022341024356271943
-2568739170,1.3601582,1.6933827,,298,0.016454518290326316
-2568739627,1.4606435,1.630919,,57,0.10055166010863961
-2613801208,1.4569364,1.7314023,,56,0.10055166010863961
-2615736193,3.6935844,1.5100561,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,265,0.06552617476988326
-2631087567,0.64535886,-3.3165596,_config ts; cli ts; deno task | deno ts download | deno land https deno download,448,0.11547381094913281
-2642651166,5.204608,3.4463894,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,95,0.004563153372047311
-2646830715,1.4851846,-3.8321812,_config ts; cli ts; deno task | deno ts download | deno land https deno download,366,0.08466450146541556
-2649222992,2.180307,-1.6324455,css import; plugins lightningcss; import css | css color includes | color includes sass,1,0.011050003698066814
-2668373267,2.8422706,-0.058980826,google fonts; fonts additional; fonts plugin | fonts japanese ranges | google fonts japanese applied,100,0.05956783134442041
-2707499096,1.8139973,-3.0046556,_config ts; cli ts; deno task | deno ts download | deno land https deno download,123,0.11580752709449785
-2709602313,1.2388505,-1.1942495,init script; cli; cli interface | init enhancement suggestions | option cli site,363,0.03449403713473677
-2710618606,1.4628928,0.083414085,preact jsx; jsx preact; react jsx | jsx preact react | preact use react precompile,224,0.09254725242789301
-2724538897,0.74082494,-3.8559763,_config ts; cli ts; deno task | deno ts download | deno land https deno download,187,0.013174249599215093
-2746713930,2.4919722,-2.3817956,_config ts; cli ts; deno task | deno ts download | deno land https deno download,309,0.09832403680898644
-2746724732,2.6171353,-2.2395804,_config ts; cli ts; deno task | deno ts download | deno land https deno download,9,0.0674430803567081
-2753666651,2.8339586,0.3079985,template engines; layout layouts; template | layouts export layout | layouts faster export const,385,0.19799997082961404
-2762314153,2.649169,-2.3087854,_config ts; cli ts; deno task | deno ts download | deno land https deno download,23,0.07081123466171303
-2763063044,5.0406127,0.47475427,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,450,0.18439830164661208
-2767073290,3.9825234,-0.21002285,,130,0.11231958433681279
-2773200405,2.0575833,-2.6212444,_config ts; cli ts; deno task | deno ts download | deno land https deno download,418,0.07509996440005332
-2788443599,3.4983804,-2.308123,ts import; template; export default | pug file changes | pug ts head,47,0.0919600681511457
-2793926070,0.33352685,0.2403458,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,419,0.012843713591728255
-2796641069,0.8537941,-2.8590958,_config ts; cli ts; deno task | deno ts download | deno land https deno download,125,0.017469188966539317
-2796975218,2.912003,-0.68985164,inline plugin; css inline; inline | inline svg attributes | svg plugin tag,277,0.038617569282428856
-2810507708,0.37323788,0.43880934,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,375,0.07945428897990177
-2824117429,1.7665112,1.2822324,,212,0.18364583461300288
-2828120437,2.720915,-1.6346468,css import; plugins lightningcss; import css | css color includes | color includes sass,401,0.014147944404157
-2841614023,3.6673079,2.1608353,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,38,0.06326285044009902
-2859228402,3.7381444,1.9624374,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,442,0.0539844824058029
-2860690296,3.5885985,2.1636271,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,101,0.012400591610839506
-2888128038,1.1638806,1.6096153,,388,0.05819943005276934
-2903664240,2.5317671,-1.728346,css import; plugins lightningcss; import css | css color includes | color includes sass,91,0.08196953367874873
-2918388996,2.0749543,-0.3765308,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,346,0.08989354955465158
-2921192275,0.9304562,-3.4533575,_config ts; cli ts; deno task | deno ts download | deno land https deno download,10,0.07500539159271984
-2973388308,1.2670307,-3.1035843,_config ts; cli ts; deno task | deno ts download | deno land https deno download,178,0.07210307206160331
-2974632657,0.34016895,0.25392085,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,410,0.011251546628070536
-2981190644,2.4888284,-1.7981691,css import; plugins lightningcss; import css | css color includes | color includes sass,86,0.08196953367874873
-3010160079,1.0740563,-3.4542272,_config ts; cli ts; deno task | deno ts download | deno land https deno download,373,0.06677091118991926
-3024973556,4.0974336,0.71605045,pages search; search pages; bug search | search pages page | pages article liquid,36,0.06532362472453916
-3032669010,3.406371,0.50404555,,200,0.04033218083634704
-3035078749,5.2006927,3.448733,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,60,0.004563153372047311
-3038992260,1.9157456,-2.7060452,_config ts; cli ts; deno task | deno ts download | deno land https deno download,381,0.10539282223472972
-3056532559,2.0942845,-3.7525682,_config ts; cli ts; deno task | deno ts download | deno land https deno download,110,0.10056100984158907
-3074605069,2.3437805,1.0848662,,127,0.19712009270267802
-3088431226,3.1849833,-0.6417734,google fonts; fonts additional; fonts plugin | fonts japanese ranges | google fonts japanese applied,138,0.17160410748254043
-3093211892,2.7955706,-0.022001961,google fonts; fonts additional; fonts plugin | fonts japanese ranges | google fonts japanese applied,63,0.05956783134442041
-3106810621,3.5962012,2.1538305,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,84,0.012400591610839506
-3107761579,0.51515144,0.65511215,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,20,0.034198403358576344
-3116167131,3.374203,-2.4271066,ts import; template; export default | pug file changes | pug ts head,162,0.10051359450058206
-3117441224,1.1293211,-3.6219723,_config ts; cli ts; deno task | deno ts download | deno land https deno download,17,0.11269549368373075
-3126825660,4.753153,1.2619246,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,334,0.0028868185079940784
-3141491106,1.4666889,-2.712908,_config ts; cli ts; deno task | deno ts download | deno land https deno download,329,0.10418796065956852
-3146414071,4.7289743,1.3163394,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,105,0.05954464733196602
-3176676416,2.167305,-2.7023137,_config ts; cli ts; deno task | deno ts download | deno land https deno download,418,0.1049200239330349
-3186154219,0.58978343,-3.7479541,_config ts; cli ts; deno task | deno ts download | deno land https deno download,268,0.011473009092858644
-3201620746,2.0411093,-3.83792,_config ts; cli ts; deno task | deno ts download | deno land https deno download,361,0.06018333760034656
-3210531086,1.3159021,-2.8558974,_config ts; cli ts; deno task | deno ts download | deno land https deno download,178,0.18176580125300404
-3226632210,1.3411348,1.6746684,,299,0.016031710718426066
-3251482945,2.4783306,-0.888439,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,437,0.09873515861117922
-3285933906,1.5079756,-2.5923643,_config ts; cli ts; deno task | deno ts download | deno land https deno download,445,0.0016903054206567699
-3306420083,4.7649612,-0.21386132,subdirectory; page src; directory | server data url | server md directory,160,0.02992930962298294
-3307228100,1.7330973,-3.664351,_config ts; cli ts; deno task | deno ts download | deno land https deno download,322,0.13484522855728034
-3312042689,1.9866695,1.004338,,443,0.028702189012111197
-3323662301,4.803313,0.15906425,,169,0.13600359037737164
-3332291143,3.695342,1.7416714,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,442,0.19343458053174056
-3454457668,2.9390404,-0.18424493,google fonts; fonts additional; fonts plugin | fonts japanese ranges | google fonts japanese applied,63,0.15828926665727286
-718298716,4.9680567,-0.3126526,,203,0.0471502873634243
-742523287,1.7391467,-3.105349,_config ts; cli ts; deno task | deno ts download | deno land https deno download,123,0.05552599245178275
-742523627,1.7930787,-3.1185582,_config ts; cli ts; deno task | deno ts download | deno land https deno download,122,0.05552599245178275
-752342974,5.0763354,-0.45391157,,342,0.14103837936455538
-753432280,0.8389966,-2.849811,_config ts; cli ts; deno task | deno ts download | deno land https deno download,77,0.017469188966539317
-760571683,1.2916144,-3.431767,_config ts; cli ts; deno task | deno ts download | deno land https deno download,14,0.09106460051299829
-761798340,2.417267,0.9019562,,306,0.1926641141442461
-765462378,3.543623,-0.22609484,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,423,0.12660902468146432
-766892057,1.9172047,0.5294721,,296,0.12738654730521518
-770128485,3.9267783,-0.3075327,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,164,0.05929874410675889
-770446146,3.1709962,0.38632065,template engines; layout layouts; template | layouts export layout | layouts faster export const,24,0.12457376570244297
-771354154,1.0504038,1.0249054,,311,0.12444394652193795
-771435109,1.9725319,0.08774092,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,251,0.06691017901441572
-771459807,2.3143733,-3.4920301,_config ts; cli ts; deno task | deno ts download | deno land https deno download,411,0.09950749253566143
-776152383,1.7327033,-3.9040213,_config ts; cli ts; deno task | deno ts download | deno land https deno download,320,0.14528932784100362
-776201960,0.94364935,-1.3011755,,284,0.04157250217994924
-776386306,3.791413,-0.43640134,filter pages; filter; filters | filter page draft | draft page data parcel,165,0.1054025631449371
-776389331,3.019505,-0.59633195,inline plugin; css inline; inline | inline svg attributes | svg plugin tag,78,0.14248722211386794
-777151333,1.8290665,0.87661606,enhancement add; plugin add; enhancement idea | matter plugin enhancement | enhancement add plugin com 11ty,272,0.14532432967879405
-777513365,0.7443953,1.9100288,,145,0.03836599863116201
-779281865,4.4204597,-1.059833,,447,0.14806611320337015
-789860523,0.7463641,-2.8795574,_config ts; cli ts; deno task | deno ts download | deno land https deno download,125,0.09729140235540736
-795671080,0.7741637,-2.0045664,init script; cli; cli interface | init enhancement suggestions | option cli site,189,0.07823022368253262
-801358004,4.0124393,-1.4847107,ts import; template; export default | pug file changes | pug ts head,400,0.06757476124360576
-808670552,0.72133225,1.940689,enhancement plugins; experimental plugins; repo enhancement | main experimental enhancement | enhancement plugins experimental plugins repo enhancement,140,0.03836599863116201
-809339219,4.30476,0.24339518,subdirectory; page src; directory | server data url | server md directory,290,0.1639525931827808
-809360646,4.044204,-1.7551099,ts import; template; export default | pug file changes | pug ts head,148,0.048861662050170646
-823466269,4.0872407,-1.778247,ts import; template; export default | pug file changes | pug ts head,147,0.048861662050170646
-823716231,4.819555,3.3154106,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,406,0.00550095947536906
-835283154,1.5619326,-3.2223084,_config ts; cli ts; deno task | deno ts download | deno land https deno download,22,0.055841970417646124
-849680624,3.400106,-0.19206455,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,193,0.026952492492759442
-849995296,2.0069764,-0.25087246,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,339,0.03814889904982462
-851000447,4.476239,0.45328063,,290,0.15589723947124162
-852850631,4.6865783,1.7231663,,41,0.0838098602636461
-852872876,6.630544,-0.7348713,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,233,0.007070912992639968
-854116637,4.246118,0.92702454,,389,0.0042314038554317705
-854122652,4.6042314,2.3477886,date format; date plugin; date property | date dates format | format iso 01 01,347,0.016151014506008976
-863889900,4.1914096,0.9465613,pages search; search pages; bug search | search pages page | pages article liquid,389,0.054736108190135906
-871433496,5.1275625,0.30387694,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,372,0.014133094194432892
-873972257,4.782747,-0.23793283,subdirectory; page src; directory | server data url | server md directory,115,0.02992930962298294
-873972732,0.40666676,-3.5702162,_config ts; cli ts; deno task | deno ts download | deno land https deno download,239,0.08701828431567889
-874000711,3.3819454,-2.3268917,ts import; template; export default | pug file changes | pug ts head,181,0.08517902848794817
-874002494,3.6571732,0.2867493,,176,0.2022544355022601
-874038961,3.9795365,-0.33460504,filter pages; filter; filters | filter page draft | draft page data parcel,130,0.05929874410675889
-874084060,3.873825,-0.37069014,filter pages; filter; filters | filter page draft | draft page data parcel,130,0.08241910034461694
-874830842,5.225983,0.17333388,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,46,0.02173251627080337
-911690109,1.1363406,-3.095443,_config ts; cli ts; deno task | deno ts download | deno land https deno download,206,0.09192633595484781
-922611298,2.190821,1.3291218,,98,0.28819691723388874
-925142948,4.743006,0.03716225,subdirectory; page src; directory | server data url | server md directory,321,0.10696848282870268
-925459315,3.5014722,0.13253121,,176,0.20041148672694029
-926569342,3.5922976,-2.0104263,ts import; template; export default | pug file changes | pug ts head,180,0.0350669259510381
-927742251,3.8897896,-1.1463958,,231,0.12452638826644673
-928801231,1.1684102,-2.1123655,_config ts; cli ts; deno task | deno ts download | deno land https deno download,42,0.2422493774922042
-930715227,3.9527583,-1.4152467,ts import; template; export default | pug file changes | pug ts head,195,0.033241034500796726
-939287230,4.390976,-0.26384017,subdirectory; page src; directory | server data url | server md directory,196,0.13005291921344625
-941041082,3.4592638,0.32844755,,200,0.14388193655024611
-941245479,3.2920096,-2.005929,ts import; template; export default | pug file changes | pug ts head,186,0.20557336466162315
-949908090,1.2925848,-3.0361614,_config ts; cli ts; deno task | deno ts download | deno land https deno download,89,0.07210307206160331
-981636268,5.159077,0.24559449,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,159,0.06625720176123072
-1005926553,3.584697,-2.0446596,ts import; template; export default | pug file changes | pug ts head,171,0.0350669259510381
-1015863698,3.395697,-2.24283,ts import; template; export default | pug file changes | pug ts head,186,0.06471642771410772
-1028140307,0.8987836,-3.9658067,_config ts; cli ts; deno task | deno ts download | deno land https deno download,412,0.1202690006454331
-1028141093,1.202206,-3.3179505,_config ts; cli ts; deno task | deno ts download | deno land https deno download,211,0.05637308937318896
-1034288334,2.2462802,2.0647032,,227,0.09086928847332681
-1034590955,4.6421065,-0.9135858,,49,0.06605070651867963
-1047840309,3.3431628,-2.2050364,ts import; template; export default | pug file changes | pug ts head,181,0.06471642771410772
-1052521647,0.7368525,-3.8685374,_config ts; cli ts; deno task | deno ts download | deno land https deno download,67,0.013174249599215093
-1056612799,0.72052443,-3.1447113,_config ts; cli ts; deno task | deno ts download | deno land https deno download,248,0.08790347109153052
-1082667587,0.8091091,-2.0745578,init script; cli; cli interface | init enhancement suggestions | option cli site,143,0.07823022368253262
-1085380741,2.345399,-3.2007565,_config ts; cli ts; deno task | deno ts download | deno land https deno download,39,0.09245550172676584
-1088450679,1.418568,0.1925407,preact jsx; jsx preact; react jsx | jsx preact react | preact use react precompile,368,0.005133692250191512
-1088741092,1.9846588,-3.898973,_config ts; cli ts; deno task | deno ts download | deno land https deno download,361,0.030811276389674822
-1090841598,3.3734424,-0.19600059,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,151,0.026952492492759442
-1091221046,2.330345,0.033447985,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,245,0.09341093725517512
-1097294791,3.9473014,-1.3824567,ts import; template; export default | pug file changes | pug ts head,174,0.033241034500796726
-1097682474,4.2628903,-0.24130492,,175,0.13005291921344625
-1107950396,4.036035,-1.3543192,ts import; template; export default | pug file changes | pug ts head,195,0.09308802596197438
-1108143579,2.2539408,-2.4355118,_config ts; cli ts; deno task | deno ts download | deno land https deno download,392,0.11346013222001672
-1118587370,1.4273773,-3.345985,_config ts; cli ts; deno task | deno ts download | deno land https deno download,14,0.08407737951555734
-1124819330,3.4246907,0.468114,page js; pages generated; generated pages | pages page data | data generated pages renderorder,94,0.04033218083634704
-1156992284,1.5589714,-1.4109457,ts import; template; export default | pug file changes | pug ts head,202,0.17215259308906267
-1156997089,1.4502971,-1.27743,,209,0.13395924344347893
-1157046803,4.9628663,-0.35951632,subdirectory; page src; directory | server data url | server md directory,121,0.0471502873634243
-1157341152,0.22393309,2.1840992,,303,0.042887053879853206
-1184052036,0.68568873,2.0413506,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,269,0.05553803836166841
-1184105756,1.0691569,-3.158187,_config ts; cli ts; deno task | deno ts download | deno land https deno download,167,0.09192633595484781
-1193652712,3.7735195,-1.846259,ts import; template; export default | pug file changes | pug ts head,6,0.040872448652414066
-1202113978,5.2730713,0.22599162,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,166,0.07064085870999648
-1205420213,1.3441322,-1.195735,init script; cli; cli interface | init enhancement suggestions | option cli site,301,0.08624343337925933
-1205422524,4.5430055,2.3559291,date format; date plugin; date property | date dates format | format iso 01 01,157,0.061764702899642324
-1205424544,1.2501117,-3.2882357,_config ts; cli ts; deno task | deno ts download | deno land https deno download,183,0.05637308937318896
-1205427025,1.6385527,1.4139609,,80,0.18364583461300288
-1205429798,2.1920638,1.6658049,,28,0.054505414665257546
-1205431860,0.8627519,1.8359507,enhancement plugins; experimental plugins; repo enhancement | main experimental enhancement | enhancement plugins experimental plugins repo enhancement,219,0.01772106477261892
-1205480728,4.6021605,-0.803799,site loadassets; html files; loadassets | files copy static files | copy static files static,354,0.03498113117990595
-1206085637,0.9063886,1.71376,enhancement plugins; experimental plugins; repo enhancement | main experimental enhancement | enhancement plugins experimental plugins repo enhancement,217,0.10111619329072033
-1206085810,0.9648129,1.7962893,enhancement plugins; experimental plugins; repo enhancement | main experimental enhancement | enhancement plugins experimental plugins repo enhancement,216,0.10111619329072033
-1206192087,3.0551744,-0.4337168,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,138,0.1664811939889079
-1212652221,0.8459773,1.8416647,enhancement plugins; experimental plugins; repo enhancement | main experimental enhancement | enhancement plugins experimental plugins repo enhancement,214,0.01772106477261892
-1213459786,3.9615498,1.0260205,pages search; search pages; bug search | search pages page | pages article liquid,158,0.24320631852559008
-1218074331,4.820858,-0.40777418,subdirectory; page src; directory | server data url | server md directory,337,0.05417090880016223
-1222794129,4.582268,-1.0834687,site loadassets; html files; loadassets | files copy static files | copy static files static,141,0.1635256263973087
-1225116154,4.806693,2.1459138,date format; date plugin; date property | date dates format | format iso 01 01,288,0.2563740767300084
-1230951777,1.412081,0.16076496,preact jsx; jsx preact; react jsx | jsx preact react | preact use react precompile,191,0.03243114478477119
-1234330313,0.7335177,-2.780529,_config ts; cli ts; deno task | deno ts download | deno land https deno download,426,0.024684934552657224
-1244975815,0.36298642,-3.3757071,_config ts; cli ts; deno task | deno ts download | deno land https deno download,239,0.11853460586324006
-1246750491,2.1651328,2.1055973,,184,0.09086928847332681
-1251609916,5.04924,2.6887026,,390,0.23727038666512548
-1269243571,1.7011261,1.0005108,,332,0.06172111783400971
-1275292920,1.1122881,-3.3886554,_config ts; cli ts; deno task | deno ts download | deno land https deno download,92,0.07590344731160202
-1290641284,3.7660108,-1.1600202,,172,0.12452638826644673
-1292404827,3.9230857,-1.0242761,filter pages; filter; filters | filter page draft | draft page data parcel,172,0.12657742073395134
-1299607630,6.635018,-0.72939557,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,155,0.007070912992639968
-1299980654,0.5948614,-3.119212,_config ts; cli ts; deno task | deno ts download | deno land https deno download,292,0.026351293303529522
-1300002345,2.1345918,-0.12228718,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,267,0.13314393371537367
-1301295229,2.7631023,-1.6599616,css import; plugins lightningcss; import css | css color includes | color includes sass,300,0.046987926051640656
-1302705516,2.38953,-0.7996417,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,355,0.02421862821466831
-1303186163,3.0668867,1.4678032,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,307,0.4523827158766748
-1306357981,0.41252184,-3.483395,_config ts; cli ts; deno task | deno ts download | deno land https deno download,161,0.08701828431567889
-1306960743,2.0552092,-3.0882976,_config ts; cli ts; deno task | deno ts download | deno land https deno download,7,0.09803109781681452
-1310185532,2.0587134,-0.28626215,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,346,0.03455449412297353
-1310425925,3.6645103,0.7526082,page js; pages generated; generated pages | pages page data | data generated pages renderorder,19,0.006929310603649843
-1311796819,4.2091684,0.83679616,pages search; search pages; bug search | search pages page | pages article liquid,295,0.024479202901285788
-1315929359,4.7843733,0.5155652,,72,0.25946901633385827
-1319682994,2.3582044,-0.055711728,jsx plugins; typescript; using jsx | interface pagination type | pagination doctype menu,317,0.08851622570017925
-1327630117,2.3959255,0.115620874,jsx plugins; typescript; using jsx | interface pagination type | pagination doctype menu,430,0.08828237926385173
-1333052958,0.5889293,-3.1939044,_config ts; cli ts; deno task | deno ts download | deno land https deno download,292,0.04866370307040695
-1333473953,0.6522942,-3.2001338,_config ts; cli ts; deno task | deno ts download | deno land https deno download,247,0.06367039264137524
-1336337412,4.670955,-0.54648685,,2,0.05158625440422724
-1336727249,1.3972504,-3.5468202,_config ts; cli ts; deno task | deno ts download | deno land https deno download,434,0.05219809278949755
-1337091376,2.0378835,0.07338335,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,133,0.06691017901441572
-1337861569,5.2421956,0.48396176,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,450,0.049417682855408006
-1338196097,3.466625,0.7326882,page js; pages generated; generated pages | pages page data | data generated pages renderorder,262,0.08557037200751326
-1346863443,3.553074,0.7681606,page js; pages generated; generated pages | pages page data | data generated pages renderorder,262,0.08092775461899245
-1351487330,4.062356,-1.8728569,ts import; template; export default | pug file changes | pug ts head,35,0.03612202855732768
-1353447163,2.9362867,-0.75267255,inline plugin; css inline; inline | inline svg attributes | svg plugin tag,277,0.05017517030709581
-1356507090,0.6308764,2.1577652,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,287,0.016130373539053208
-1356507893,0.6309999,2.1979122,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,259,0.01715010546352667
-1356510144,0.6254884,2.2141526,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,258,0.01715010546352667
-1357441181,2.0922961,0.64674824,enhancement add; plugin add; enhancement idea | matter plugin enhancement | enhancement add plugin com 11ty,296,0.18391737405975966
-1359020574,3.7917483,0.76346403,pages search; search pages; bug search | search pages page | pages article liquid,242,0.1277003021082404
-1368697212,3.4875522,0.8156601,,254,0.08092775461899245
-1369049807,1.8199533,1.5440153,plugins pagefind; plugins idea; pagefind plugin | idea pagefind suffix | land discussions related https enhancement plugins,326,0.05845198763609128
-1372081303,3.7188132,-0.60070014,filter pages; filter; filters | filter page draft | draft page data parcel,137,0.17962416389782174
-1372850098,3.751383,1.5409268,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,58,0.06552617476988326
-1374634463,0.92846316,1.4459622,,324,0.04191859742373979
-1377021007,2.0969229,-0.24999136,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,241,0.05268331719222725
-1379650502,0.59543496,-3.7579386,_config ts; cli ts; deno task | deno ts download | deno land https deno download,109,0.011473009092858644
-1383744004,0.65974754,2.090458,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,378,0.041719000469053115
-1388021659,4.986478,3.2872176,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,280,0.05723052207803342
-1388129613,4.995395,3.216438,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,280,0.016217031207046245
-1388764426,1.6973867,0.9380945,enhancement add; plugin add; enhancement idea | matter plugin enhancement | enhancement add plugin com 11ty,229,0.06252822705579654
-1389774758,4.622575,2.358704,date format; date plugin; date property | date dates format | format iso 01 01,441,0.004285922493907876
-1389785503,2.6110256,-1.6902648,css import; plugins lightningcss; import css | css color includes | color includes sass,424,0.06929126530024386
-1389800113,4.314317,-0.9137834,,304,0.018400104160331228
-1391157799,3.4968941,0.61199933,page js; pages generated; generated pages | pages page data | data generated pages renderorder,327,0.03896282616906199
-1392704495,2.8948133,-0.7244324,inline plugin; css inline; inline | inline svg attributes | svg plugin tag,78,0.038617569282428856
-1393372480,1.2965674,1.711367,,298,0.05217098465105604
-1393570858,4.6481543,0.09679798,subdirectory; page src; directory | server data url | server md directory,321,0.007045605478183481
-1393603235,5.0006676,3.231774,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,271,0.016217031207046245
-1394876095,0.60380536,2.2287269,,259,0.026125926107398466
-1395553880,1.4552339,-0.019047592,preact jsx; jsx preact; react jsx | jsx preact react | preact use react precompile,66,0.10274752104593204
-1396922305,0.96124864,-1.7585632,init script; cli; cli interface | init enhancement suggestions | option cli site,370,0.09280304225202443
-1396926438,0.9545971,-1.3412806,init script; cli; cli interface | init enhancement suggestions | option cli site,136,0.04157250217994924
-1397621789,4.8501883,2.8834023,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,390,0.2355352482797409
-1400083323,3.666467,0.64741814,page js; pages generated; generated pages | pages page data | data generated pages renderorder,29,0.014289782329278257
-1401902046,0.62219566,2.1713605,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,257,0.016130373539053208
-1402213403,4.6512613,2.3497977,date format; date plugin; date property | date dates format | format iso 01 01,441,0.025751429820549124
-1402432784,3.8906994,-1.9377751,ts import; template; export default | pug file changes | pug ts head,43,0.02577723736491998
-1403687725,4.4592414,0.2983128,,153,0.15589723947124162
-1404394396,5.307284,0.42607766,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,450,0.0867369712934243
-1409979836,0.59105796,-3.1452873,_config ts; cli ts; deno task | deno ts download | deno land https deno download,234,0.026351293303529522
-1420743598,2.1992536,-1.0399597,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,355,0.28475297510494735
-1423612217,1.3446077,-3.6672077,_config ts; cli ts; deno task | deno ts download | deno land https deno download,250,0.13139412994422342
-1425691954,4.2057476,0.86103517,pages search; search pages; bug search | search pages page | pages article liquid,243,0.024479202901285788
-1429644034,1.9086412,0.6565705,,129,0.12738654730521518
-1429649885,0.93077165,1.4912251,,266,0.045321762983803617
-1434886130,1.3483256,1.7048169,,55,0.016454518290326316
-1434890775,1.3570173,1.6724862,,112,0.016031710718426066
-1437167797,2.7618532,-1.7069329,css import; plugins lightningcss; import css | css color includes | color includes sass,236,0.046987926051640656
-1437632856,1.2989559,-1.1222705,init script; cli; cli interface | init enhancement suggestions | option cli site,209,0.08624343337925933
-1449203963,3.3058987,-0.3797227,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,394,0.022751247207805095
-1452384700,0.25993943,2.2073982,,204,0.042887053879853206
-1452554473,4.3048897,-0.9295848,site loadassets; html files; loadassets | files copy static files | copy static files static,275,0.018400104160331228
-1458112361,1.6713527,-3.2687438,_config ts; cli ts; deno task | deno ts download | deno land https deno download,22,0.0880214539888313
-1459272498,2.5911565,0.81899875,,127,0.1926641141442461
-1460263171,3.518362,1.4391658,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,58,0.18901937478756298
-1461848442,1.9192433,1.4729835,,263,0.12208204050024864
-1462542302,2.4933052,-2.2834806,_config ts; cli ts; deno task | deno ts download | deno land https deno download,68,0.09832403680898644
-1462592306,4.52948,-0.09750418,,175,0.21645097779482
-1462979064,0.9894927,1.1334233,,336,0.09120289365784472
-1466798490,1.1594938,-0.48681608,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,431,0.04552757804517095
-1469448878,2.1976488,0.17866783,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,341,0.0633847667673439
-1471664882,1.6071101,-3.5518296,_config ts; cli ts; deno task | deno ts download | deno land https deno download,50,0.018550322381586448
-1472235766,2.1136665,-3.4088666,_config ts; cli ts; deno task | deno ts download | deno land https deno download,360,0.02369821689963461
-1473098175,1.3707926,0.14805283,preact jsx; jsx preact; react jsx | jsx preact react | preact use react precompile,224,0.043201022905959535
-1488469875,2.3126419,-0.13160099,jsx plugins; typescript; using jsx | interface pagination type | pagination doctype menu,245,0.08851622570017925
-1488473349,1.2074634,0.4803671,,383,0.2428279656592265
-1492700732,1.1387882,-0.41792363,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,431,0.03164637372778331
-1497716681,1.5966611,-3.8530164,_config ts; cli ts; deno task | deno ts download | deno land https deno download,366,0.03187604804453275
-1504869208,4.649997,0.08999769,subdirectory; page src; directory | server data url | server md directory,279,0.007045605478183481
-1505689262,1.6249071,-3.5838642,_config ts; cli ts; deno task | deno ts download | deno land https deno download,314,0.03664629371936537
-1513805170,0.5397703,0.80014485,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,102,0.14710735420537202
-1513895047,0.9525102,1.4116269,,266,0.04191859742373979
-1522463996,1.9671161,1.6448114,plugins pagefind; plugins idea; pagefind plugin | idea pagefind suffix | land discussions related https enhancement plugins,326,0.15098360761515667
-1522465655,1.8222046,1.6024239,plugins pagefind; plugins idea; pagefind plugin | idea pagefind suffix | land discussions related https enhancement plugins,263,0.05845198763609128
-1527842518,3.5311012,0.63065344,page js; pages generated; generated pages | pages page data | data generated pages renderorder,276,0.03896282616906199
-1529279405,0.8472535,-1.7755952,init script; cli; cli interface | init enhancement suggestions | option cli site,283,0.11526049070291972
-1532383908,1.5218251,-2.6245048,_config ts; cli ts; deno task | deno ts download | deno land https deno download,114,0.034997426738300294
-1534804022,1.881051,-3.4852846,_config ts; cli ts; deno task | deno ts download | deno land https deno download,374,0.20864295351119927
-1551758565,2.7770329,-0.95191634,ts import; template; export default | pug file changes | pug ts head,439,0.02983592001913847
-1551821237,1.7407725,1.0478147,enhancement add; plugin add; enhancement idea | matter plugin enhancement | enhancement add plugin com 11ty,229,0.06172111783400971
-1552156199,0.38803488,0.18312454,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,419,0.0669822534556
-1560794243,4.754768,1.2595319,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,105,0.0028868185079940784
-1560808085,4.835609,1.0795904,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,40,0.1931416368844044
-1568789705,0.8983118,1.1314214,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,311,0.09120289365784472
-1572209816,4.77464,-0.43603,subdirectory; page src; directory | server data url | server md directory,221,0.05417090880016223
-1573289968,2.416263,2.213668,,184,0.22601930400690728
-1578457442,2.0021517,-0.21302988,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,152,0.03814889904982462
-1579562893,1.9687839,-0.26001263,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,152,0.03927098748484318
-1581447320,2.2465525,0.13834344,,313,0.0633847667673439
-1583383524,4.9398913,-0.41820675,subdirectory; page src; directory | server data url | server md directory,203,0.0630271019289674
-1585754143,4.898499,-0.5311779,subdirectory; page src; directory | server data url | server md directory,342,0.12031541972763185
-1587352606,0.8010557,2.2945354,,259,0.19309398067471434
-1589893470,4.9221425,3.2417278,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,271,0.07749533849252507
-1597543948,2.0271769,-0.3003851,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,241,0.03455449412297353
-1606820484,4.612908,2.361411,date format; date plugin; date property | date dates format | format iso 01 01,273,0.010038785298227756
-1610365009,4.748078,-0.17237584,subdirectory; page src; directory | server data url | server md directory,115,0.04478942738304626
-1629455059,1.8530084,-0.9862618,,293,0.3503843322035331
-1629746219,4.895048,-0.6694881,subdirectory; page src; directory | server data url | server md directory,343,0.13835323731633414
-1630286707,2.9978316,0.54946095,template engines; layout layouts; template | layouts export layout | layouts faster export const,33,0.08062277906443235
-1635636805,1.578521,-1.8696682,,201,0.4591389800951726
-1639649677,2.1109457,-2.5659995,_config ts; cli ts; deno task | deno ts download | deno land https deno download,418,0.04281295440872532
-1639856356,4.574988,-0.8258292,site loadassets; html files; loadassets | files copy static files | copy static files static,215,0.03498113117990595
-1640399491,2.3839145,-0.82320035,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,237,0.02421862821466831
-1646215808,3.426674,-0.1213396,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,151,0.07555047795536932
-1649092396,4.158018,0.8757464,pages search; search pages; bug search | search pages page | pages article liquid,295,0.04994522618501775
-1650523054,3.6506946,-1.2328317,filter pages; filter; filters | filter page draft | draft page data parcel,393,0.08343902989442228
-1650993698,1.3132666,-0.99592835,init script; cli; cli interface | init enhancement suggestions | option cli site,4,0.0671851647569842
-1670897109,2.0924451,-3.4194145,_config ts; cli ts; deno task | deno ts download | deno land https deno download,315,0.02369821689963461
-1676672365,1.9892801,-3.8685102,_config ts; cli ts; deno task | deno ts download | deno land https deno download,416,0.017651242674530075
-1696723667,0.69681036,-3.792821,_config ts; cli ts; deno task | deno ts download | deno land https deno download,16,0.0277423841023965
-1699174692,1.2086096,-1.1776565,init script; cli; cli interface | init enhancement suggestions | option cli site,65,0.03449403713473677
-1700520071,3.8706908,-2.0329382,ts import; template; export default | pug file changes | pug ts head,43,0.07312987977612469
-1702219939,6.7598143,-0.8628096,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,18,0.035467289388748706
-1706691503,1.5697671,-3.835905,_config ts; cli ts; deno task | deno ts download | deno land https deno download,320,0.03187604804453275
-1713509524,1.6063459,0.6547829,enhancement add; plugin add; enhancement idea | matter plugin enhancement | enhancement add plugin com 11ty,272,0.2975800767795506
-1717805125,1.4149911,0.1962232,preact jsx; jsx preact; react jsx | jsx preact react | preact use react precompile,191,0.005133692250191512
-1739658809,6.7306485,-0.8246636,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,18,0.01280037659553339
-1740124763,1.0357081,-1.8139545,init script; cli; cli interface | init enhancement suggestions | option cli site,283,0.09280304225202443
-1742155784,6.704778,-0.79855174,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,31,0.016766740165525696
-1742562283,5.140027,0.31053877,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,159,0.014133094194432892
-1767942178,1.015176,-3.485715,_config ts; cli ts; deno task | deno ts download | deno land https deno download,10,0.020474324745147744
-1772949438,1.7904397,-3.2973444,_config ts; cli ts; deno task | deno ts download | deno land https deno download,305,0.12247329760595226
-1781034691,0.39368886,0.36203212,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,79,0.07945428897990177
-1782625515,0.7785798,-2.155339,init script; cli; cli interface | init enhancement suggestions | option cli site,189,0.08635765816382966
-1790248028,2.1607118,-3.1559982,_config ts; cli ts; deno task | deno ts download | deno land https deno download,7,0.0529112760067718
-1791138842,0.6627115,2.1320715,plugins repo; experimental plugins; main repo | plugins katex experimental | experimental plugins plugins katex asdf,257,0.04091009869472723
-1791938846,2.1597884,-3.511248,_config ts; cli ts; deno task | deno ts download | deno land https deno download,417,0.06089993510214656
-1795380343,6.546969,-0.70675135,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,155,0.08817911059887115
-1799921578,1.9948132,-2.77573,_config ts; cli ts; deno task | deno ts download | deno land https deno download,96,0.10539282223472972
-1815197090,1.1553005,-0.8509332,init script; cli; cli interface | init enhancement suggestions | option cli site,4,0.17915296416398585
-1824778292,1.2939779,0.7072606,enhancement add; plugin add; enhancement idea | matter plugin enhancement | enhancement add plugin com 11ty,318,0.2428279656592265
-1828274548,3.551181,2.1850624,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,84,0.04312230409566372
-1831432664,2.7397718,0.48216176,template engines; layout layouts; template | layouts export layout | layouts faster export const,70,0.19799997082961404
-1831437119,2.0709198,0.93048275,,415,0.07234277119532873
-1833550738,1.9244944,-2.5830016,_config ts; cli ts; deno task | deno ts download | deno land https deno download,96,0.12335417708457189
-1842861687,1.1065234,1.6194807,enhancement plugins; experimental plugins; repo enhancement | main experimental enhancement | enhancement plugins experimental plugins repo enhancement,85,0.05819943005276934
-1856533265,4.2420626,0.9258172,pages search; search pages; bug search | search pages page | pages article liquid,156,0.0042314038554317705
-1856777932,5.082257,2.9236646,,285,0.2355352482797409
-1856972803,5.1383433,3.163554,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,405,0.09645544881636509
-1865656526,2.2058606,-2.538281,_config ts; cli ts; deno task | deno ts download | deno land https deno download,353,0.09887951468996165
-1867990439,3.6383288,-1.1503141,ts import; template; export default | pug file changes | pug ts head,358,0.08343902989442228
-1868177875,3.3108175,-0.35750955,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,302,0.022751247207805095
-1868380774,4.7542286,-0.67653763,,2,0.11833819225827083
-1875122005,0.5834993,1.5301446,,297,0.3494464181893249
-1878579546,2.5331573,-0.17771037,jsx plugins; typescript; using jsx | interface pagination type | pagination doctype menu,245,0.2132890412613377
-1878849065,1.8214978,0.29846334,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,129,0.2500497335268017
-1880500594,4.8630342,1.5784825,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,41,0.22349748867277577
-1884008828,3.9455523,-1.4750935,ts import; template; export default | pug file changes | pug ts head,174,0.06027902162981873
-1889941813,2.7103608,-1.6440686,css import; plugins lightningcss; import css | css color includes | color includes sass,81,0.014147944404157
-1894203445,4.201491,0.70335734,pages search; search pages; bug search | search pages page | pages article liquid,12,0.09894295099267587
-1894917537,3.2851787,2.189956,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,11,0.20140985446166498
-1901711198,5.0911236,3.282323,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,425,0.03132630199560392
-1911004430,5.0494227,3.2009275,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,421,0.021466891544001606
-1911716640,4.8202343,3.3208694,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,149,0.00550095947536906
-1920550211,4.882988,-0.25608432,subdirectory; page src; directory | server data url | server md directory,160,0.10187134864250938
-1922878362,1.3593785,-3.8785408,_config ts; cli ts; deno task | deno ts download | deno land https deno download,61,0.13407602302244903
-1926766647,2.2477481,-2.014539,,91,0.3239376836320441
-1927059931,0.33551008,0.26416254,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,90,0.011251546628070536
-1952981949,2.234554,-3.432611,_config ts; cli ts; deno task | deno ts download | deno land https deno download,417,0.09132146842080775
-1977287113,0.7786891,-3.959331,_config ts; cli ts; deno task | deno ts download | deno land https deno download,187,0.09996888156456565
-1977294118,1.9610478,-3.7325227,_config ts; cli ts; deno task | deno ts download | deno land https deno download,416,0.1251856720088107
-1979693294,2.8499744,-1.4100322,css import; plugins lightningcss; import css | css color includes | color includes sass,81,0.25905218456813217
-1989267321,2.0452135,0.8628613,,386,0.07234277119532873
-1995501764,1.9760692,-3.856804,_config ts; cli ts; deno task | deno ts download | deno land https deno download,361,0.017651242674530075
-2002956444,2.2196019,-3.5227,_config ts; cli ts; deno task | deno ts download | deno land https deno download,379,0.06089993510214656
-2004563234,2.1306756,-2.6039953,_config ts; cli ts; deno task | deno ts download | deno land https deno download,353,0.04281295440872532
-2010533133,0.3389521,0.22870417,tailwindcss plugins; plugins tailwindcss; tailwindcss ts | tailwind tailwindcss postcss | postcss typography string,76,0.012843713591728255
-2013774168,2.20785,0.036408316,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,341,0.10903509390732395
-2019594424,5.037277,3.2186282,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,405,0.021466891544001606
-2022249427,6.6647325,-0.7502382,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,446,0.004156657994371182
-2027261721,3.4212406,-0.25853544,layout njk; nunjucks; block | nunjucks njk block | nunjucks block comp button,151,0.06974991993347383
-2034011983,2.6774287,-1.6704683,css import; plugins lightningcss; import css | css color includes | color includes sass,27,0.019347033160108586
-2034365967,5.1117716,3.3058813,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,34,0.021326504208076736
-2037571703,0.7158153,-2.7633252,_config ts; cli ts; deno task | deno ts download | deno land https deno download,225,0.024684934552657224
-2038437846,2.3710656,0.520759,,260,0.3059178378081542
-2044968131,5.0640335,3.3551834,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,425,0.06862667852614984
-2052613035,4.178717,0.82398856,pages search; search pages; bug search | search pages page | pages article liquid,243,0.03303507755408636
-2053267049,2.365329,0.1984317,,246,0.08828237926385173
-2054882277,1.1338681,-0.4491852,plugins markdown; markdown plugin; markdown ts | markdown toc options | toc options md,319,0.03164637372778331
-2058030094,5.181651,3.4345202,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,95,0.023761001481381987
-2058909012,1.9745785,2.0149963,,37,0.21068621514413427
-2061610155,1.4425844,-3.5726943,_config ts; cli ts; deno task | deno ts download | deno land https deno download,250,0.05219809278949755
-2064744262,2.1306615,-3.9443927,_config ts; cli ts; deno task | deno ts download | deno land https deno download,51,0.06682269038355115
-2065979226,3.3985958,-1.1871712,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,393,0.24254968551572206
-2068289785,2.5745718,-0.9104902,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,440,0.0455849373239307
-2075428993,0.5769995,-3.7337897,_config ts; cli ts; deno task | deno ts download | deno land https deno download,109,0.01908037789843048
-2077993305,2.7964532,-0.9745665,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,331,0.02983592001913847
-2082102163,2.6010725,-0.94758064,jsx precompile; jsx_preact ts; compileroptions jsx | button jsx html | button jsx h1,437,0.0455849373239307
-2090664664,4.626673,2.3574502,date format; date plugin; date property | date dates format | format iso 01 01,273,0.004285922493907876
-2091532196,3.691611,1.93507,plugins metas; _data yml; metas plugin | feed metas title | metas description rss,83,0.0539844824058029
-2092132913,2.0022197,0.98021317,,117,0.028702189012111197
-2098559155,4.1022143,-0.28517088,,164,0.13226329446031024
-2128926664,1.507499,-2.5907426,_config ts; cli ts; deno task | deno ts download | deno land https deno download,114,0.0016903054206567699
-2129875460,6.667256,-0.75354123,copy static; copy files; copy file | copy static spaces | site copy copy static spaces,422,0.004156657994371182
-2132960975,4.4767246,-0.9228738,site loadassets; html files; loadassets | files copy static files | copy static files static,354,0.1381061942336754
-2133769767,0.7541566,-3.355254,_config ts; cli ts; deno task | deno ts download | deno land https deno download,59,0.11547381094913281
-2134267105,4.6816278,3.3075244,transform_images; source srcset; picture plugin | summary jpg images | summary webp imagick,149,0.13815232281214856
-2136817712,5.221526,0.43907434,sitemap plugin; sitemap; prettyurls | sitemap urls url | 101 114 97,252,0.049417682855408006
+2154078558,0.6083999,8.650808,fails; os error; import map | error npm import | npm import react,240,0.09290298742254251
+2167599169,-0.2642444,6.03627,tailwindcss; minify css; minify html | minify tailwind css | tailwind typography tip unocss,20,0.11667503451009048
+2171507413,2.6145403,5.0323763,site loadassets; static files; html files | files static site | html static files dir,321,0.14364067083719745
+2187597779,4.234149,5.630998,pages search; search pages; bug search | search pages page | 404 response bug search,402,0.019761687852882393
+2188194317,2.209209,5.1885853,,359,0.05279066279461463
+2197103920,3.9861152,5.9716005,pages search; search pages; bug search | search pages page | 404 response bug search,264,0.06036086204730373
+2209227733,2.144096,8.025632,component; _components; components | component components comp | component _data ts does,196,0.09699301250051157
+2219590718,1.7750797,8.967735,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,68,0.02268158344933349
+2222336077,2.8722603,4.54017,site loadassets; static files; html files | files static site | html static files dir,354,0.021591473420222308
+2226778587,1.8077534,8.815293,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,23,0.09003222316949619
+2227675080,-0.11259593,9.224353,deno task; deno; deno run | port deno task | port deno task run,320,0.07352998547475637
+2250434213,0.59249127,3.8658288,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,13,0.07590036463709957
+2254968218,4.3480473,5.599292,pages search; search pages; bug search | search pages page | 404 response bug search,19,0.016301921825223047
+2260941719,0.5796598,3.9406366,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,11,0.07590036463709957
+2265159664,0.16560236,9.076662,,51,0.09357813484828134
+2283041462,2.3675702,4.784613,,407,0.08227208190375374
+2290404988,-0.39682326,9.326546,deno task; deno; deno run | port deno task | port deno task run,59,0.029099758253427616
+2304467044,-0.10380428,9.406865,deno task; deno; deno run | port deno task | port deno task run,268,0.03969908805873729
+2307702650,4.6068487,3.1244013,copy file; copy assets; copy | copy underscore directory | copied copy file static,446,0.023539116060646216
+2342297220,4.3467135,5.615539,pages search; search pages; bug search | search pages page | 404 response bug search,12,0.016301921825223047
+2345400881,-0.32882112,5.9390955,tailwindcss; minify css; minify html | minify tailwind css | tailwind typography tip unocss,102,0.09767516961950093
+2349164402,0.3533834,9.457371,upgrading deno; deno version; deno task | macos deno version | version tests crash,434,0.10394482133345959
+2354884082,0.98662585,9.300771,fails; os error; import map | error npm import | npm import react,199,0.11713150619746615
+2356024285,1.8341652,8.901364,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,52,0.011704080084014658
+2356825060,2.3050246,5.714966,,33,0.054916390433915115
+2357044529,1.3390852,7.5018306,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,355,0.03663186482466142
+2360464025,0.72353184,9.367265,,116,0.1322592841660612
+2370229283,-0.38596195,6.9262686,css files; lightningcss; css plugin | css sass includes | _includes import css files,401,0.005096917572130732
+2374960782,1.823366,5.526738,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,42,0.0871216593875055
+2377925297,4.1708846,5.669886,,3,0.07426072521086385
+2378738442,1.8402727,4.8753486,,341,0.0884036482070398
+2378780827,4.687173,3.0468724,copy file; copy assets; copy | copy underscore directory | copied copy file static,369,0.008478312174626393
+2380743243,4.4578667,3.2587817,copy file; copy assets; copy | copy underscore directory | copied copy file static,387,0.05776446647025535
+2381019325,2.2690823,5.7564864,pages rendered; rendered content; content rendered | content layout renderorder | content layout renderorder,24,0.054916390433915115
+2388504142,1.4450967,1.6776875,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,432,0.016789695560556164
+2402124114,2.81034,8.182479,file changes; js file; changes | file changes pug | pug rebuild update,147,0.05839314410087723
+2422606228,4.3259916,5.5729065,pages search; search pages; bug search | search pages page | 404 response bug search,12,0.03438946170667666
+2425047485,0.10163063,4.503974,plugins idea; enhancement plugins; plugin | ai idea issue | add ai block,433,0.03373081828426445
+2446919220,0.68296653,3.6377952,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,84,0.020586995985255506
+2455087139,0.32629526,8.781341,,416,0.06479279814546769
+2459669034,1.1083746,3.5177622,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,105,0.03220540519566778
+2460330730,2.412687,3.180776,,154,0.022996192520879543
+2460851920,1.8709561,5.5997133,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,28,0.0871216593875055
+2461232229,2.6958523,8.134264,file changes; js file; changes | file changes pug | pug rebuild update,147,0.1232261480156076
+2499612816,0.04664136,9.972629,upgrading deno; deno version; deno task | macos deno version | version tests crash,417,0.064880693764124
+2507354179,2.0219407,7.96783,component; _components; components | component components comp | component _data ts does,196,0.03986058387916154
+2508736226,3.6883273,4.9834204,,389,0.5315630145615646
+2510040324,2.6662028,8.503663,file changes; js file; changes | file changes pug | pug rebuild update,181,0.07103591019747475
+2510715199,1.8656849,8.901955,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,52,0.019836330623137697
+2522986851,1.6897186,4.69853,,213,0.09126481788132836
+2527617055,0.83078426,8.365585,fails; os error; import map | error npm import | npm import react,122,0.13938422142624496
+2543510859,0.2379158,9.136056,deno deploy; deploy expected; vento template | vto deploy deno | vto file _site imports,14,0.09357813484828134
+2554576930,1.8458488,8.902057,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,23,0.011704080084014658
+2568440176,1.4670779,1.6976067,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,432,0.01666839662139332
+2568738691,-0.6258417,4.2276645,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,269,0.014052117828936762
+2568739170,-0.3448288,4.8496294,,57,0.09025622677407551
+2568739627,-0.5829641,5.033661,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,100,0.1929422021410804
+2613801208,-0.25514054,4.859739,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,55,0.09025622677407551
+2615736193,1.0560265,4.13952,,307,0.167603936416025
+2631087567,-0.4117071,9.351551,deno task; deno; deno run | port deno task | port deno task run,16,0.029099758253427616
+2642651166,1.5159023,1.7254004,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,95,0.02011642700923244
+2646830715,0.6015975,9.052088,fails; os error; import map | error npm import | npm import react,366,0.008658573862191196
+2649222992,0.5321681,7.9065785,,409,0.3768560757479892
+2668373267,-0.74630827,5.3739605,,120,0.0545532744932981
+2707499096,0.5415708,9.324602,deno deploy; deploy expected; vento template | vto deploy deno | vto file _site imports,361,0.14342056985999319
+2709602313,-0.9619159,8.918461,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,382,0.06703468770843302
+2710618606,0.9083029,6.410595,,340,0.23867061656018107
+2724538897,-0.3436702,9.444466,deno task; deno; deno run | port deno task | port deno task run,412,0.05735186451027148
+2746713930,1.7633451,8.948325,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,7,0.02268158344933349
+2746724732,1.9649196,8.746849,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,71,0.13682260142116517
+2753666651,3.5275264,5.627278,,209,0.06137176662830123
+2762314153,1.9058305,8.8702545,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,48,0.05115242488210797
+2763063044,3.460074,4.0602236,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,166,0.10591692148009395
+2767073290,2.1789706,6.258333,async; njk filter; plugin filter | async filter content | async extradata page page,444,0.16497361346500833
+2773200405,0.9901025,9.181508,fails; os error; import map | error npm import | npm import react,199,0.040379756333489766
+2788443599,2.728394,8.5768585,file changes; js file; changes | file changes pug | pug rebuild update,181,0.025324166031439492
+2793926070,-0.2669279,6.6700296,tailwindcss postcss; plugins tailwind; tailwindcss | tailwind tailwindcss variants | tailwindcss variants plugin,419,0.06522405078528891
+2796641069,-0.26808235,9.711133,,206,0.05289866842143234
+2796975218,1.8152068,6.7797303,inline plugin; inline; css plugin | attributes svg inline | svg inline plugin tag,277,0.06482735287604063
+2810507708,-0.30706108,6.2339087,tailwindcss; minify css; minify html | minify tailwind css | tailwind typography tip unocss,1,0.20222326377799837
+2824117429,0.3546017,5.0412025,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,324,0.08991999068010628
+2828120437,0.037862998,7.17261,css files; lightningcss; css plugin | css sass includes | _includes import css files,318,0.06950132544153112
+2841614023,0.8058237,3.5811071,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,442,0.07105565339863243
+2859228402,0.94868535,3.6773155,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,119,0.06473848134234511
+2860690296,0.6775554,3.617932,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,38,0.020586995985255506
+2888128038,-0.301097,4.94732,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,112,0.01593393444755828
+2903664240,-0.37736794,6.96282,css files; lightningcss; css plugin | css sass includes | _includes import css files,27,0.03754819978815899
+2918388996,1.4910094,6.502175,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,346,0.1972477154360064
+2921192275,0.4614332,8.891313,,413,0.16111402260676924
+2973388308,0.18213066,9.75106,upgrading deno; deno version; deno task | macos deno version | version tests crash,448,0.05860948410475853
+2974632657,-0.2364199,6.60803,tailwindcss postcss; plugins tailwind; tailwindcss | tailwind tailwindcss variants | tailwindcss variants plugin,410,0.03368098160312692
+2981190644,-0.39237067,7.0149755,css files; lightningcss; css plugin | css sass includes | _includes import css files,274,0.022612195553598426
+3010160079,-0.36691454,9.79759,,77,0.13131130300829347
+3024973556,4.2759047,5.499719,pages search; search pages; bug search | search pages page | 404 response bug search,36,0.08868536211816014
+3032669010,2.733231,5.8385034,pages rendered; rendered content; content rendered | content layout renderorder | content layout renderorder,327,0.15155885537713312
+3035078749,1.5014583,1.7394019,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,60,0.02011642700923244
+3038992260,1.1076148,8.957196,fails; os error; import map | error npm import | npm import react,418,0.09362544064596133
+3056532559,0.19881439,9.66276,upgrading deno; deno version; deno task | macos deno version | version tests crash,106,0.05189338902026055
+3074605069,3.1233928,3.643761,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,168,0.04968157652831195
+3088431226,-0.36871552,7.1809745,,424,0.05162574661142825
+3093211892,-0.6077813,5.2250004,,56,0.1929422021410804
+3106810621,0.7179371,3.6043885,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,84,0.04259240946343507
+3107761579,-0.29344913,5.84805,tailwindcss; minify css; minify html | minify tailwind css | tailwind typography tip unocss,20,0.09767516961950093
+3116167131,2.6028326,8.743305,,110,0.08056597859682749
+3117441224,0.18032496,9.606268,upgrading deno; deno version; deno task | macos deno version | version tests crash,97,0.05944063037027704
+3126825660,1.1316987,3.4955547,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,334,0.02786793939668508
+3141491106,0.14768901,9.671655,upgrading deno; deno version; deno task | macos deno version | version tests crash,97,0.05189338902026055
+3146414071,1.1680179,3.5208359,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,334,0.01755133582109296
+3176676416,0.21473458,5.816913,,224,0.3003616448407939
+3186154219,-0.26770982,9.578652,,182,0.09966987044715905
+3201620746,2.5859191,8.822076,,103,0.08056597859682749
+3210531086,0.1924855,9.273984,deno deploy; deploy expected; vento template | vto deploy deno | vto file _site imports,435,0.026254629366575657
+3226632210,-0.30908623,4.9611063,,85,0.01593393444755828
+3251482945,1.4487287,7.501968,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,437,0.07583171156565986
+3285933906,0.94366556,7.949711,,409,0.13697135398703528
+3306420083,1.3670331,4.77309,,386,0.20841330434745173
+3307228100,0.85432506,9.386903,fails; os error; import map | error npm import | npm import react,26,0.1322592841660612
+3312042689,0.93678117,4.9985967,,415,0.03672976364294339
+3323662301,3.6806355,4.0909967,copy file; copy assets; copy | copy underscore directory | copied copy file static,72,0.22269792266342445
+3332291143,0.97543675,3.6183627,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,249,0.049035583861877556
+3454457668,-0.7682497,5.423907,,63,0.0545532744932981
+718298716,2.9935634,4.6276307,site loadassets; static files; html files | files static site | html static files dir,124,0.052531442697687315
+742523287,0.8524894,8.503269,fails; os error; import map | error npm import | npm import react,123,0.04834735169312515
+742523627,0.88612515,8.537998,fails; os error; import map | error npm import | npm import react,377,0.02549509106135026
+752342974,2.9720635,4.675561,site loadassets; static files; html files | files static site | html static files dir,121,0.052531442697687315
+753432280,-0.95035213,9.0586195,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,292,0.09084948946147318
+760571683,-0.05134281,10.085384,,230,0.07740911660635372
+761798340,0.71793556,5.361556,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,139,0.1213826964049103
+765462378,3.2960563,6.740953,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,302,0.02918265651266717
+766892057,0.7070901,5.6869,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,245,0.1310309211754262
+770128485,3.1635182,6.5581,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,394,0.05637138954619435
+770446146,2.144196,5.801198,,201,0.12884533754885988
+771354154,3.4248369,6.920726,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,423,0.0701766256112462
+771435109,1.1477624,5.5108438,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,251,0.04678631291042766
+771459807,1.112246,7.744904,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,190,0.030610417411529044
+776152383,0.25115046,9.503822,upgrading deno; deno version; deno task | macos deno version | version tests crash,434,0.09700603036242292
+776201960,1.5502241,5.5419474,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,385,0.09265300657443393
+776386306,2.530813,6.460729,async; njk filter; plugin filter | async filter content | async extradata page page,164,0.041706034582260514
+776389331,2.0038042,6.688484,inline plugin; inline; css plugin | attributes svg inline | svg inline plugin tag,78,0.2095109795117949
+777151333,0.62561053,5.4403586,,332,0.03743492150275537
+777513365,-0.21750486,4.254901,repo enhancement; enhancement plugins; enhancement wontfix | wontfix enhancement experimental plugins | wontfix publish experimental plugins,214,0.03179940711136792
+779281865,2.2919772,4.735243,ts plugins; modules; ts getoptionsfromcli | terser cli easier | terser ts processor,15,0.0902869108299484
+789860523,-0.543796,9.276309,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,161,0.11383950892310017
+795671080,-0.569625,8.434462,using cli; cli; cli interface | cli error good | commands errors config,189,0.05241553003968728
+801358004,2.8505502,8.131488,file changes; js file; changes | file changes pug | pug rebuild update,147,0.03256225223620703
+808670552,-0.31421208,4.2488456,,140,0.0968966184262436
+809339219,3.2549632,5.572468,,262,0.1990044213398456
+809360646,2.8187058,8.124688,file changes; js file; changes | file changes pug | pug rebuild update,144,0.03256225223620703
+823466269,2.8189306,8.081484,file changes; js file; changes | file changes pug | pug rebuild update,147,0.043204892539618484
+823716231,1.34008,2.098192,picture plugin; imagick plugin; generated images | element img image | element image picture plugin,406,0.11999456634209278
+835283154,0.33355728,9.033115,deno deploy; deploy expected; vento template | vto deploy deno | vto file _site imports,413,0.10180503865271652
+849680624,3.3900878,6.833831,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,193,0.024523608489046562
+849995296,1.2777531,6.332375,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,339,0.026590074269564168
+851000447,2.8891616,3.9799948,,290,0.0866866731752307
+852850631,2.395987,3.1965852,,41,0.022996192520879543
+852872876,4.6316714,3.0630472,copy file; copy assets; copy | copy underscore directory | copied copy file static,422,0.027214305993730138
+854116637,2.152307,2.6141212,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,441,0.044285429581741045
+854122652,2.1019375,2.6350605,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,441,0.011909601742795909
+863889900,4.192931,5.531125,pages search; search pages; bug search | search pages page | 404 response bug search,357,0.0834946528576403
+871433496,3.416958,4.197632,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,310,0.029344443547100633
+873972257,3.1505036,4.3888063,site loadassets; static files; html files | files static site | html static files dir,348,0.20416845535246467
+873972732,-0.583038,9.169447,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,226,0.08673727028490934
+874000711,2.5683498,8.57119,file changes; js file; changes | file changes pug | pug rebuild update,47,0.11889100036136478
+874002494,3.0971754,6.686457,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,394,0.09574777101541972
+874038961,2.5418823,6.420519,async; njk filter; plugin filter | async filter content | async extradata page page,137,0.041706034582260514
+874084060,2.6232703,6.455585,async; njk filter; plugin filter | async filter content | async extradata page page,164,0.08862076122342435
+874830842,3.3704662,4.0037537,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,244,0.08276462737382222
+911690109,-0.19401285,9.837673,,77,0.14662438063908986
+922611298,3.1703696,3.6275918,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,98,0.04968157652831195
+925142948,3.2078853,3.9104478,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,208,0.12152563159305423
+925459315,1.672112,5.596453,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,136,0.13351985082011875
+926569342,2.460255,8.167437,file changes; js file; changes | file changes pug | pug rebuild update,180,0.13367632123061904
+927742251,2.4553325,4.2389054,sourcemaps; source files; source file | source map comment | comment mapping page instance,232,0.021075375333585455
+928801231,-0.4105494,8.626655,using cli; cli; cli interface | cli error good | commands errors config,370,0.22463005112201503
+930715227,2.030763,7.9102993,component; _components; components | component components comp | component _data ts does,195,0.017257607447082036
+939287230,3.4147224,4.436268,,179,0.06160585088852142
+941041082,1.3735284,5.3592334,,284,0.21259820444080987
+941245479,2.3375509,8.395572,file changes; js file; changes | file changes pug | pug rebuild update,186,0.12347189576265194
+949908090,0.50298613,9.851675,fails; os error; import map | error npm import | npm import react,448,0.3096854354870629
+981636268,3.4385602,4.493075,,175,0.06160585088852142
+1005926553,2.4353821,8.298779,file changes; js file; changes | file changes pug | pug rebuild update,171,0.13367632123061904
+1015863698,2.709551,8.559939,file changes; js file; changes | file changes pug | pug rebuild update,75,0.025324166031439492
+1028140307,-0.3427351,9.513038,deno task; deno; deno run | port deno task | port deno task run,67,0.06857841963530444
+1028141093,-0.8581135,8.842373,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,65,0.12870241292652324
+1034288334,0.23381382,4.2847724,,227,0.0282690454039112
+1034590955,1.6832429,4.5561905,,213,0.05324147631882877
+1047840309,2.3595505,8.517068,file changes; js file; changes | file changes pug | pug rebuild update,177,0.12347189576265194
+1052521647,-0.3323193,9.125657,,362,0.054530492018984134
+1056612799,0.09210455,9.579401,upgrading deno; deno version; deno task | macos deno version | version tests crash,104,0.09222077724057438
+1082667587,-0.52480936,8.407278,using cli; cli; cli interface | cli error good | commands errors config,143,0.05241553003968728
+1085380741,1.124756,7.7728415,,134,0.030610417411529044
+1088450679,0.55309194,5.9640837,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,368,0.03885593011657008
+1088741092,0.7094285,8.628826,fails; os error; import map | error npm import | npm import react,240,0.03953407104520893
+1090841598,3.385205,6.8578634,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,151,0.024523608489046562
+1091221046,1.1212885,5.6005745,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,251,0.06228370486609023
+1097294791,2.0412922,7.9239726,component; _components; components | component components comp | component _data ts does,174,0.017257607447082036
+1097682474,2.052686,7.9931993,component; _components; components | component components comp | component _data ts does,207,0.02795562982106978
+1107950396,2.059677,7.93252,component; _components; components | component components comp | component _data ts does,195,0.020274453213153146
+1108143579,-0.17377298,7.7357793,,300,0.43629002986335325
+1118587370,0.95049196,9.189352,fails; os error; import map | error npm import | npm import react,74,0.040379756333489766
+1124819330,2.8769681,5.730399,,327,0.14640884890993733
+1156992284,2.1934118,5.6821227,,202,0.04329562389908708
+1156997089,2.200968,5.6394916,build; enhancement add; builds | folder build dest folder | sass details example like enhancement,201,0.04329562389908708
+1157046803,2.7696545,4.727946,site loadassets; static files; html files | files static site | html static files dir,342,0.1611104769075955
+1157341152,2.7386115,3.876238,,303,0.16176105602070676
+1184052036,-0.7181054,4.2394433,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,259,0.04717849183929869
+1184105756,-0.22874308,9.675768,upgrading deno; deno version; deno task | macos deno version | version tests crash,77,0.05289866842143234
+1193652712,2.044402,8.019899,component; _components; components | component components comp | component _data ts does,196,0.02795562982106978
+1202113978,3.3227444,3.8707507,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,450,0.09191597607985529
+1205420213,3.576093,5.5897574,,70,0.06137176662830123
+1205422524,2.0764623,2.6731079,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,273,0.030585198448585094
+1205424544,-0.15329054,10.0432005,,230,0.05080716059250532
+1205427025,0.579448,4.878322,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,308,0.08273181615801646
+1205429798,1.6740161,4.6086264,,185,0.05324147631882877
+1205431860,-0.22376539,4.286078,repo enhancement; enhancement plugins; enhancement wontfix | wontfix enhancement experimental plugins | wontfix publish experimental plugins,140,0.03179940711136792
+1205480728,2.734487,4.510132,site loadassets; static files; html files | files static site | html static files dir,221,0.027451488673311798
+1206085637,-0.42252514,4.3750544,repo enhancement; enhancement plugins; enhancement wontfix | wontfix enhancement experimental plugins | wontfix publish experimental plugins,145,0.16631408339925102
+1206085810,-0.23388484,4.3377466,,219,0.017171945621728635
+1206192087,3.0115907,6.5118804,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,394,0.13523938144831593
+1212652221,-0.2508149,4.3406186,repo enhancement; enhancement plugins; enhancement wontfix | wontfix enhancement experimental plugins | wontfix publish experimental plugins,217,0.017171945621728635
+1213459786,3.8503985,5.538778,,295,0.060002574378049546
+1218074331,2.7097094,4.5219493,site loadassets; static files; html files | files static site | html static files dir,215,0.027451488673311798
+1222794129,2.7378805,4.5446043,site loadassets; static files; html files | files static site | html static files dir,215,0.03463908372382305
+1225116154,2.048141,2.713732,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,210,0.04952186391906894
+1230951777,0.5143736,5.8377357,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,368,0.09520898492986964
+1234330313,-1.0272686,8.975969,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,426,0.06733653487384803
+1244975815,-0.6578792,9.125605,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,161,0.08673727028490934
+1246750491,0.24398029,4.2583947,,184,0.0282690454039112
+1251609916,3.2424881,6.480774,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,130,0.11052425158375918
+1269243571,-0.46676862,4.766984,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,272,0.021419051241937787
+1275292920,-0.12871817,10.08767,,211,0.05080716059250532
+1290641284,2.483756,4.23446,sourcemaps; source files; source file | source map comment | comment mapping page instance,172,0.02876909811457864
+1292404827,2.4356725,4.2464986,sourcemaps; source files; source file | source map comment | comment mapping page instance,172,0.021075375333585455
+1299607630,4.6256948,3.1091328,copy file; copy assets; copy | copy underscore directory | copied copy file static,446,0.0008137997278599129
+1299980654,-0.833799,9.395043,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,239,0.1647205496582655
+1300002345,1.3454359,6.2506795,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,241,0.07548804915830838
+1301295229,-0.065642,7.152609,css files; lightningcss; css plugin | css sass includes | _includes import css files,81,0.10541974073415902
+1302705516,1.285653,7.4912486,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,355,0.01814200150037349
+1303186163,-0.37070817,4.65494,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,278,0.0877353291054755
+1306357981,-0.7592454,9.24816,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,247,0.10071606135547306
+1306960743,0.69984865,8.667182,fails; os error; import map | error npm import | npm import react,192,0.03953407104520893
+1310185532,1.3202988,6.3218594,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,152,0.0438259546274133
+1310425925,2.9393418,5.94021,,327,0.08694546768677161
+1311796819,4.0631866,5.6055455,pages search; search pages; bug search | search pages page | 404 response bug search,29,0.12545342998068587
+1315929359,3.3271544,4.0742807,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,166,0.08276462737382222
+1319682994,0.594994,5.75475,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,397,0.10516137466539957
+1327630117,1.4874784,6.0565023,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,420,0.04256147672899041
+1333052958,-0.6703122,9.295432,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,239,0.10071606135547306
+1333473953,-0.4588442,9.061538,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,187,0.14184444415403002
+1336337412,1.02276,3.6055176,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,119,0.049035583861877556
+1336727249,0.77384067,8.800787,fails; os error; import map | error npm import | npm import react,322,0.029479711072582338
+1337091376,1.1635993,5.554868,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,398,0.024934158922232528
+1337861569,3.2620342,3.714879,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,380,0.07148236001328857
+1338196097,3.4712503,5.736229,,254,0.01866618859753109
+1346863443,3.4529047,5.7396736,,253,0.01866618859753109
+1351487330,2.7310002,8.281274,file changes; js file; changes | file changes pug | pug rebuild update,364,0.07916871437856077
+1353447163,1.7678822,6.8321304,inline plugin; inline; css plugin | attributes svg inline | svg inline plugin tag,277,0.06672283790041734
+1356507090,-0.6069254,4.2746553,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,378,0.038230445209938645
+1356507893,-0.6245122,4.364834,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,257,0.09187738785511709
+1356510144,-0.67817605,4.2143145,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,205,0.04717849183929869
+1357441181,0.85309297,5.6180143,,129,0.1614375959570455
+1359020574,3.6998982,5.625169,pages search; search pages; bug search | search pages page | 404 response bug search,209,0.12876999936722844
+1368697212,3.3792694,5.727873,,254,0.07457493772142
+1369049807,4.4466276,5.7822137,pagefind plugin; pagefind; plugin | pagefind windows latest | pagefind plugin task does windows,330,0.022750084900655956
+1372081303,3.951307,5.922287,pages search; search pages; bug search | search pages page | 404 response bug search,5,0.06036086204730373
+1372850098,0.48964447,4.2192864,,384,0.16363920819490638
+1374634463,-0.641798,4.611191,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,278,0.1870981051840727
+1377021007,1.1996899,6.5755186,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,340,0.20566440507176695
+1379650502,-0.1431425,9.401525,,17,0.03969908805873729
+1383744004,-0.63053924,4.240908,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,54,0.014052117828936762
+1388021659,1.5182424,1.8530747,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,425,0.09207102298264284
+1388129613,1.6134614,1.8454022,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,404,0.048680217640510316
+1388764426,-0.4763711,4.747838,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,229,0.021419051241937787
+1389774758,2.083308,2.6432986,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,288,0.014860364379723818
+1389785503,-0.37853667,7.032862,css files; lightningcss; css plugin | css sass includes | _includes import css files,91,0.022612195553598426
+1389800113,2.6599038,4.222039,sourcemaps; source files; source file | source map comment | comment mapping page instance,231,0.17658506347254319
+1391157799,3.6163557,5.7751155,,253,0.1502255957144853
+1392704495,1.8339001,6.841804,inline plugin; inline; css plugin | attributes svg inline | svg inline plugin tag,78,0.06482735287604063
+1393372480,-0.4580099,4.6462283,plugin; plugin plugin; plugins | plugin idea fonts | plugins idea icons generator,238,0.0877353291054755
+1393570858,3.0196161,3.9421387,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,290,0.08060032231723153
+1393603235,1.4982104,2.0402927,picture plugin; imagick plugin; generated images | element img image | element image picture plugin,345,0.033842063210306396
+1394876095,-0.5983323,4.212524,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,54,0.031400674565924956
+1395553880,1.1198642,7.705659,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,134,0.03997770532167689
+1396922305,-0.7119151,8.509215,using cli; cli; cli interface | cli error good | commands errors config,143,0.16073140574597627
+1396926438,1.2814236,5.1676226,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,312,0.035112010345381264
+1397621789,1.8715974,2.2301104,,390,0.39585870944541257
+1400083323,3.0215547,5.9108596,,242,0.08729492545859875
+1401902046,-0.4675723,4.210412,,281,0.13077703794498882
+1402213403,2.0748928,2.6310506,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,273,0.014860364379723818
+1402432784,2.871624,8.048091,file changes; js file; changes | file changes pug | pug rebuild update,148,0.06238330794375063
+1403687725,2.97158,4.0068607,,279,0.08060032231723153
+1404394396,3.2153938,3.7835422,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,252,0.0830057265207702
+1409979836,-0.9144268,9.142064,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,125,0.09084948946147318
+1420743598,1.2835317,7.632825,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,329,0.13955838464966933
+1423612217,0.64489305,8.849276,,374,0.09108155843886417
+1425691954,3.8999555,5.5049486,pages search; search pages; bug search | search pages page | 404 response bug search,389,0.03335384931066271
+1429644034,0.472963,4.957132,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,383,0.03207769044829706
+1429649885,0.104572795,5.026909,plugins idea; enhancement plugins; plugin | ai idea issue | add ai block,311,0.13931593302510117
+1434886130,0.99435127,4.691416,,299,0.10526064008677796
+1434890775,0.8891011,4.6928997,,298,0.10526064008677796
+1437167797,-0.27031267,7.310304,,99,0.16250935022169313
+1437632856,2.1691275,5.27741,build; enhancement add; builds | folder build dest folder | sass details example like enhancement,359,0.04608345936132165
+1449203963,3.2925065,6.769919,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,128,0.02918265651266717
+1452384700,2.6073675,3.7816777,,204,0.16176105602070676
+1452554473,2.6324503,5.4664416,,351,0.33812725447149333
+1458112361,0.81929725,8.785066,fails; os error; import map | error npm import | npm import react,250,0.048098454801672616
+1459272498,2.0927942,6.4081755,,73,0.17285564696749584
+1460263171,0.92011225,4.2375937,,58,0.167603936416025
+1461848442,0.5323154,4.810329,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,326,0.03988039928390843
+1462542302,1.8240994,8.931171,bug esbuild; esbuild plugin; esbuild | esbuild esbuild plugin bug | esbuild plugin deno json bug esbuild,23,0.031460814805132395
+1462592306,3.3985274,4.220466,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,159,0.029344443547100633
+1462979064,0.19337802,5.134252,plugins idea; enhancement plugins; plugin | ai idea issue | add ai block,324,0.13721019561203177
+1466798490,1.2468648,5.173831,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,284,0.035112010345381264
+1469448878,0.7195137,5.2039566,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,127,0.1576073505237541
+1471664882,0.9186876,8.757857,fails; os error; import map | error npm import | npm import react,305,0.10304722418446215
+1472235766,4.4656997,5.755624,pagefind plugin; pagefind; plugin | pagefind windows latest | pagefind plugin task does windows,330,0.03107769855972931
+1473098175,0.4385581,6.045084,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,352,0.07739337816992353
+1488469875,0.70594865,5.848318,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,397,0.08088582427173295
+1488473349,0.046022076,7.2416306,,81,0.06950132544153112
+1492700732,0.89201343,5.1463933,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,415,0.1287883955731256
+1497716681,-0.15678684,9.283122,deno task; deno; deno run | port deno task | port deno task run,10,0.07352998547475637
+1504869208,2.4751408,4.9977293,,344,0.10509364056816166
+1505689262,0.78031933,8.829546,fails; os error; import map | error npm import | npm import react,250,0.029479711072582338
+1513805170,-0.35659882,5.689812,,102,0.17037349329818297
+1513895047,0.33043712,5.127815,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,80,0.08991999068010628
+1522463996,0.55193293,4.7518353,,308,0.06169563570523462
+1522465655,0.49832013,4.789478,,308,0.03988039928390843
+1527842518,2.879877,5.876779,pages rendered; rendered content; content rendered | content layout renderorder | content layout renderorder,242,0.08694546768677161
+1529279405,1.596744,5.168421,,385,0.2910720552149802
+1532383908,1.1526765,7.6813374,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,282,0.04084337199816234
+1534804022,4.4689646,5.7865295,pagefind plugin; pagefind; plugin | pagefind windows latest | pagefind plugin task does windows,263,0.022750084900655956
+1551758565,1.880606,7.7786984,component; _components; components | component components comp | component _data ts does,439,0.08132934981780587
+1551821237,0.595702,5.4178452,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,139,0.03743492150275537
+1552156199,0.11004135,6.837232,,414,0.23916345683565696
+1560794243,1.1570458,3.5071368,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,107,0.01755133582109296
+1560808085,1.1695255,3.490247,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,334,0.02100018301831352
+1568789705,-0.24577427,5.383152,,323,0.32607138046068423
+1572209816,2.8137655,4.469271,site loadassets; static files; html files | files static site | html static files dir,447,0.04425524179694501
+1573289968,0.1936435,4.110742,,403,0.11824529397679155
+1578457442,1.2577615,6.349907,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,152,0.026590074269564168
+1579562893,1.1446477,6.3773565,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,339,0.11639675204623538
+1581447320,1.8321003,4.9633737,ts plugins; modules; ts getoptionsfromcli | terser cli easier | terser ts processor,30,0.0884036482070398
+1583383524,2.6167774,4.677101,site loadassets; static files; html files | files static site | html static files dir,350,0.10266944284717568
+1585754143,2.4968514,4.741873,site loadassets; static files; html files | files static site | html static files dir,407,0.13195866004275172
+1587352606,2.390629,4.93526,site loadassets; static files; html files | files static site | html static files dir,407,0.091255624854997
+1589893470,1.4664414,2.0286303,picture plugin; imagick plugin; generated images | element img image | element image picture plugin,280,0.033842063210306396
+1597543948,1.381685,6.3379955,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,241,0.06347160706880925
+1606820484,2.100989,2.6496775,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,157,0.014647703576142415
+1610365009,2.9889877,4.5136957,site loadassets; static files; html files | files static site | html static files dir,121,0.1140268393786756
+1629455059,0.5424354,6.0367274,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,352,0.030918884870948706
+1629746219,2.5391886,4.609863,site loadassets; static files; html files | files static site | html static files dir,342,0.10266944284717568
+1630286707,2.5238667,5.7866597,pages rendered; rendered content; content rendered | content layout renderorder | content layout renderorder,94,0.21568778657745313
+1635636805,0.51562953,6.052136,,349,0.030918884870948706
+1639649677,1.0467125,9.10482,fails; os error; import map | error npm import | npm import react,74,0.09531899809728775
+1639856356,2.883047,4.558874,site loadassets; static files; html files | files static site | html static files dir,8,0.021591473420222308
+1640399491,1.3037761,7.4920754,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,237,0.01814200150037349
+1646215808,3.4461002,6.805271,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,151,0.06287323481190481
+1649092396,4.1224017,5.486438,pages search; search pages; bug search | search pages page | 404 response bug search,158,0.0834946528576403
+1650523054,2.4005404,4.2224674,sourcemaps; source files; source file | source map comment | comment mapping page instance,232,0.04256484593114786
+1650993698,2.195373,5.2395306,build; enhancement add; builds | folder build dest folder | sass details example like enhancement,301,0.04608345936132165
+1670897109,4.374811,5.6933455,pagefind plugin; pagefind; plugin | pagefind windows latest | pagefind plugin task does windows,19,0.082724385717699
+1676672365,0.54716307,9.467914,,64,0.14342056985999319
+1696723667,-0.27807957,9.131281,,187,0.054530492018984134
+1699174692,1.8827792,5.284129,,28,0.24977803395960776
+1700520071,2.7943077,8.328812,file changes; js file; changes | file changes pug | pug rebuild update,255,0.07916871437856077
+1702219939,4.640962,3.1001468,copy file; copy assets; copy | copy underscore directory | copied copy file static,422,0.01540112935188446
+1706691503,0.6080425,9.05787,,61,0.008658573862191196
+1713509524,0.4355412,5.559586,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,427,0.02844501862903763
+1717805125,0.5518778,5.9252467,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,191,0.03885593011657008
+1739658809,4.6897335,3.03879,copy file; copy assets; copy | copy underscore directory | copied copy file static,31,0.008478312174626393
+1740124763,-0.47248644,8.410732,using cli; cli; cli interface | cli error good | commands errors config,189,0.05243681860820234
+1742155784,4.691169,3.0281386,copy file; copy assets; copy | copy underscore directory | copied copy file static,369,0.010747617666927773
+1742562283,3.4232793,4.2743683,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,310,0.0593135593482525
+1767942178,-0.17597035,9.373896,deno task; deno; deno run | port deno task | port deno task run,268,0.042907144733268766
+1772949438,0.67622817,8.934797,,294,0.09108155843886417
+1781034691,-0.30924523,6.5213695,tailwindcss postcss; plugins tailwind; tailwindcss | tailwind tailwindcss variants | tailwindcss variants plugin,410,0.0829639206813728
+1782625515,-0.5690332,8.371257,using cli; cli; cli interface | cli error good | commands errors config,189,0.05703751103801342
+1790248028,0.8946063,8.562041,fails; os error; import map | error npm import | npm import react,123,0.02549509106135026
+1791138842,-0.644264,4.2664456,plugins repo; main repo; plugins | katex plugins repo | katex tests ts plugins,269,0.028991930692721265
+1791938846,0.5011854,9.124797,,61,0.12397255657708918
+1795380343,3.2778332,3.6451645,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,252,0.07148236001328857
+1799921578,-0.36909333,6.8306994,css files; lightningcss; css plugin | css sass includes | _includes import css files,401,0.09419249747947289
+1815197090,-1.0273628,8.903957,,426,0.06051566237273848
+1824778292,0.46482697,4.9881606,enhancement plugins; plugins idea; add plugin | enhancement translation wordpress | enhancement plugins add wordpress,296,0.03207769044829706
+1828274548,0.63522243,4.2940183,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,265,0.16363920819490638
+1831432664,1.5924205,5.4594607,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,136,0.09265300657443393
+1831437119,1.3069725,4.9726615,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,284,0.19662799212592877
+1833550738,4.5102854,3.234512,copy file; copy assets; copy | copy underscore directory | copied copy file static,32,0.05776446647025535
+1842861687,-0.026099019,4.896014,plugins idea; enhancement plugins; plugin | ai idea issue | add ai block,297,0.1849554953526823
+1856533265,3.8776982,5.4801073,pages search; search pages; bug search | search pages page | 404 response bug search,295,0.03335384931066271
+1856777932,1.8242348,1.8370953,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,421,0.16472009800519985
+1856972803,2.2374237,4.3844438,,358,0.22987690093931112
+1865656526,1.1403699,9.055295,fails; os error; import map | error npm import | npm import react,418,0.02351635756436632
+1867990439,1.8312259,7.480952,,436,0.08488076938945573
+1868177875,3.1195323,6.593356,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,130,0.05637138954619435
+1868380774,2.1829896,4.8001146,ts plugins; modules; ts getoptionsfromcli | terser cli easier | terser ts processor,141,0.12683311576402587
+1875122005,0.15046154,9.30925,,435,0.031276020449783073
+1878579546,0.6253758,5.855427,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,317,0.08088582427173295
+1878849065,1.1872197,5.562855,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,251,0.024934158922232528
+1880500594,2.447837,3.2218568,,41,0.05406635446685127
+1884008828,2.1384792,8.1345825,component; _components; components | component components comp | component _data ts does,6,0.10909529512264772
+1889941813,-0.389546,6.9226446,css files; lightningcss; css plugin | css sass includes | _includes import css files,27,0.005096917572130732
+1894203445,4.2444215,5.64788,pages search; search pages; bug search | search pages page | 404 response bug search,3,0.019761687852882393
+1894917537,0.26600444,4.017223,,338,0.11824529397679155
+1901711198,1.5952101,1.800273,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,271,0.048680217640510316
+1911004430,1.5778694,1.937449,picture plugin; imagick plugin; generated images | element img image | element image picture plugin,271,0.09868834545767338
+1911716640,1.4186397,2.1888952,picture plugin; imagick plugin; generated images | element img image | element image picture plugin,449,0.11579229358303683
+1920550211,2.419267,4.848614,site loadassets; static files; html files | files static site | html static files dir,15,0.08227208190375374
+1922878362,-0.36533892,9.387834,deno task; deno; deno run | port deno task | port deno task run,412,0.05166751980481999
+1926766647,0.87311924,8.067118,,114,0.13697135398703528
+1927059931,-0.24679564,6.575987,tailwindcss postcss; plugins tailwind; tailwindcss | tailwind tailwindcss variants | tailwindcss variants plugin,90,0.03368098160312692
+1952981949,4.312223,5.637967,pages search; search pages; bug search | search pages page | 404 response bug search,429,0.009933086588221002
+1977287113,-0.31420788,9.39526,deno task; deno; deno run | port deno task | port deno task run,408,0.05166751980481999
+1977294118,0.30635843,8.935011,,150,0.10180503865271652
+1979693294,0.1340004,7.0751925,,81,0.13686687774325218
+1989267321,0.95158535,5.032211,,117,0.03672976364294339
+1995501764,0.27141365,8.815781,,39,0.06479279814546769
+2002956444,0.093113035,10.017904,,44,0.064880693764124
+2004563234,1.1557465,9.037502,fails; os error; import map | error npm import | npm import react,392,0.02351635756436632
+2010533133,-0.20725876,6.64369,tailwindcss postcss; plugins tailwind; tailwindcss | tailwind tailwindcss variants | tailwindcss variants plugin,90,0.046065461450012876
+2013774168,1.4496883,6.0760827,markdown plugin; typescript; markdown | markdown interface rules | interface rules markdown plugin,246,0.04256147672899041
+2019594424,1.6617124,1.8102779,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,271,0.059681477476564396
+2022249427,4.6465874,3.0858097,copy file; copy assets; copy | copy underscore directory | copied copy file static,365,0.01540112935188446
+2027261721,3.3555877,6.909354,nunjucks; nunjuck; js files | nunjucks njk content | nunjucks content md files,193,0.05940105917691125
+2034011983,-0.33003667,7.1467814,css files; lightningcss; css plugin | css sass includes | _includes import css files,99,0.05162574661142825
+2034365967,1.5191278,1.7610079,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,95,0.027911129898821427
+2037571703,-1.0799077,8.933977,remove deno; deno json; deno task | deno jsonc task | jsonc lock deno task,382,0.06051566237273848
+2038437846,0.43904978,5.587814,preact jsx; jsx preact; use react | jsx react client | jsx preact plugins,367,0.02844501862903763
+2044968131,1.4134821,1.7686464,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,432,0.08403109126900989
+2052613035,4.3037395,5.6328,pages search; search pages; bug search | search pages page | 404 response bug search,411,0.009933086588221002
+2053267049,2.0090647,4.851761,ts plugins; modules; ts getoptionsfromcli | terser cli easier | terser ts processor,30,0.17043216300835226
+2054882277,1.1378348,5.1475496,template engines; enhancement add; enhancement allow | engines performance pages | engines performance pages,312,0.11215280838770988
+2058030094,1.450942,1.6934268,imagick plugin; images generated; picture plugin | images image jpg | images transform imagick,53,0.01666839662139332
+2058909012,0.1319346,4.4891605,plugins idea; enhancement plugins; plugin | ai idea issue | add ai block,37,0.03373081828426445
+2061610155,0.33101743,9.558881,upgrading deno; deno version; deno task | macos deno version | version tests crash,135,0.09700603036242292
+2064744262,0.16794595,9.283318,deno deploy; deploy expected; vento template | vto deploy deno | vto file _site imports,111,0.026254629366575657
+2065979226,1.7473215,7.4681144,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,393,0.08488076938945573
+2068289785,1.4537615,7.5776324,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,113,0.07583171156565986
+2075428993,-0.17887837,9.427244,deno task; deno; deno run | port deno task | port deno task run,268,0.04402898750595943
+2077993305,1.8059165,7.7465124,component; _components; components | component components comp | component _data ts does,331,0.08132934981780587
+2082102163,1.6278892,7.6269712,compileroptions jsx; jsx plugin; jsx component | jsx button precompile | button precompile attribute,437,0.18098280060081542
+2090664664,2.1096375,2.625975,date format; date plugin; bug date | date dates format | 01 01 frontmatter iso,157,0.011909601742795909
+2091532196,0.8004641,3.510254,metas plugin; sitemap plugin; bug | feed sitemap xml | sitemap xml metas,82,0.07105565339863243
+2092132913,1.1281874,4.8231263,,298,0.18777587339128737
+2098559155,2.286406,6.3835287,async; njk filter; plugin filter | async filter content | async extradata page page,73,0.16497361346500833
+2128926664,-0.24325848,4.3828897,repo enhancement; enhancement plugins; enhancement wontfix | wontfix enhancement experimental plugins | wontfix publish experimental plugins,219,0.04294122500982655
+2129875460,4.625376,3.1098816,copy file; copy assets; copy | copy underscore directory | copied copy file static,233,0.0008137997278599129
+2132960975,2.7824306,4.4380198,site loadassets; static files; html files | files static site | html static files dir,337,0.04425524179694501
+2133769767,0.22631158,9.712548,upgrading deno; deno version; deno task | macos deno version | version tests crash,97,0.0568769509863924
+2134267105,1.3179265,2.246033,,406,0.11579229358303683
+2136817712,3.408227,3.9045334,prettyurls false; html url; url foo | url spaces urls | capitals _headers trailing slash,208,0.09191597607985529
