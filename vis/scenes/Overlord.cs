@@ -64,7 +64,7 @@ public partial class Overlord : Node
     private TestStructure currentItem;
 
     public const float ItemRadius = 256.0f;
-    public const float StructureRadius = 7f;
+    public const float StructureRadius = 10f;
     public const int HeightmapSize = 1024;
     public const string DefaultHint = "Hover over a structure to see its description...";
     public const byte MaxTerrainHeight = 50;

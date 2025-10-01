@@ -14,7 +14,7 @@ public partial class TopicIsland : Node3D
 {
     public const int GrassWidth = 1;
     public const int DirtWidth = 3;
-    public const float StructureRadius = 3f;
+    public const int StructureRadius = 3;
     
     public Topic Topic { get; set; }
 
@@ -44,7 +44,7 @@ public partial class TopicIsland : Node3D
         var points = Topic.Ids.Select(id => Overlord.Instance.Positions.GetValueOrDefault(id)).ToArray();
         var coords = points.Select(v => new Coordinate(v.X, v.Z)).ToArray();
         var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
-        var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.5);
+        var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.3);
         var kdTree = new KdTree<Issue>();
         foreach (var id in Topic.Ids)
         {
@@ -55,11 +55,11 @@ public partial class TopicIsland : Node3D
             new Vector3((float)hull.Envelope.Coordinates[0].X, 0f, (float)hull.Envelope.Coordinates[0].Y),
             new Vector3(
                 (float)Math.Abs(hull.Envelope.Coordinates[0].X - hull.Envelope.Coordinates[3].X),
-                points.Max(p => p.Y),
+                points.Max(p => p.Y) + 1,
                 (float)Math.Abs(hull.Envelope.Coordinates[0].Y - hull.Envelope.Coordinates[1].Y)
             )
         );
-        var intSize = Utils.RoundToInt(bbox.Size);
+        var intSize = Utils.RoundToInt(bbox.Size) + new Vector3I(StructureRadius * 2, 0, StructureRadius * 2);
         var buffer = new StructureBuffer(
             size: intSize,
             library: Library,
