@@ -27,6 +27,11 @@ public partial class TopicIsland : Node3D
     [Export]
     public Material Material { get; set; }
 
+    [Export]
+    public Material HighlightMaterial { get; set; }
+
+    public bool IsHighlighted { get; set; }
+
     public byte[,] Heightmap { get; set; }
 
     public override void _Ready()
@@ -100,6 +105,7 @@ public partial class TopicIsland : Node3D
                     }
                     else
                     {
+                        distance -= StructureRadius;
                         var height = nearestPointHeight / (distance * distance + 1);
                         Heightmap[z, x] = (byte)height;
                     }
@@ -144,5 +150,20 @@ public partial class TopicIsland : Node3D
         _.Mesh.Position = bbox.Position;
         _.Body.Collider.Shape = shape;
         _.Body.Get().Position = bbox.Position;
+    }
+
+    public void ToggleHighlight(bool? value)
+    {
+        if (value is not null && value == IsHighlighted)
+        {
+            return;
+        }
+
+        IsHighlighted = value ?? !IsHighlighted;
+        var material = _.Mesh.GetActiveMaterial(0);
+        if (material is not null)
+        {
+            material.NextPass = IsHighlighted ? HighlightMaterial : null;
+        }
     }
 }

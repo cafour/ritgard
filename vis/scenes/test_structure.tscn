@@ -9,7 +9,7 @@
 render_priority = 0
 shader = ExtResource("3_fjski")
 shader_parameter/color = Color(1, 0.772549, 0, 1)
-shader_parameter/thickness = 0.5
+shader_parameter/thickness = 0.25
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_v15mh"]
 radius = 3.0

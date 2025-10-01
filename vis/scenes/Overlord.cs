@@ -26,6 +26,9 @@ public partial class Overlord : Node
 
     [Export]
     public PackedScene TopicIslandScene { get; set; }
+    
+    [Export]
+    public PackedScene OutlierRockScene { get; set; }
 
     [Export]
     public string DataJsonPath { get; set; }
@@ -56,12 +59,14 @@ public partial class Overlord : Node
     public ImmutableDictionary<long, Issue> Data { get; private set; }
     public ImmutableDictionary<string, Topic> Topics { get; private set; }
     public ImmutableDictionary<long, Vector3> Positions { get; private set; }
+    public ImmutableDictionary<long, string> IssueTopics { get; private set; }
     public DateTimeOffset MinDate { get; private set; }
     public DateTimeOffset MaxDate { get; private set; }
     public TimeSpan AvgIssueLength { get; private set; }
 
     private RandomNumberGenerator rng;
-    private TestStructure currentItem;
+    private TestStructure currentStructure;
+    private TopicIsland currentIsland;
 
     public const float ItemRadius = 256.0f;
     public const float StructureRadius = 10f;
@@ -121,6 +126,10 @@ public partial class Overlord : Node
         // ));
 
         var issueTopics = Utils.ReadGodotCsv<IssueTopic>(PositionsCsvPath);
+        IssueTopics = issueTopics.ToImmutableDictionary(
+            i => i.Id,
+            i => i.Topic
+        );
         var averageDistance = issueTopics.Average(i => i.NearestNeighborDistance);
         var bbox = new Rect2(issueTopics.Min(p => (float)p.X), issueTopics.Min(p => (float)p.Y), Vector2.Zero);
         foreach (var position in issueTopics)
@@ -175,6 +184,15 @@ public partial class Overlord : Node
             instance.Item = Data[id];
             instance.Position = position;
             AddChild(instance);
+
+            if (string.IsNullOrEmpty(IssueTopics[id]))
+            {
+                var outlierRock = OutlierRockScene.Instantiate<OutlierRock>();
+                outlierRock.Height = Mathf.RoundToInt(position.Y);
+                outlierRock.Breadth = 3;
+                outlierRock.Position = position + Vector3.Down * (outlierRock.Height - 1);
+                AddChild(outlierRock);
+            }
         }
 
         Player.HoverChanged += OnHoverChanged;
@@ -182,9 +200,9 @@ public partial class Overlord : Node
 
     public override void _Input(InputEvent @event)
     {
-        if (@event.IsAction("interact") && @event.IsPressed() && currentItem is not null)
+        if (@event.IsAction("interact") && @event.IsPressed() && currentStructure is not null)
         {
-            var item = Data.GetValueOrDefault(currentItem.Id.Value);
+            var item = Data.GetValueOrDefault(currentStructure.Id.Value);
             if (!string.IsNullOrEmpty(item.Url))
             {
                 OS.ShellOpen(item.Url);
@@ -290,9 +308,13 @@ public partial class Overlord : Node
         {
             if (structure.Id is not null && Data.TryGetValue(structure.Id.Value, out var item))
             {
-                currentItem?.ToggleHighlight(false);
-                currentItem = structure;
-                currentItem.ToggleHighlight(true);
+                currentIsland?.ToggleHighlight(false);
+                currentIsland = null;
+
+                currentStructure?.ToggleHighlight(false);
+                structure.ToggleHighlight(true);
+                currentStructure = structure;
+
                 ItemDescriptionLabel.Text = $"#{item.Number} {item.Title}\n\t{item.CreatedAt:s}--{item.UpdatedAt:s} ({item.UpdatedAt - item.CreatedAt:c}, {item.CommentCount} comments)";
 
                 Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
@@ -300,12 +322,23 @@ public partial class Overlord : Node
         }
         else if (parent is TopicIsland island)
         {
+            currentStructure?.ToggleHighlight(false);
+            currentStructure = null;
+
+            currentIsland?.ToggleHighlight(false);
+            island.ToggleHighlight(true);
+            currentIsland = island;
+
             ItemDescriptionLabel.Text = $"The '{island.Topic.Title}' topic island";
         }
         else if (parent is null)
         {
-            currentItem?.ToggleHighlight(false);
-            currentItem = null;
+            currentStructure?.ToggleHighlight(false);
+            currentStructure = null;
+
+            currentIsland?.ToggleHighlight(false);
+            currentIsland = null;
+            
             Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
             ItemDescriptionLabel.Text = DefaultHint;
         }
