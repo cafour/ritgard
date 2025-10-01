@@ -135,18 +135,21 @@ public partial class Overlord : Node
             GetLevelForIssue(i.Id),
             (float)((i.Y - center.Y) * factor)
         ));
-        Topics = issueTopics.GroupBy(i => i.Topic)
+        Topics = issueTopics
+            .Where(i => !string.IsNullOrEmpty(i.Topic))
+            .GroupBy(i => i.Topic)
             .ToImmutableDictionary(g => g.Key, g => new Topic(g.Key, g.Select(i => i.Id).ToImmutableHashSet()));
-        // foreach (var topic in Topics.Values)
-        // {
-        //     var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
-        //     topicIsland.Topic = topic;
-        // }
+        foreach (var topic in Topics.Values)
+        {
+            var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
+            topicIsland.Topic = topic;
+            AddChild(topicIsland);
+        }
 
-        var firstTopic = Topics.Values.OrderBy(t => t.Title).First();
-        var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
-        topicIsland.Topic = firstTopic;
-        AddChild(topicIsland);
+        // var firstTopic = Topics.Values.OrderBy(t => t.Title).First();
+        // var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
+        // topicIsland.Topic = firstTopic;
+        // AddChild(topicIsland);
 
         // foreach (var (identifier, item) in data)
         // {

@@ -213,7 +213,7 @@ def use_bertopic(docs: list[str], project_name):
     )
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
     fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
-    topics = [keybert_topic_labels[topic] for topic in topic_model.topics_]  # type: ignore
+    topics = [keybert_topic_labels[topic] if topic != -1 else '' for topic in topic_model.topics_]  # type: ignore
     return (reduced_embeddings, topics)
 
 
@@ -275,8 +275,8 @@ def get_nearest_neighbor_distances(
     return (distances[0:, 1], indices[0:, 1])
 
 
-project_name = "jetuml"
-issues_filename = "jetuml.json"
+project_name = "lume"
+issues_filename = "lume.json"
 ids, docs = read_issues(issues_filename, project_name)
 # embeddings = embed_sbert(issue_titles)
 # positions = reduce_umap(embeddings)
