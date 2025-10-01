@@ -22,6 +22,7 @@ from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
 import transformers
 from torch import bfloat16
+from scipy.cluster import hierarchy as sch
 
 
 def get_top_keywords(tfidf_matrix, labels, feature_names, top_n=5):
@@ -193,7 +194,7 @@ def use_bertopic(docs: list[str], project_name):
         verbose=True,
         # calculate_probabilities=True
     )
-    topic_model.fit(docs, embeddings=embeddings)
+    _topics, probs = topic_model.fit_transform(docs, embeddings=embeddings)
     reduction_umap = umap.UMAP(
         n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42
     )
@@ -223,12 +224,13 @@ def use_bertopic(docs: list[str], project_name):
     }
     topic_model.set_topic_labels(combined_labels)
 
-    # new_topics = topic_model.reduce_outliers(
-    #     titles, topics, embeddings=embeddings, strategy="embeddings"
-    # )
-    # topic_model.update_topics(titles, topics=new_topics)
+    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
 
-    # title_topics, probs = topic_model.transform(titles, embeddings=title_embeddings)
+    linkage_function = lambda x: sch.linkage(x, 'single', optimal_ordering=True)
+    hierarchical_topics = topic_model.hierarchical_topics(docs, linkage_function=linkage_function)
+    fig_hierarchy = topic_model.visualize_hierarchy(hierarchical_topics=hierarchical_topics)
+    fig_hierarchy.write_html(f"./hierarchy_{project_name}_{formatted_datetime}.html")
+
     fig = topic_model.visualize_documents(
         docs,
         embeddings=embeddings,
@@ -237,7 +239,6 @@ def use_bertopic(docs: list[str], project_name):
         hide_annotations=True,
         title=project_name,
     )
-    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
     fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
     topics = [combined_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
     return (reduced_embeddings, topics)
