@@ -15,15 +15,16 @@ public static partial class Utils
 
     public static void WriteMarkdownAsPlainText(string markdown, TextWriter writer)
     {
-        var urlRegex = ReadmeMiner.GetUrlRegex();
-        markdown = urlRegex.Replace(markdown, "");
         var document = MarkdownParser.Parse(markdown, MarkdownPipeline);
         var renderer = new PlainTextRenderer(writer);
         MarkdownPipeline.Setup(renderer);
-        renderer.ObjectRenderers.RemoveAll(r => r is HtmlObjectRenderer<CodeBlock> || r is HtmlObjectRenderer<AutolinkInline> || r is HtmlObjectRenderer<LinkInline>);
+        renderer.ObjectRenderers.RemoveAll(r =>
+            r is HtmlObjectRenderer<CodeBlock>
+            || r is HtmlObjectRenderer<AutolinkInline>
+            || r is HtmlObjectRenderer<LinkInline>
+        );
         renderer.ObjectRenderers.Add(new PlainTextLinkInlineRenderer());
         renderer.Render(document);
-        var test = new string[3];
         writer.Flush();
     }
 }

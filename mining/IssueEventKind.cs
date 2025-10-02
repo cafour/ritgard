@@ -2,6 +2,7 @@ namespace Ritgard.Mining;
 
 public enum IssueEventKind
 {
+    Unknown,
     AddedToProject,
     Assigned,
     AutomaticBaseChangeFailed,

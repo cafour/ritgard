@@ -224,6 +224,7 @@ public static class OctokitMapping
     {
         return value switch
         {
+            null => null,
             Octokit.RepositoryVisibility.Internal => RepositoryVisibility.Internal,
             Octokit.RepositoryVisibility.Private => RepositoryVisibility.Private,
             Octokit.RepositoryVisibility.Public => RepositoryVisibility.Public,
@@ -284,7 +285,7 @@ public static class OctokitMapping
             Author: value.Actor?.Login,
             Assignee: value.Assignee?.Login,
             Label: value.Label?.Name,
-            Kind: MapEventInfoState(UnwrapStringEnum<EventInfoState>(value.Event)),
+            Kind: MapEventInfoState(UnwrapStringEnum<EventInfoState>(value.Event)) ?? default,
             CommitId: value.CommitId,
             CreatedAt: value.CreatedAt,
             RenamedFrom: value.Rename?.From,
@@ -312,7 +313,7 @@ public static class OctokitMapping
             Author: value.Actor?.Login,
             Assignee: value.Assignee?.Login,
             Label: value.Label?.Name,
-            Kind: MapEventInfoState(UnwrapStringEnum<EventInfoState>(value.Event)),
+            Kind: MapEventInfoState(UnwrapStringEnum<EventInfoState>(value.Event)) ?? default,
             CommitId: value.CommitId,
             CreatedAt: value.CreatedAt,
             RenamedFrom: value.Rename?.From,
@@ -327,10 +328,11 @@ public static class OctokitMapping
         );
     }
 
-    public static IssueEventKind MapEventInfoState(EventInfoState? value)
+    public static IssueEventKind? MapEventInfoState(EventInfoState? value)
     {
         return value switch
         {
+            null => null,
             EventInfoState.AddedToProject => IssueEventKind.AddedToProject,
             EventInfoState.Assigned => IssueEventKind.Assigned,
             EventInfoState.AutomaticBaseChangeFailed => IssueEventKind.AutomaticBaseChangeFailed,
@@ -403,10 +405,6 @@ public static class OctokitMapping
         var sb = new StringBuilder();
         var sw = new StringWriter(sb);
         Utils.WriteMarkdownAsPlainText(title.Trim(), sw);
-        if (sb[^1] != '.')
-        {
-            sb.Append('.');
-        }
 
         if (!string.IsNullOrWhiteSpace(body))
         {
@@ -414,6 +412,8 @@ public static class OctokitMapping
             Utils.WriteMarkdownAsPlainText(body.Trim(), sw);
         }
 
-        return sb.ToString();
+        var plainText = sb.ToString();
+        var urlRegex = ReadmeMiner.GetUrlRegex();
+        return urlRegex.Replace(plainText, "");
     }
 }

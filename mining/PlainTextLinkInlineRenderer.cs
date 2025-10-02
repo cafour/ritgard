@@ -8,7 +8,7 @@ public class PlainTextLinkInlineRenderer : HtmlObjectRenderer<LinkInline>
 {
     protected override void Write(HtmlRenderer renderer, LinkInline obj)
     {
-        if (!obj.IsAutoLink)
+        if (!obj.IsAutoLink && !obj.IsImage)
         {
             renderer.WriteChildren(obj);
         }
