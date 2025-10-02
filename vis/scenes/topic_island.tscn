@@ -9,7 +9,7 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pnkat"]
 render_priority = 0
 shader = ExtResource("5_4m8o0")
-shader_parameter/color = Color(0.188235, 0.772549, 0, 1)
+shader_parameter/color = Color(0.784851, 0.125123, 0, 1)
 shader_parameter/thickness = 0.25
 
 [node name="TopicIsland" type="Node3D"]

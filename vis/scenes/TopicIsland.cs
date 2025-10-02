@@ -67,7 +67,7 @@ public partial class TopicIsland : Node3D
         );
 
         Heightmap = new byte[intSize.Z, intSize.X];
-        // ComputeLeveledHeightmap(points, intSize, bbox);
+        // ComputeLeveledHeightmap(points, bbox);
         ComputeSmoothHeightmap(points, bbox);
 
         for (int y = 0; y < Heightmap.GetLength(0); ++y)
@@ -124,7 +124,7 @@ public partial class TopicIsland : Node3D
         }
     }
 
-    private void ComputeLeveledHeightmap(IEnumerable<Vector3> points, Vector3I intSize, Aabb bbox)
+    private void ComputeLeveledHeightmap(IEnumerable<Vector3> points, Aabb bbox)
     {
         var coords = points.Select(v => new Coordinate(v.X, v.Z)).ToArray();
         var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
@@ -137,9 +137,9 @@ public partial class TopicIsland : Node3D
         }
 
         var testPoint = Geometry.DefaultFactory.CreatePoint(new Coordinate(0, 0));
-        for (int z = 0; z < intSize.Z; ++z)
+        for (int z = SmoothRadius; z < Heightmap.GetLength(0); ++z)
         {
-            for (int x = 0; x < intSize.X; ++x)
+            for (int x = SmoothRadius; x < Heightmap.GetLength(1); ++x)
             {
                 var px = x + bbox.Position.X;
                 var py = z + bbox.Position.Z;
@@ -184,7 +184,8 @@ public partial class TopicIsland : Node3D
     {
         foreach (var point in points)
         {
-            for (int z = -SmoothRadius; z < SmoothRadius; ++z)
+            var radius = SmoothRadius;
+            for (int z = -radius; z < radius; ++z)
             {
                 var hz = Mathf.RoundToInt(point.Z - bbox.Position.Z + z);
                 if (hz < 0 || hz >= Heightmap.GetLength(0))
@@ -192,7 +193,7 @@ public partial class TopicIsland : Node3D
                     continue;
                 }
 
-                for (int x = -SmoothRadius; x < SmoothRadius; ++x)
+                for (int x = -radius; x < radius; ++x)
                 {
                     var hx = Mathf.RoundToInt(point.X - bbox.Position.X + x);
                     if (hx < 0 || hx >= Heightmap.GetLength(1))
@@ -202,7 +203,7 @@ public partial class TopicIsland : Node3D
 
                     var distSquared = x * x + z * z;
                     // var height = point.Y * Mathf.Exp(-distSquared / (float)(SmoothRadius * SmoothRadius));
-                    var height = point.Y * Mathf.Exp(-Mathf.Log(point.Y) / (SmoothRadius * SmoothRadius) * distSquared);
+                    var height = point.Y * Mathf.Exp(-Mathf.Log(point.Y) / (radius * radius) * distSquared);
                     var byteHeight = (byte)Math.Clamp(Mathf.RoundToInt(height), 0, 255);
                     // Heightmap[hz, hx] = Math.Max(Heightmap[hz, hx], byteHeight);
                     Heightmap[hz, hx] += byteHeight;
