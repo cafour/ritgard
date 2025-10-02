@@ -203,7 +203,8 @@ public partial class TopicIsland : Node3D
 
                     var distSquared = x * x + z * z;
                     // var height = point.Y * Mathf.Exp(-distSquared / (float)(SmoothRadius * SmoothRadius));
-                    var height = point.Y * Mathf.Exp(-Mathf.Log(point.Y) / (radius * radius) * distSquared);
+                    var desiredHeight = Mathf.Max(1f, point.Y);
+                    var height = desiredHeight * Mathf.Exp(-Mathf.Log(desiredHeight) / (radius * radius) * distSquared);
                     var byteHeight = (byte)Math.Clamp(Mathf.RoundToInt(height), 0, 255);
                     // Heightmap[hz, hx] = Math.Max(Heightmap[hz, hx], byteHeight);
                     Heightmap[hz, hx] += byteHeight;

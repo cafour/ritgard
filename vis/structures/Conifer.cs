@@ -23,9 +23,7 @@ public sealed class Conifer : IStructure
     public void Build(StructureBuffer buffer)
     {
         var coneHeight = Mathf.RoundToInt(CrownBreadth * 2f);
-        var totalHeight = TrunkHeight + coneHeight;
-        var trunk = Mathf.RoundToInt(Mathf.Log(totalHeight * BarkGrowth));
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, trunk, Mathf.CeilToInt(trunk / 2f), Blocks.Bark);
+        buffer.FillBresenhamLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, Blocks.Bark);
         buffer.FillCone(
             Vector3I.Up * (TrunkHeight - 1),
             coneHeight,

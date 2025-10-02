@@ -177,7 +177,7 @@ public partial class Overlord : Node
         var heightFactor = (float)MaxTerrainHeight / Data.Values.Max(i => i.Events.Length);
         Positions = issueTopics.ToImmutableDictionary(i => i.Id, i => new Vector3(
             (float)((i.X - center.X) * magnification),
-            Data[i.Id].Events.Length * heightFactor,
+            Mathf.Max(1f, Data[i.Id].Events.Length * heightFactor),
             (float)((i.Y - center.Y) * magnification)
         ));
         Topics = issueTopics
