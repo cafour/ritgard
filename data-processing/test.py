@@ -1,39 +1,21 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
 from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
-from sklearn.preprocessing import normalize
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neighbors import NearestNeighbors
-from sentence_transformers import SentenceTransformer, SparseEncoder
+from sentence_transformers import SentenceTransformer
 import umap.umap_ as umap
-import matplotlib.pyplot as plt
 import csv
 import json
 import numpy as np
-import numpy.typing as npt
 from datetime import datetime
 from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
-from bertopic.representation import TextGeneration
 from bertopic.representation import PartOfSpeech
 from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
-from torch import bfloat16
 from scipy.cluster import hierarchy as sch
-
-
-def get_top_keywords(tfidf_matrix, labels, feature_names, top_n=5):
-    clusters = {}
-    for cluster_id in set(labels):
-        if cluster_id == -1:
-            continue  # skip noise
-        cluster_docs = tfidf_matrix[labels == cluster_id]
-        mean_tfidf = cluster_docs.mean(axis=0).A1
-        top_indices = mean_tfidf.argsort()[::-1][:top_n]
-        clusters[cluster_id] = feature_names[top_indices]
-    return clusters
+import argparse
 
 
 def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]:
@@ -54,37 +36,6 @@ def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]
             docs.append(doc)
     return (ids, docs)
 
-
-def embed_sbert(strings: list[str]):
-    model = SentenceTransformer("all-mpnet-base-v2")
-    embeddings = model.encode(strings)
-    return embeddings
-
-
-def embed_jina(strings: list[str]):
-    model = SentenceTransformer("jinaai/jina-embeddings-v4", trust_remote_code=True)
-    embeddings = model.encode(strings)
-    return embeddings
-
-
-def embed_splade(strings: list[str]):
-    model = SparseEncoder("naver/splade-cocondenser-ensembledistil")
-    embeddings = model.encode(strings)
-    dense = embeddings.to_dense().numpy()
-    svd = TruncatedSVD(n_components=300, random_state=42)
-    return svd.fit_transform(dense)
-
-
-def embed_lsi(strings: list[str]):
-    vectorizer = TfidfVectorizer(stop_words="english")
-    tfidf_matrix = vectorizer.fit_transform(strings)
-    # feature_names = np.array(vectorizer.get_feature_names_out())
-    n_components = 100  # latent dimensions (tune as needed)
-    svd = TruncatedSVD(n_components=n_components, random_state=42)
-    embeddings = svd.fit_transform(tfidf_matrix)
-    return embeddings
-
-
 def reduce_mds(embeddings):
     cosine_dist = pairwise_distances(embeddings, metric="cosine")
     mds = MDS(
@@ -96,65 +47,6 @@ def reduce_mds(embeddings):
     )
     embeddings_2d = mds.fit_transform(cosine_dist)
     return embeddings_2d
-
-
-def reduce_umap(embeddings):
-    reducer = umap.UMAP(n_neighbors=5, min_dist=0.3, random_state=42)
-    embeddings_2d = reducer.fit_transform(embeddings)
-    return embeddings_2d
-
-
-def cluster_hdbscan(embeddings):
-    clusterer = HDBSCAN(
-        min_cluster_size=3,
-        metric="cosine",
-    )
-    labels = clusterer.fit_predict(embeddings)
-    # keywords_per_cluster = get_top_keywords(tfidf_matrix, labels, feature_names, top_n=5)
-    return labels
-
-
-def show_plot(titles: list[str], labels, positions, title):
-    fig, ax = plt.subplots()
-
-    # Use a colormap, but assign gray to noise points (-1)
-    palette = plt.cm.get_cmap("tab10", len(set(labels)))
-    colors = [palette(l) if l != -1 else (0.7, 0.7, 0.7, 0.5) for l in labels]
-
-    scatter = plt.scatter(
-        positions[:, 0], positions[:, 1], c=colors, s=80, alpha=0.8, edgecolors="k"
-    )
-
-    annot = ax.annotate(
-        "",
-        xy=(0, 0),
-        xytext=(20, 20),
-        textcoords="offset points",
-        arrowprops=dict(arrowstyle="->"),
-    )
-    annot.set_visible(False)
-
-    plt.title(title)
-
-    def hover(event):
-        vis = annot.get_visible()
-        if event.inaxes == ax:
-            contains, index = scatter.contains(event)
-            if contains:
-                pos = scatter.get_offsets()[index["ind"][0]]  # type: ignore
-                annot.xy = pos  # type: ignore
-                annot.set_text(titles[index["ind"][0]])
-                annot.set_visible(True)
-                fig.canvas.draw_idle()
-            else:
-                if vis:
-                    annot.set_visible(False)
-                    fig.canvas.draw_idle()
-
-    fig.canvas.mpl_connect("motion_notify_event", hover)
-    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
-    plt.savefig(f"./issues_{formatted_datetime}.png", dpi=300)
-    plt.show()
 
 
 def use_bertopic(docs: list[str], project_name):
@@ -224,9 +116,13 @@ def use_bertopic(docs: list[str], project_name):
 
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
 
-    linkage_function = lambda x: sch.linkage(x, 'single', optimal_ordering=True)
-    hierarchical_topics = topic_model.hierarchical_topics(docs, linkage_function=linkage_function)
-    fig_hierarchy = topic_model.visualize_hierarchy(hierarchical_topics=hierarchical_topics)
+    linkage_function = lambda x: sch.linkage(x, "single", optimal_ordering=True)
+    hierarchical_topics = topic_model.hierarchical_topics(
+        docs, linkage_function=linkage_function
+    )
+    fig_hierarchy = topic_model.visualize_hierarchy(
+        hierarchical_topics=hierarchical_topics
+    )
     fig_hierarchy.write_html(f"./hierarchy_{project_name}_{formatted_datetime}.html")
 
     fig = topic_model.visualize_documents(
@@ -240,14 +136,6 @@ def use_bertopic(docs: list[str], project_name):
     fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
     topics = [combined_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
     return (reduced_embeddings, topics)
-
-
-# Print cluster assignments with keywords
-# for cluster_id, keywords in keywords_per_cluster.items():
-#     print(f"Cluster {cluster_id}: {', '.join(keywords)}")
-#     for name, label in zip(issue_titles, labels):
-#         if label == cluster_id:
-#             print(f"   - {name}")
 
 
 def write_topics(
@@ -300,23 +188,33 @@ def get_nearest_neighbor_distances(
     return (distances[0:, 1], indices[0:, 1])
 
 
-project_name = "stable diffusion"
-issues_filename = "datasets/stable-diffusion.json"
-ids, docs = read_issues(issues_filename, project_name)
-# embeddings = embed_sbert(issue_titles)
-# positions = reduce_umap(embeddings)
-# labels = cluster_hdbscan(embeddings)
-# show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
-positions, topics = use_bertopic(docs, project_name)
-distances, indices = get_nearest_neighbor_distances(positions)
-write_topics(ids, positions, topics, indices, distances, project_name)
+def main():
+    args_parser = argparse.ArgumentParser(prog="ritgard")
+    args_parser.add_argument("project_name")
+    args_parser.add_argument("data_path")
+    args = args_parser.parse_args()
 
-min_distance = np.min(distances)
-max_distance = np.max(distances)
-avg_distance = np.mean(distances)
-med_distance = np.median(distances)
+    project_name: str = args.project_name
+    data_path: str = args.data_path
+    ids, docs = read_issues(data_path, project_name)
+    # embeddings = embed_sbert(issue_titles)
+    # positions = reduce_umap(embeddings)
+    # labels = cluster_hdbscan(embeddings)
+    # show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
+    positions, topics = use_bertopic(docs, project_name)
+    distances, indices = get_nearest_neighbor_distances(positions)
+    write_topics(ids, positions, topics, indices, distances, project_name)
 
-print(f"Min nearest neighbor distance: {min_distance}")
-print(f"Max nearest neighbor distance: {max_distance}")
-print(f"Average nearest neighbor distance: {avg_distance}")
-print(f"Median nearest neighbor distance: {med_distance}")
+    min_distance = np.min(distances)
+    max_distance = np.max(distances)
+    avg_distance = np.mean(distances)
+    med_distance = np.median(distances)
+
+    print(f"Min nearest neighbor distance: {min_distance}")
+    print(f"Max nearest neighbor distance: {max_distance}")
+    print(f"Average nearest neighbor distance: {avg_distance}")
+    print(f"Median nearest neighbor distance: {med_distance}")
+
+
+if __name__ == "__main__":
+    main()

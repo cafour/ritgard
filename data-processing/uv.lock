@@ -3,6 +3,15 @@ revision = 3
 requires-python = ">=3.13"
 
 [[package]]
+name = "benchmark-imports"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/84/571c49b3dfd3bcc693cb373940a15c376be5794cebf273469486dae2be87/benchmark-imports-1.0.0.tar.gz", hash = "sha256:630892f436b1925325d701d990b9504629c7f53532ff361ec93f1b4ad4f32ff0", size = 202617, upload-time = "2022-03-24T12:53:39.411Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/12/0a/dd95ce6e26297f292b51a7da5307f75fddf9039fe842c14d806f36341032/benchmark_imports-1.0.0-py3-none-any.whl", hash = "sha256:0162e1071c17d092528743bc685cef4c203ceecf35e58ea4c48ddf88a3aebefa", size = 7269, upload-time = "2022-03-24T12:53:35.819Z" },
+]
+
+[[package]]
 name = "bertopic"
 version = "0.17.3"
 source = { registry = "https://pypi.org/simple" }
@@ -944,6 +953,11 @@ dependencies = [
     { name = "umap-learn" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "benchmark-imports" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "bertopic", specifier = ">=0.17.3" },
@@ -951,6 +965,9 @@ requires-dist = [
     { name = "sentence-transformers", specifier = ">=5.1.1" },
     { name = "umap-learn", specifier = ">=0.5.9.post2" },
 ]
+
+[package.metadata.requires-dev]
+dev = [{ name = "benchmark-imports", specifier = ">=1.0.0" }]
 
 [[package]]
 name = "safetensors"

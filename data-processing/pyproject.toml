@@ -9,3 +9,8 @@ dependencies = [
     "sentence-transformers>=5.1.1",
     "umap-learn>=0.5.9.post2",
 ]
+
+[dependency-groups]
+dev = [
+    "benchmark-imports>=1.0.0",
+]
