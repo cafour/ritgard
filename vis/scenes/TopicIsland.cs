@@ -102,6 +102,12 @@ public partial class TopicIsland : Node3D
         var mesher = new VoxelMesherBlocky();
         mesher.Library = Library;
         var mesh = mesher.BuildMesh(buffer.Data, [Material]);
+        if (mesh is null)
+        {
+            GD.PushWarning($"Topic island '{Topic.Title}' did not produce a mesh.");
+            return;
+        }
+
         shape.SetFaces(mesh.GetFaces());
         _.Mesh.Mesh = mesh;
         _.Mesh.Position = bbox.Position;
