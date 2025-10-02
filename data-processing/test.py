@@ -20,7 +20,6 @@ from bertopic.representation import PartOfSpeech
 from bertopic.representation import MaximalMarginalRelevance
 from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
-import transformers
 from torch import bfloat16
 from scipy.cluster import hierarchy as sch
 
