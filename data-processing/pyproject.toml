@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "The data-processing bits of Ritgard."
 requires-python = ">=3.13"
 dependencies = [
-    "bertopic>=0.17.3",
+    "bertopic[spacy]>=0.17.3",
+    "en-core-web-sm",
     "matplotlib>=3.10.6",
     "sentence-transformers>=5.1.1",
     "umap-learn>=0.5.9.post2",
@@ -14,3 +15,6 @@ dependencies = [
 dev = [
     "benchmark-imports>=1.0.0",
 ]
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }

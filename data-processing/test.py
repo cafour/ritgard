@@ -16,6 +16,7 @@ from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
 from scipy.cluster import hierarchy as sch
 import argparse
+from pathlib import Path
 
 
 def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]:
@@ -35,6 +36,7 @@ def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]
             doc = doc.lower().replace(project_name, "")
             docs.append(doc)
     return (ids, docs)
+
 
 def reduce_mds(embeddings):
     cosine_dist = pairwise_distances(embeddings, metric="cosine")
@@ -123,7 +125,9 @@ def use_bertopic(docs: list[str], project_name):
     fig_hierarchy = topic_model.visualize_hierarchy(
         hierarchical_topics=hierarchical_topics
     )
-    fig_hierarchy.write_html(f"./hierarchy_{project_name}_{formatted_datetime}.html")
+    fig_hierarchy.write_html(
+        f"./out/hierarchy_{project_name}_{formatted_datetime}.html"
+    )
 
     fig = topic_model.visualize_documents(
         docs,
@@ -133,7 +137,7 @@ def use_bertopic(docs: list[str], project_name):
         hide_annotations=True,
         title=project_name,
     )
-    fig.write_html(f"./issues_{project_name}_{formatted_datetime}.html")
+    fig.write_html(f"./out/issues_{project_name}_{formatted_datetime}.html")
     topics = [combined_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
     return (reduced_embeddings, topics)
 
@@ -148,7 +152,7 @@ def write_topics(
 ):
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
     with open(
-        f"topics_{project_name}_{formatted_datetime}.csv",
+        f"./out/topics_{project_name}_{formatted_datetime}.csv",
         "w",
         encoding="utf8",
         newline="",
@@ -193,6 +197,8 @@ def main():
     args_parser.add_argument("project_name")
     args_parser.add_argument("data_path")
     args = args_parser.parse_args()
+    
+    Path("./out").mkdir(exist_ok=True)
 
     project_name: str = args.project_name
     data_path: str = args.data_path
