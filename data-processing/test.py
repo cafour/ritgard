@@ -12,12 +12,14 @@ from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 from bertopic.representation import PartOfSpeech
 from bertopic.representation import MaximalMarginalRelevance
+from bertopic.representation import TextGeneration
 from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
 from scipy.cluster import hierarchy as sch
 import argparse
 from pathlib import Path
 import torch
+import transformers
 
 
 def read_issues(filename: str) -> tuple[list[str], list[str]]:
@@ -52,6 +54,64 @@ def reduce_mds(embeddings):
     return embeddings_2d
 
 
+def prepare_llm():
+    model_id = "meta-llama/Llama-2-7b-chat-hf"
+    bnb_config = transformers.BitsAndBytesConfig(
+        load_in_4bit=True,  # 4-bit quantization
+        bnb_4bit_quant_type='nf4',  # Normalized float 4
+        bnb_4bit_use_double_quant=True,  # Second quantization after the first
+        bnb_4bit_compute_dtype=torch.bfloat16  # Computation type
+    )
+    tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
+    model = transformers.AutoModelForCausalLM.from_pretrained(
+        model_id,
+        trust_remote_code=True,
+        quantization_config=bnb_config,
+        device_map='auto',
+    )
+    model.eval()
+    generator = transformers.pipeline(
+        model=model, tokenizer=tokenizer,
+        task='text-generation',
+        temperature=0.1,
+        max_new_tokens=500,
+        repetition_penalty=1.1
+    )
+    
+    system_prompt = """
+    <s>[INST] <<SYS>>
+    You are a helpful, respectful and honest assistant for labeling topics of GitHub issues.
+    <</SYS>>
+    """
+    
+    example_prompt = """
+    I have a topic that contains the following documents:
+    - Traditional diets in most cultures were primarily plant-based with a little meat on top, but with the rise of industrial style meat production and factory farming, meat has become a staple food.
+    - Meat, but especially beef, is the word food in terms of emissions.
+    - Eating meat doesn't make you a bad person, not eating meat doesn't make you a good one.
+
+    The topic is described by the following keywords: 'meat, beef, eat, eating, emissions, steak, food, health, processed, chicken'.
+
+    Based on the information about the topic above, please create a short label of this topic. Make sure you to only return the label and nothing more. Don't use the word 'issue' as it's redundant.
+
+    [/INST] Environmental impacts of eating meat
+    """
+
+    main_prompt = """
+    [INST]
+    I have a topic that contains the following documents:
+    [DOCUMENTS]
+
+    The topic is described by the following keywords: '[KEYWORDS]'.
+
+    Based on the information about the topic above, please create a short label of this topic. Make sure you to only return the label and nothing more. Don't use the word 'issue' as it's redundant.
+    [/INST]
+    """
+    
+    prompt = system_prompt + example_prompt + main_prompt
+
+    return (generator, prompt)
+
 def use_bertopic(docs: list[str], project_name):
     embedding_model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
     embeddings = embedding_model.encode(docs, show_progress_bar=True)
@@ -65,15 +125,18 @@ def use_bertopic(docs: list[str], project_name):
         prediction_data=True,
     )
     vectorizer_model = CountVectorizer(
-        stop_words="english", min_df=2, ngram_range=(1, 2)
+        stop_words="english", min_df=10, ngram_range=(1, 2)
     )
     ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
     keybert_model = KeyBERTInspired()
+
+    llm, prompt = prepare_llm()
 
     representation_model = {
         "KeyBERT": keybert_model,
         "POS": PartOfSpeech("en_core_web_sm"),
         "MMS": MaximalMarginalRelevance(diversity=0.5),
+        "LLM": TextGeneration(llm, prompt=prompt),
     }
     topic_model = BERTopic(
         embedding_model=embedding_model,
@@ -107,6 +170,10 @@ def use_bertopic(docs: list[str], project_name):
         topic: " ".join(list(zip(*values))[0][:3])
         for topic, values in topic_model.topic_aspects_["MMS"].items()
     }
+    llm_labels = {
+        topic: values[0][0].strip()
+        for topic, values in topic_model.topic_aspects_["LLM"].items()
+    }
     combined_labels = {
         topic: keybert_labels[topic]
         + " | "
@@ -115,7 +182,7 @@ def use_bertopic(docs: list[str], project_name):
         + mms_labels[topic]
         for topic in keybert_labels.keys()
     }
-    topic_model.set_topic_labels(pos_labels)
+    topic_model.set_topic_labels(llm_labels)
 
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
 
@@ -139,7 +206,7 @@ def use_bertopic(docs: list[str], project_name):
         title=project_name,
     )
     fig.write_html(f"./out/issues_{project_name}_{formatted_datetime}.html")
-    topics = [combined_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
+    topics = [llm_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
     return (reduced_embeddings, topics)
 
 

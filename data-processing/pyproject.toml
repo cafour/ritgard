@@ -4,17 +4,21 @@ version = "0.1.0"
 description = "The data-processing bits of Ritgard."
 requires-python = ">=3.13"
 dependencies = [
+    "accelerate>=1.10.1",
     "bertopic[spacy]>=0.17.3",
+    "bitsandbytes>=0.48.1",
     "en-core-web-sm",
     "matplotlib>=3.10.6",
     "plotly==5.24.1",
     "sentence-transformers>=5.1.1",
+    "transformers>=4.56.2",
     "umap-learn>=0.5.9.post2",
 ]
 
 [dependency-groups]
 dev = [
     "benchmark-imports>=1.0.0",
+    "huggingface-hub[cli]>=0.35.3",
 ]
 
 [tool.uv.sources]

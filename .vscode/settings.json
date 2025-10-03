@@ -1,3 +1,4 @@
 {
-    "python.defaultInterpreterPath": "data-processing/.venv/Scripts/python.exe"
+    "python.defaultInterpreterPath": "${workspaceFolder}/data-processing/.venv/bin/python",
+    "python-envs.pythonProjects": []
 }
