@@ -17,9 +17,10 @@ from hdbscan import HDBSCAN
 from scipy.cluster import hierarchy as sch
 import argparse
 from pathlib import Path
+import torch
 
 
-def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]:
+def read_issues(filename: str) -> tuple[list[str], list[str]]:
     print("Reading " + filename)
     ids = []
     docs = []
@@ -32,8 +33,8 @@ def read_issues(filename: str, project_name: str) -> tuple[list[str], list[str]]
             if "Labels" in issue and issue["Labels"] != None:
                 for label in issue["Labels"]:
                     doc += f"[{label}] "
-            doc += issue["PlainText"]
-            doc = doc.lower().replace(project_name, "")
+            doc += issue["Title"]
+            # doc = doc.lower().replace(project_name, "")
             docs.append(doc)
     return (ids, docs)
 
@@ -52,7 +53,7 @@ def reduce_mds(embeddings):
 
 
 def use_bertopic(docs: list[str], project_name):
-    embedding_model = SentenceTransformer("all-distilroberta-v1")
+    embedding_model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
     embeddings = embedding_model.encode(docs, show_progress_bar=True)
     umap_model = umap.UMAP(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
@@ -66,7 +67,7 @@ def use_bertopic(docs: list[str], project_name):
     vectorizer_model = CountVectorizer(
         stop_words="english", min_df=2, ngram_range=(1, 2)
     )
-    ctfidf_model = ClassTfidfTransformer()
+    ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
     keybert_model = KeyBERTInspired()
 
     representation_model = {
@@ -197,16 +198,30 @@ def main():
     args_parser.add_argument("project_name")
     args_parser.add_argument("data_path")
     args = args_parser.parse_args()
-    
+
     Path("./out").mkdir(exist_ok=True)
 
     project_name: str = args.project_name
     data_path: str = args.data_path
-    ids, docs = read_issues(data_path, project_name)
-    # embeddings = embed_sbert(issue_titles)
-    # positions = reduce_umap(embeddings)
-    # labels = cluster_hdbscan(embeddings)
-    # show_plot(issue_titles, labels, positions, "DotVVM Issues (SBERT + UMAP + HDBSCAN)")
+    ids, docs = read_issues(data_path)
+
+    current_gpu = -1
+    current_gpu_free_memory = 0
+    for i in range(0, torch.cuda.device_count()):
+        memory = torch.cuda.mem_get_info(i)
+        print(
+            f"[GPU {i}] {torch.cuda.get_device_name(i)}: {memory[0]} free / {memory[1]} total"
+        )
+        free_memory = memory[0] / memory[1]
+        if free_memory > current_gpu_free_memory:
+            current_gpu = i
+            current_gpu_free_memory = free_memory
+    if current_gpu == -1:
+        raise RuntimeError("No CUDA device detected")
+    torch.cuda.set_device(current_gpu)
+    torch.cuda.empty_cache()
+    print(f"Selected GPU {current_gpu}")
+
     positions, topics = use_bertopic(docs, project_name)
     distances, indices = get_nearest_neighbor_distances(positions)
     write_topics(ids, positions, topics, indices, distances, project_name)
