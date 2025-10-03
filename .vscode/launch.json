@@ -54,7 +54,6 @@
             "request": "launch",
             "program": "${workspaceFolder}/data-processing/test.py",
             "args": [
-                "lume",
                 "../console/lume_2025-10-02_13-33-34.json"
             ],
             "console": "integratedTerminal",

@@ -4,8 +4,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neighbors import NearestNeighbors
 from sentence_transformers import SentenceTransformer
 import umap.umap_ as umap
-import csv
-import json
 import numpy as np
 from datetime import datetime
 from bertopic import BERTopic
@@ -20,22 +18,89 @@ import argparse
 from pathlib import Path
 import torch
 import transformers
+import logging
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_pascal
+
+log = logging.getLogger("data-processing")
 
 
-def read_issues(filename: str) -> tuple[list[str], list[str]]:
-    print("Reading " + filename)
+class DocumentItemComment(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal)
+
+    body: str | None = None
+    plain_text: str | None = None
+
+
+class DocumentItem(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal)
+
+    id: int
+    title: str
+    labels: list[str] | None = None
+    body: str | None = None
+    plain_text: str | None = None
+    comments: list[DocumentItemComment] | None = None
+
+
+class Repository(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal)
+
+    id: int
+    owner: str
+    name: str
+
+
+class MiningResult(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal)
+
+    issues: dict[int, DocumentItem] | None = None
+    pull_requests: dict[int, DocumentItem] | None = None
+    repository: Repository
+
+
+class Topic(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal)
+
+    name: str
+    keywords: list[str]
+
+
+class TopicItem(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal)
+
+    id: int
+    x: float
+    y: float
+    topic_id: int
+
+
+class TopicModellingResult(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal)
+
+    topics: dict[int, Topic]
+    items: dict[int, TopicItem]
+
+
+def read_mining_result(filename: str) -> MiningResult:
+    log.info(f"Reading data from '{filename}'")
+    with open(filename, "r", encoding="utf8") as json_file:
+        json = json_file.read()
+        return MiningResult.model_validate_json(json)
+
+
+def get_documents(data: MiningResult) -> tuple[list[int], list[str]]:
+    log.info(f"Preparing documents for '{data.repository.owner}/{data.repository.name}'")
     ids = []
     docs = []
-    with open(filename, "r", encoding="utf8") as json_file:
-        data = json.load(json_file)
-        for issue_id in data["Issues"]:
-            issue = data["Issues"][issue_id]
-            ids.append(issue["Id"])
+    if data.issues is not None:
+        for issue in data.issues.values():
+            ids.append(issue.id)
             doc = ""
-            if "Labels" in issue and issue["Labels"] != None:
-                for label in issue["Labels"]:
+            if issue.labels != None:
+                for label in issue.labels:
                     doc += f"[{label}] "
-            doc += issue["Title"]
+            doc += issue.title
             # doc = doc.lower().replace(project_name, "")
             docs.append(doc)
     return (ids, docs)
@@ -58,32 +123,33 @@ def prepare_llm():
     model_id = "meta-llama/Llama-2-7b-chat-hf"
     bnb_config = transformers.BitsAndBytesConfig(
         load_in_4bit=True,  # 4-bit quantization
-        bnb_4bit_quant_type='nf4',  # Normalized float 4
+        bnb_4bit_quant_type="nf4",  # Normalized float 4
         bnb_4bit_use_double_quant=True,  # Second quantization after the first
-        bnb_4bit_compute_dtype=torch.bfloat16  # Computation type
+        bnb_4bit_compute_dtype=torch.bfloat16,  # Computation type
     )
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_id,
         trust_remote_code=True,
         quantization_config=bnb_config,
-        device_map='auto',
+        device_map="auto",
     )
     model.eval()
     generator = transformers.pipeline(
-        model=model, tokenizer=tokenizer,
-        task='text-generation',
+        model=model,
+        tokenizer=tokenizer,
+        task="text-generation",
         temperature=0.1,
         max_new_tokens=500,
-        repetition_penalty=1.1
+        repetition_penalty=1.1,
     )
-    
+
     system_prompt = """
     <s>[INST] <<SYS>>
     You are a helpful, respectful and honest assistant for labeling topics of GitHub issues.
     <</SYS>>
     """
-    
+
     example_prompt = """
     I have a topic that contains the following documents:
     - Traditional diets in most cultures were primarily plant-based with a little meat on top, but with the rise of industrial style meat production and factory farming, meat has become a staple food.
@@ -107,10 +173,11 @@ def prepare_llm():
     Based on the information about the topic above, please create a short label of this topic. Make sure you to only return the label and nothing more. Don't use the word 'issue' as it's redundant.
     [/INST]
     """
-    
+
     prompt = system_prompt + example_prompt + main_prompt
 
     return (generator, prompt)
+
 
 def use_bertopic(docs: list[str], project_name):
     embedding_model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
@@ -261,22 +328,23 @@ def get_nearest_neighbor_distances(
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
+
     args_parser = argparse.ArgumentParser(prog="ritgard")
-    args_parser.add_argument("project_name")
     args_parser.add_argument("data_path")
     args = args_parser.parse_args()
 
     Path("./out").mkdir(exist_ok=True)
 
-    project_name: str = args.project_name
-    data_path: str = args.data_path
-    ids, docs = read_issues(data_path)
+    data = read_mining_result(args.data_path)
+    project_name = data.repository.name
+    ids, docs = get_documents(data)
 
     current_gpu = -1
     current_gpu_free_memory = 0
     for i in range(0, torch.cuda.device_count()):
         memory = torch.cuda.mem_get_info(i)
-        print(
+        log.info(
             f"[GPU {i}] {torch.cuda.get_device_name(i)}: {memory[0]} free / {memory[1]} total"
         )
         free_memory = memory[0] / memory[1]
@@ -287,7 +355,7 @@ def main():
         raise RuntimeError("No CUDA device detected")
     torch.cuda.set_device(current_gpu)
     torch.cuda.empty_cache()
-    print(f"Selected GPU {current_gpu}")
+    log.info(f"Selected GPU {current_gpu}")
 
     positions, topics = use_bertopic(docs, project_name)
     distances, indices = get_nearest_neighbor_distances(positions)
@@ -298,10 +366,10 @@ def main():
     avg_distance = np.mean(distances)
     med_distance = np.median(distances)
 
-    print(f"Min nearest neighbor distance: {min_distance}")
-    print(f"Max nearest neighbor distance: {max_distance}")
-    print(f"Average nearest neighbor distance: {avg_distance}")
-    print(f"Median nearest neighbor distance: {med_distance}")
+    log.info(f"Min nearest neighbor distance: {min_distance}")
+    log.info(f"Max nearest neighbor distance: {max_distance}")
+    log.info(f"Average nearest neighbor distance: {avg_distance}")
+    log.info(f"Median nearest neighbor distance: {med_distance}")
 
 
 if __name__ == "__main__":
