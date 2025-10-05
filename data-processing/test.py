@@ -1,3 +1,4 @@
+from typing import Mapping
 from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
 from sklearn.feature_extraction.text import CountVectorizer
@@ -18,19 +19,27 @@ import torch
 import logging
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_pascal
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS as SKLEARN_STOP_WORDS
+import nltk
+nltk.download("stopwords")
+from nltk.corpus import stopwords as nltk_stopwords
+
+STOP_WORDS = list(set(nltk_stopwords.words("english")).union(set(SKLEARN_STOP_WORDS)))
 
 log = logging.getLogger("data-processing")
 
 
 class DocumentItemComment(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal)
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
 
     body: str | None = None
     plain_text: str | None = None
 
 
 class DocumentItem(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal)
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
 
     id: int
     title: str
@@ -41,7 +50,8 @@ class DocumentItem(BaseModel):
 
 
 class Repository(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal)
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
 
     id: int
     owner: str
@@ -49,7 +59,8 @@ class Repository(BaseModel):
 
 
 class MiningResult(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal)
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
 
     issues: dict[int, DocumentItem] | None = None
     pull_requests: dict[int, DocumentItem] | None = None
@@ -57,14 +68,15 @@ class MiningResult(BaseModel):
 
 
 class Topic(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal)
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
 
-    name: str
-    keywords: list[tuple[str, float]]
+    representations: dict[str, list[tuple[str, float]]]
 
 
 class TopicItem(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal)
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
 
     id: int
     x: float
@@ -73,7 +85,8 @@ class TopicItem(BaseModel):
 
 
 class TopicModellingResult(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal)
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
 
     topics: dict[int, Topic]
     items: dict[int, TopicItem]
@@ -176,8 +189,7 @@ def prepare_llm():
     """
 
     prompt = system_prompt + example_prompt + main_prompt
-
-    return (generator, prompt)
+    return generator, prompt
 
 
 def use_bertopic(docs: list[str], project_name):
@@ -196,18 +208,18 @@ def use_bertopic(docs: list[str], project_name):
         prediction_data=True,
     )
     vectorizer_model = CountVectorizer(
-        stop_words="english", min_df=10, ngram_range=(1, 2)
+        stop_words=STOP_WORDS, ngram_range=(1, 1)
     )
     ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
     keybert_model = KeyBERTInspired()
 
-    llm, prompt = prepare_llm()
+    # llm, prompt = prepare_llm()
 
     representation_model = {
         "KeyBERT": keybert_model,
         "POS": PartOfSpeech("en_core_web_sm"),
         "MMS": MaximalMarginalRelevance(diversity=0.5),
-        "LLM": TextGeneration(llm, prompt=prompt),
+        # "LLM": TextGeneration(llm, prompt=prompt),
     }
     topic_model = BERTopic(
         embedding_model=embedding_model,
@@ -228,32 +240,6 @@ def use_bertopic(docs: list[str], project_name):
         reduction_umap.fit_transform(embeddings)
     )  # type: ignore
     # reduced_embeddings = reduce_mds(topic_model.umap_model.transform(embeddings))
-
-    keybert_labels = {
-        topic: "; ".join(list(zip(*values))[0][:3])
-        for topic, values in topic_model.topic_aspects_["KeyBERT"].items()
-    }
-    pos_labels = {
-        topic: " ".join(list(zip(*values))[0][:3])
-        for topic, values in topic_model.topic_aspects_["POS"].items()
-    }
-    mms_labels = {
-        topic: " ".join(list(zip(*values))[0][:3])
-        for topic, values in topic_model.topic_aspects_["MMS"].items()
-    }
-    llm_labels = {
-        topic: values[0][0].strip()
-        for topic, values in topic_model.topic_aspects_["LLM"].items()
-    }
-    combined_labels = {
-        topic: keybert_labels[topic]
-        + " | "
-        + pos_labels[topic]
-        + " | "
-        + mms_labels[topic]
-        for topic in keybert_labels.keys()
-    }
-    topic_model.set_topic_labels(llm_labels)
 
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
 
@@ -277,68 +263,48 @@ def use_bertopic(docs: list[str], project_name):
         title=project_name,
     )
     fig.write_html(f"./out/issues_{project_name}_{formatted_datetime}.html")
-    topics = [llm_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
-    return (topic_model, reduced_embeddings)
+    return topic_model, reduced_embeddings
 
 
 def write_topics(
-    ids: list[int],
-    positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
-    topic_model: BERTopic,
-    neighbors: np.ndarray[tuple[int], np.dtype[np.int32]],
-    neighbor_distances: np.ndarray[tuple[int], np.dtype[np.float32]],
-    project_name: str,
+        ids: list[int],
+        positions: np.ndarray[tuple[int, int], np.dtype[np.float64]],
+        topic_model: BERTopic,
+        neighbors: np.ndarray[tuple[int], np.dtype[np.int32]],
+        neighbor_distances: np.ndarray[tuple[int], np.dtype[np.float32]],
+        project_name: str,
 ):
     topics = {}
-    for topic_id, keywords in topic_model.topic_representations_.items():  # type: ignore
-        names = topic_model.get_topic(topic_id, full=True)
-        best_name = names["LLM"] or names["KeyBERT"] or topic_model.topic_labels_[topic_id]
-        topics[topic_id] = Topic(
-            name=name, keywords=keywords
-        )
-    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
-    out_path = f"./out/topics_{project_name}_{formatted_datetime}.csv"
-    log.info(f"Writing data processing result to '{out_path}'")
+    for topic_id in topic_model.topic_representations_.keys():
+        # noinspection PyTypeChecker
+        full_info: Mapping[str, list[tuple[str, float]]] = topic_model.get_topic(topic_id, full=True)
+        representations = {method: [candidate for candidate in candidates if candidate[0] != ""] for
+                           (method, candidates) in full_info.items()}
+        topics[topic_id] = Topic(representations=representations)
 
-    with open(
-        out_path,
-        "w",
-        encoding="utf8",
-        newline="",
-    ) as file:
-        writer = csv.DictWriter(
-            file,
-            fieldnames=[
-                "Id",
-                "X",
-                "Y",
-                "Topic",
-                "NearestNeighbor",
-                "NearestNeighborDistance",
-            ],
-        )
-        writer.writeheader()
-        for id, pos, topic, nn, nn_dist in zip(
-            ids, positions, topics, neighbors, neighbor_distances
-        ):
-            writer.writerow(
-                {
-                    "Id": id,
-                    "X": pos[0],
-                    "Y": pos[1],
-                    "Topic": topic,
-                    "NearestNeighbor": nn,
-                    "NearestNeighborDistance": nn_dist,
-                }
-            )
+    topic_items = {}
+    for doc_id, pos, topic, nn, nn_dist in zip(ids, positions, topic_model.topics_, neighbors, neighbor_distances):
+        topic_items[doc_id] = TopicItem(id=doc_id, x=pos[0].item(), y=pos[1].item(), topic_id=topic)
+
+    result = TopicModellingResult(
+        topics=topics,
+        items=topic_items
+    )
+    json = result.model_dump_json()
+
+    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
+    out_path = f"./out/topics_{project_name}_{formatted_datetime}.json"
+    log.info(f"Writing data processing result to '{out_path}'")
+    with open(out_path, "w") as json_file:
+        json_file.write(json)
 
 
 def get_nearest_neighbor_distances(
-    positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
+        positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
 ):
     neighbors = NearestNeighbors(n_neighbors=2).fit(positions)
     distances, indices = neighbors.kneighbors(positions, n_neighbors=2)
-    return (distances[0:, 1], indices[0:, 1])
+    return distances[0:, 1], indices[0:, 1]
 
 
 def main():
@@ -366,10 +332,11 @@ def main():
             current_gpu = i
             current_gpu_free_memory = free_memory
     if current_gpu == -1:
-        raise RuntimeError("No CUDA device detected")
-    torch.cuda.set_device(current_gpu)
-    torch.cuda.empty_cache()
-    log.info(f"Selected GPU {current_gpu}")
+        log.warning("No CUDA device detected")
+    else:
+        torch.cuda.set_device(current_gpu)
+        torch.cuda.empty_cache()
+        log.info(f"Selected GPU {current_gpu}")
 
     topic_model, positions = use_bertopic(docs, project_name)
     distances, indices = get_nearest_neighbor_distances(positions)
