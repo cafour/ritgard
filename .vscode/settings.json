@@ -1,4 +1,6 @@
 {
+    // "python.defaultInterpreterPath": "data-processing/.venv/Scripts/python.exe",
     "python.defaultInterpreterPath": "${workspaceFolder}/data-processing/.venv/bin/python",
-    "python-envs.pythonProjects": []
+    "python-envs.pythonProjects": [],
+    "godotTools.lsp.autoReconnect.enabled": false
 }
