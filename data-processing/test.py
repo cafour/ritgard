@@ -2,8 +2,6 @@ from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.neighbors import NearestNeighbors
-from sentence_transformers import SentenceTransformer
-import umap.umap_ as umap
 import numpy as np
 from datetime import datetime
 from bertopic import BERTopic
@@ -17,7 +15,6 @@ from scipy.cluster import hierarchy as sch
 import argparse
 from pathlib import Path
 import torch
-import transformers
 import logging
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_pascal
@@ -63,7 +60,7 @@ class Topic(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal)
 
     name: str
-    keywords: list[str]
+    keywords: list[tuple[str, float]]
 
 
 class TopicItem(BaseModel):
@@ -90,7 +87,9 @@ def read_mining_result(filename: str) -> MiningResult:
 
 
 def get_documents(data: MiningResult) -> tuple[list[int], list[str]]:
-    log.info(f"Preparing documents for '{data.repository.owner}/{data.repository.name}'")
+    log.info(
+        f"Preparing documents for '{data.repository.owner}/{data.repository.name}'"
+    )
     ids = []
     docs = []
     if data.issues is not None:
@@ -120,6 +119,8 @@ def reduce_mds(embeddings):
 
 
 def prepare_llm():
+    import transformers
+
     model_id = "meta-llama/Llama-2-7b-chat-hf"
     bnb_config = transformers.BitsAndBytesConfig(
         load_in_4bit=True,  # 4-bit quantization
@@ -180,6 +181,9 @@ def prepare_llm():
 
 
 def use_bertopic(docs: list[str], project_name):
+    from sentence_transformers import SentenceTransformer
+    import umap.umap_ as umap
+
     embedding_model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
     embeddings = embedding_model.encode(docs, show_progress_bar=True)
     umap_model = umap.UMAP(
@@ -274,20 +278,30 @@ def use_bertopic(docs: list[str], project_name):
     )
     fig.write_html(f"./out/issues_{project_name}_{formatted_datetime}.html")
     topics = [llm_labels[topic] if topic != -1 else "" for topic in topic_model.topics_]  # type: ignore
-    return (reduced_embeddings, topics)
+    return (topic_model, reduced_embeddings)
 
 
 def write_topics(
-    ids: list[str],
+    ids: list[int],
     positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
-    topics: list[str],
+    topic_model: BERTopic,
     neighbors: np.ndarray[tuple[int], np.dtype[np.int32]],
     neighbor_distances: np.ndarray[tuple[int], np.dtype[np.float32]],
     project_name: str,
 ):
+    topics = {}
+    for topic_id, keywords in topic_model.topic_representations_.items():  # type: ignore
+        names = topic_model.get_topic(topic_id, full=True)
+        best_name = names["LLM"] or names["KeyBERT"] or topic_model.topic_labels_[topic_id]
+        topics[topic_id] = Topic(
+            name=name, keywords=keywords
+        )
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
+    out_path = f"./out/topics_{project_name}_{formatted_datetime}.csv"
+    log.info(f"Writing data processing result to '{out_path}'")
+
     with open(
-        f"./out/topics_{project_name}_{formatted_datetime}.csv",
+        out_path,
         "w",
         encoding="utf8",
         newline="",
@@ -357,9 +371,9 @@ def main():
     torch.cuda.empty_cache()
     log.info(f"Selected GPU {current_gpu}")
 
-    positions, topics = use_bertopic(docs, project_name)
+    topic_model, positions = use_bertopic(docs, project_name)
     distances, indices = get_nearest_neighbor_distances(positions)
-    write_topics(ids, positions, topics, indices, distances, project_name)
+    write_topics(ids, positions, topic_model, indices, distances, project_name)
 
     min_distance = np.min(distances)
     max_distance = np.max(distances)
