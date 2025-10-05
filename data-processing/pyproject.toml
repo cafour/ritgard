@@ -16,6 +16,8 @@ dependencies = [
     "umap-learn>=0.5.9.post2",
     "torch>=2.8.0",
     "nltk>=3.9.2",
+    "openai>=2.1.0",
+    "dotenv>=0.9.9",
 ]
 
 [dependency-groups]

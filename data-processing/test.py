@@ -10,6 +10,7 @@ from bertopic.representation import KeyBERTInspired
 from bertopic.representation import PartOfSpeech
 from bertopic.representation import MaximalMarginalRelevance
 from bertopic.representation import TextGeneration
+from bertopic.representation import OpenAI
 from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
 from scipy.cluster import hierarchy as sch
@@ -21,8 +22,14 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_pascal
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS as SKLEARN_STOP_WORDS
 import nltk
+
 nltk.download("stopwords")
 from nltk.corpus import stopwords as nltk_stopwords
+import openai
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 STOP_WORDS = list(set(nltk_stopwords.words("english")).union(set(SKLEARN_STOP_WORDS)))
 
@@ -215,11 +222,13 @@ def use_bertopic(docs: list[str], project_name):
 
     # llm, prompt = prepare_llm()
 
+    llm_client = openai.OpenAI(api_key=os.getenv("LLM_API_KEY"), base_url='https://chat.ai.e-infra.cz/api', timeout=60)
     representation_model = {
         "KeyBERT": keybert_model,
         "POS": PartOfSpeech("en_core_web_sm"),
         "MMS": MaximalMarginalRelevance(diversity=0.5),
         # "LLM": TextGeneration(llm, prompt=prompt),
+        "LLM": OpenAI(client=llm_client, model="gpt-oss-120b", generator_kwargs={"stop": "tetřev hlušec"})
     }
     topic_model = BERTopic(
         embedding_model=embedding_model,
