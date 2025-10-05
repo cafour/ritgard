@@ -9,7 +9,6 @@ from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 from bertopic.representation import PartOfSpeech
 from bertopic.representation import MaximalMarginalRelevance
-from bertopic.representation import TextGeneration
 from bertopic.representation import OpenAI
 from bertopic.vectorizers import ClassTfidfTransformer
 from hdbscan import HDBSCAN
@@ -89,6 +88,7 @@ class TopicItem(BaseModel):
     x: float
     y: float
     topic_id: int
+    probabilities: dict[int, float]
 
 
 class TopicModellingResult(BaseModel):
@@ -138,68 +138,7 @@ def reduce_mds(embeddings):
     return embeddings_2d
 
 
-def prepare_llm():
-    import transformers
-
-    model_id = "meta-llama/Llama-2-7b-chat-hf"
-    bnb_config = transformers.BitsAndBytesConfig(
-        load_in_4bit=True,  # 4-bit quantization
-        bnb_4bit_quant_type="nf4",  # Normalized float 4
-        bnb_4bit_use_double_quant=True,  # Second quantization after the first
-        bnb_4bit_compute_dtype=torch.bfloat16,  # Computation type
-    )
-    tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
-    model = transformers.AutoModelForCausalLM.from_pretrained(
-        model_id,
-        trust_remote_code=True,
-        quantization_config=bnb_config,
-        device_map="auto",
-    )
-    model.eval()
-    generator = transformers.pipeline(
-        model=model,
-        tokenizer=tokenizer,
-        task="text-generation",
-        temperature=0.1,
-        max_new_tokens=500,
-        repetition_penalty=1.1,
-    )
-
-    system_prompt = """
-    <s>[INST] <<SYS>>
-    You are a helpful, respectful and honest assistant for labeling topics of GitHub issues.
-    <</SYS>>
-    """
-
-    example_prompt = """
-    I have a topic that contains the following documents:
-    - Traditional diets in most cultures were primarily plant-based with a little meat on top, but with the rise of industrial style meat production and factory farming, meat has become a staple food.
-    - Meat, but especially beef, is the word food in terms of emissions.
-    - Eating meat doesn't make you a bad person, not eating meat doesn't make you a good one.
-
-    The topic is described by the following keywords: 'meat, beef, eat, eating, emissions, steak, food, health, processed, chicken'.
-
-    Based on the information about the topic above, please create a short label of this topic. Make sure you to only return the label and nothing more. Don't use the word 'issue' as it's redundant.
-
-    [/INST] Environmental impacts of eating meat
-    """
-
-    main_prompt = """
-    [INST]
-    I have a topic that contains the following documents:
-    [DOCUMENTS]
-
-    The topic is described by the following keywords: '[KEYWORDS]'.
-
-    Based on the information about the topic above, please create a short label of this topic. Make sure you to only return the label and nothing more. Don't use the word 'issue' as it's redundant.
-    [/INST]
-    """
-
-    prompt = system_prompt + example_prompt + main_prompt
-    return generator, prompt
-
-
-def use_bertopic(docs: list[str], project_name):
+def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
     from sentence_transformers import SentenceTransformer
     import umap.umap_ as umap
 
@@ -222,14 +161,19 @@ def use_bertopic(docs: list[str], project_name):
 
     # llm, prompt = prepare_llm()
 
-    llm_client = openai.OpenAI(api_key=os.getenv("LLM_API_KEY"), base_url='https://chat.ai.e-infra.cz/api', timeout=60)
     representation_model = {
         "KeyBERT": keybert_model,
         "POS": PartOfSpeech("en_core_web_sm"),
-        "MMS": MaximalMarginalRelevance(diversity=0.5),
-        # "LLM": TextGeneration(llm, prompt=prompt),
-        "LLM": OpenAI(client=llm_client, model="gpt-oss-120b", generator_kwargs={"stop": "tetřev hlušec"})
+        "MMS": MaximalMarginalRelevance(diversity=0.5)
     }
+    if use_metacentrum:
+        api_key = os.getenv("METACENTRUM_API_KEY")
+        if api_key is None:
+            raise RuntimeError("The METACENTRUM_API_KEY environment variable is not set.");
+        llm_client = openai.OpenAI(api_key=api_key, base_url='https://chat.ai.e-infra.cz/api', timeout=60)
+        # noinspection PyTypeChecker
+        representation_model["LLM"] = OpenAI(client=llm_client, model="qwen3-coder",
+                                             generator_kwargs={"stop": "tetřev hlušec"})
     topic_model = BERTopic(
         embedding_model=embedding_model,
         umap_model=umap_model,
@@ -239,16 +183,22 @@ def use_bertopic(docs: list[str], project_name):
         representation_model=representation_model,  # type: ignore
         top_n_words=10,
         verbose=True,
-        # calculate_probabilities=True
+        calculate_probabilities=True,
     )
-    _topics, probs = topic_model.fit_transform(docs, embeddings=embeddings)
+    topic_model.fit_transform(docs, embeddings=embeddings)
     reduction_umap = umap.UMAP(
         n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42
     )
-    reduced_embeddings: np.ndarray[tuple[int, int], np.dtype[np.float32]] = (
+    positions: np.ndarray[tuple[int, int], np.dtype[np.float32]] = (
         reduction_umap.fit_transform(embeddings)
-    )  # type: ignore
-    # reduced_embeddings = reduce_mds(topic_model.umap_model.transform(embeddings))
+    )
+
+    if "LLM" in topic_model.topic_aspects_:
+        llm_labels = {
+            topic: values[0][0].strip()
+            for topic, values in topic_model.topic_aspects_["LLM"].items()
+        }
+        topic_model.set_topic_labels(llm_labels)
 
     formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
 
@@ -266,13 +216,13 @@ def use_bertopic(docs: list[str], project_name):
     fig = topic_model.visualize_documents(
         docs,
         embeddings=embeddings,
-        reduced_embeddings=reduced_embeddings,  # type: ignore
+        reduced_embeddings=positions,  # type: ignore
         custom_labels=True,
         hide_annotations=True,
         title=project_name,
     )
     fig.write_html(f"./out/issues_{project_name}_{formatted_datetime}.html")
-    return topic_model, reduced_embeddings
+    return topic_model, positions
 
 
 def write_topics(
@@ -292,8 +242,10 @@ def write_topics(
         topics[topic_id] = Topic(representations=representations)
 
     topic_items = {}
-    for doc_id, pos, topic, nn, nn_dist in zip(ids, positions, topic_model.topics_, neighbors, neighbor_distances):
-        topic_items[doc_id] = TopicItem(id=doc_id, x=pos[0].item(), y=pos[1].item(), topic_id=topic)
+    for doc_id, pos, topic, probs in zip(ids, positions, topic_model.topics_, topic_model.probabilities_):
+        doc_probs = {index: probability for (index, probability) in enumerate(probs) if not np.isclose(probability, 0)}
+        topic_items[doc_id] = TopicItem(id=doc_id, x=pos[0].item(), y=pos[1].item(), topic_id=topic,
+                                        probabilities=doc_probs)
 
     result = TopicModellingResult(
         topics=topics,
@@ -321,6 +273,7 @@ def main():
 
     args_parser = argparse.ArgumentParser(prog="ritgard")
     args_parser.add_argument("data_path")
+    args_parser.add_argument("--llm", action="store_true")
     args = args_parser.parse_args()
 
     Path("./out").mkdir(exist_ok=True)
@@ -347,7 +300,7 @@ def main():
         torch.cuda.empty_cache()
         log.info(f"Selected GPU {current_gpu}")
 
-    topic_model, positions = use_bertopic(docs, project_name)
+    topic_model, positions = use_bertopic(docs, project_name, use_metacentrum=args.llm)
     distances, indices = get_nearest_neighbor_distances(positions)
     write_topics(ids, positions, topic_model, indices, distances, project_name)
 
