@@ -1,4 +1,4 @@
-[gd_resource type="VoxelBlockyLibrary" load_steps=12 format=3 uid="uid://cbghhwq48nb1x"]
+[gd_resource type="VoxelBlockyLibrary" load_steps=20 format=3 uid="uid://cbghhwq48nb1x"]
 
 [sub_resource type="VoxelBlockyModelEmpty" id="VoxelBlockyModelEmpty_80ftu"]
 resource_name = "air"
@@ -44,5 +44,37 @@ color = Color(0.121569, 0.239216, 0.188235, 1)
 resource_name = "water"
 color = Color(0.0196078, 0.0627451, 0.317647, 1)
 
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_ek263"]
+resource_name = "vis01"
+color = Color(0.866667, 0.517647, 0.321569, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_oy2o0"]
+resource_name = "vis02"
+color = Color(0.768627, 0.305882, 0.321569, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_gj7eh"]
+resource_name = "vis03"
+color = Color(0.505882, 0.447059, 0.701961, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_g50pg"]
+resource_name = "vis04"
+color = Color(0.576471, 0.470588, 0.376471, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_p0eyp"]
+resource_name = "vis05"
+color = Color(0.854902, 0.545098, 0.764706, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_3bf2p"]
+resource_name = "vis06"
+color = Color(0.54902, 0.54902, 0.54902, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_qmwbw"]
+resource_name = "vis07"
+color = Color(0.8, 0.72549, 0.454902, 1)
+
+[sub_resource type="VoxelBlockyModelCube" id="VoxelBlockyModelCube_5sb1r"]
+resource_name = "vis08"
+color = Color(0.392157, 0.709804, 0.803922, 1)
+
 [resource]
-models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_80ftu"), SubResource("VoxelBlockyModelCube_80ftu"), SubResource("VoxelBlockyModelCube_slcdn"), SubResource("VoxelBlockyModelCube_o2oqi"), SubResource("VoxelBlockyModelCube_508ry"), SubResource("VoxelBlockyModelCube_8fe22"), SubResource("VoxelBlockyModelCube_6qcw4"), SubResource("VoxelBlockyModelCube_7kxxd"), SubResource("VoxelBlockyModelCube_7yfqv"), SubResource("VoxelBlockyModelCube_letun"), SubResource("VoxelBlockyModelCube_jk2pl")])
+models = Array[VoxelBlockyModel]([SubResource("VoxelBlockyModelEmpty_80ftu"), SubResource("VoxelBlockyModelCube_80ftu"), SubResource("VoxelBlockyModelCube_slcdn"), SubResource("VoxelBlockyModelCube_o2oqi"), SubResource("VoxelBlockyModelCube_508ry"), SubResource("VoxelBlockyModelCube_8fe22"), SubResource("VoxelBlockyModelCube_6qcw4"), SubResource("VoxelBlockyModelCube_7kxxd"), SubResource("VoxelBlockyModelCube_7yfqv"), SubResource("VoxelBlockyModelCube_letun"), SubResource("VoxelBlockyModelCube_jk2pl"), SubResource("VoxelBlockyModelCube_ek263"), SubResource("VoxelBlockyModelCube_oy2o0"), SubResource("VoxelBlockyModelCube_gj7eh"), SubResource("VoxelBlockyModelCube_g50pg"), SubResource("VoxelBlockyModelCube_p0eyp"), SubResource("VoxelBlockyModelCube_3bf2p"), SubResource("VoxelBlockyModelCube_qmwbw"), SubResource("VoxelBlockyModelCube_5sb1r")])

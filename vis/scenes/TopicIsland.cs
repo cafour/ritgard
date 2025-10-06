@@ -16,6 +16,16 @@ public partial class TopicIsland : Node3D
     public const int GrassWidth = 1;
     public const int DirtWidth = 3;
     public const int StructureRadius = 3;
+    public static ImmutableArray<string> Palette = [
+        "vis01",
+        "vis02",
+        "vis03",
+        "vis04",
+        "vis05",
+        "vis06",
+        "vis07",
+        "vis08",
+    ];
 
     private ImmutableHashSet<long> itemIds;
     private ImmutableDictionary<long, Vector3> points;
@@ -100,7 +110,7 @@ public partial class TopicIsland : Node3D
                 buffer.FillArea(
                     new(x, height - GrassWidth, y),
                     new(x + 1, height, y + 1),
-                    Blocks.Grass
+                    Palette[Topic.Id % Palette.Length]
                 );
             }
         }
