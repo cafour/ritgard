@@ -2,7 +2,6 @@ from typing import Mapping
 from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.neighbors import NearestNeighbors
 import numpy as np
 from datetime import datetime
 from bertopic import BERTopic
@@ -157,8 +156,6 @@ def write_topics(
         ids: list[int],
         positions: np.ndarray[tuple[int, int], np.dtype[np.float64]],
         topic_model: BERTopic,
-        neighbors: np.ndarray[tuple[int], np.dtype[np.int32]],
-        neighbor_distances: np.ndarray[tuple[int], np.dtype[np.float32]],
         project_name: str,
 ):
     topics = {}
@@ -173,7 +170,7 @@ def write_topics(
     for doc_id, pos, topic, probs in zip(ids, positions, topic_model.topics_, topic_model.probabilities_):
         doc_probs = {index: probability for (index, probability) in enumerate(probs) if not np.isclose(probability, 0)}
         topic_items[doc_id] = dt.TopicItem(id=doc_id, x=pos[0].item(), y=pos[1].item(), topic_id=topic,
-                                        probabilities=doc_probs)
+                                           probabilities=doc_probs)
 
     result = dt.TopicModellingResult(
         topics=topics,
@@ -186,14 +183,6 @@ def write_topics(
     log.info(f"Writing data processing result to '{out_path}'")
     with open(out_path, "w") as json_file:
         json_file.write(json)
-
-
-def get_nearest_neighbor_distances(
-        positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
-):
-    neighbors = NearestNeighbors(n_neighbors=2).fit(positions)
-    distances, indices = neighbors.kneighbors(positions, n_neighbors=2)
-    return distances[0:, 1], indices[0:, 1]
 
 
 def main():
@@ -229,18 +218,7 @@ def main():
         log.info(f"Selected GPU {current_gpu}")
 
     topic_model, positions = use_bertopic(docs, project_name, use_metacentrum=args.llm)
-    distances, indices = get_nearest_neighbor_distances(positions)
-    write_topics(ids, positions, topic_model, indices, distances, project_name)
-
-    min_distance = np.min(distances)
-    max_distance = np.max(distances)
-    avg_distance = np.mean(distances)
-    med_distance = np.median(distances)
-
-    log.info(f"Min nearest neighbor distance: {min_distance}")
-    log.info(f"Max nearest neighbor distance: {max_distance}")
-    log.info(f"Average nearest neighbor distance: {avg_distance}")
-    log.info(f"Median nearest neighbor distance: {med_distance}")
+    write_topics(ids, positions, topic_model, project_name)
 
 
 if __name__ == "__main__":
