@@ -51,6 +51,9 @@ public partial class Overlord : Node
     [Export]
     public OptionButton DatasetDropdown { get; set; }
 
+    [Export]
+    public VoxelBlockyLibrary Library { get; set; }
+
     public int CurrentDataset { get; set; } = -1;
 
     public const int ByteLengthMappingMin = 3;
@@ -93,6 +96,8 @@ public partial class Overlord : Node
         rng = new RandomNumberGenerator();
 
         generatedNodesContainer = GetNode<Node>("GeneratedNodesContainer");
+
+        Library.Bake();
     }
 
     public override void _Ready()
