@@ -26,7 +26,7 @@ public partial class Overlord : Node
 
     [Export]
     public PackedScene TopicIslandScene { get; set; }
-    
+
     [Export]
     public PackedScene OutlierRockScene { get; set; }
 
@@ -64,10 +64,9 @@ public partial class Overlord : Node
     public Func<long, int> WordLengthMapping { get; private set; }
     public Func<long, int> TagCountMapping { get; private set; }
     public MiningResult MiningResult { get; private set; }
+    public TopicModellingResult TopicResult { get; private set; }
     public ImmutableDictionary<long, Issue> Data { get; private set; }
-    public ImmutableDictionary<string, Topic> Topics { get; private set; }
     public ImmutableDictionary<long, Vector3> Positions { get; private set; }
-    public ImmutableDictionary<long, string> IssueTopics { get; private set; }
     public DateTimeOffset MinDate { get; private set; }
     public DateTimeOffset MaxDate { get; private set; }
     public TimeSpan AvgIssueLength { get; private set; }
@@ -106,7 +105,7 @@ public partial class Overlord : Node
         DatasetDropdown.ItemSelected += i => ShowDataset((int)i);
         ShowDataset(0);
     }
-    
+
     private void ShowDataset(int index)
     {
         if (CurrentDataset == index)
@@ -122,7 +121,7 @@ public partial class Overlord : Node
             old.QueueFree();
             generatedNodesContainer.RemoveChild(old);
         }
-        
+
         var dataset = Datasets[index];
         MiningResult = Utils.ReadGodotJson<MiningResult>(dataset.DataFilePath);
         Data = MiningResult.Issues;
@@ -160,32 +159,31 @@ public partial class Overlord : Node
         //     TagsLengthMappingMax
         // ));
 
-        var issueTopics = Utils.ReadGodotCsv<IssueTopic>(dataset.PositionsFilePath);
-        IssueTopics = issueTopics.ToImmutableDictionary(
-            i => i.Id,
-            i => i.Topic
+        TopicResult = Utils.ReadGodotJson<TopicModellingResult>(dataset.TopicFilePath);
+        var bbox = new Rect2(
+            TopicResult.Items.Values.Min(p => (float)p.X),
+            TopicResult.Items.Values.Min(p => (float)p.Y),
+            Vector2.Zero
         );
-        var averageDistance = issueTopics.Average(i => i.NearestNeighborDistance);
-        var bbox = new Rect2(issueTopics.Min(p => (float)p.X), issueTopics.Min(p => (float)p.Y), Vector2.Zero);
-        foreach (var position in issueTopics)
+        foreach (var item in TopicResult.Items.Values)
         {
-            bbox = bbox.Expand(new Vector2((float)position.X, (float)position.Y));
+            bbox = bbox.Expand(new Vector2((float)item.X, (float)item.Y));
         }
         var center = bbox.GetCenter();
 
-        var magnification = StructureRadius / averageDistance;
         var heightFactor = (float)MaxTerrainHeight / Data.Values.Max(i => i.Events.Length);
-        Positions = issueTopics.ToImmutableDictionary(i => i.Id, i => new Vector3(
-            (float)((i.X - center.X) * magnification),
-            Mathf.Max(1f, Data[i.Id].Events.Length * heightFactor),
-            (float)((i.Y - center.Y) * magnification)
+        Positions = TopicResult.Items.ToImmutableDictionary(p => p.Key, p => new Vector3(
+            (float)(p.Value.X - center.X),
+            Mathf.Max(1f, Data[p.Value.Id].Events.Length * heightFactor),
+            (float)(p.Value.Y - center.Y)
         ));
-        Topics = issueTopics
-            .Where(i => !string.IsNullOrEmpty(i.Topic))
-            .GroupBy(i => i.Topic)
-            .ToImmutableDictionary(g => g.Key, g => new Topic(g.Key, g.Select(i => i.Id).ToImmutableHashSet()));
-        foreach (var topic in Topics.Values)
+        foreach (var (topicId, topic) in TopicResult.Topics)
         {
+            if (topicId == -1)
+            {
+                continue;
+            }
+
             var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
             topicIsland.Topic = topic;
             generatedNodesContainer.AddChild(topicIsland);
@@ -221,7 +219,7 @@ public partial class Overlord : Node
             instance.Position = position;
             generatedNodesContainer.AddChild(instance);
 
-            if (string.IsNullOrEmpty(IssueTopics[id]))
+            if (TopicResult.Items[id].TopicId == -1)
             {
                 var outlierRock = OutlierRockScene.Instantiate<OutlierRock>();
                 outlierRock.Height = Mathf.RoundToInt(position.Y);
@@ -365,7 +363,7 @@ public partial class Overlord : Node
             island.ToggleHighlight(true);
             currentIsland = island;
 
-            ItemDescriptionLabel.Text = $"The '{island.Topic.Title}' topic island";
+            ItemDescriptionLabel.Text = $"The '{island.Topic.GetPreferredTitle()}' topic island";
         }
         else if (parent is null)
         {
@@ -374,7 +372,7 @@ public partial class Overlord : Node
 
             currentIsland?.ToggleHighlight(false);
             currentIsland = null;
-            
+
             Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
             ItemDescriptionLabel.Text = DefaultHint;
         }
@@ -466,7 +464,7 @@ public partial class Overlord : Node
         var dateLength = MaxDate - MinDate;
         return (byte)Mathf.RoundToInt(Math.Clamp((date - MinDate) / dateLength * MaxTerrainHeight, 0.0, 255.0));
     }
-    
+
     private byte GetLevelForIssue(long id)
     {
         var issue = Data[id];

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Godot;
 using NetTopologySuite.Algorithm.Hull;
@@ -15,6 +16,9 @@ public partial class TopicIsland : Node3D
     public const int GrassWidth = 1;
     public const int DirtWidth = 3;
     public const int StructureRadius = 3;
+
+    private ImmutableHashSet<long> itemIds;
+    private ImmutableDictionary<long, Vector3> points;
 
     public Topic Topic { get; set; }
 
@@ -46,17 +50,20 @@ public partial class TopicIsland : Node3D
             throw new NullReferenceException("Topic is not set.");
         }
 
-        var points = Topic.Ids.Select(id => Overlord.Instance.Positions.GetValueOrDefault(id)).ToArray();
+        itemIds = [.. Overlord.Instance.TopicResult.Items
+            .Where(i => i.Value.TopicId == Topic.Id)
+            .Select(i => i.Value.Id)];
+        points = itemIds.ToImmutableDictionary(i => i, i => Overlord.Instance.Positions[i]);
 
         var startCorner = new Vector3(
-            points.Min(p => p.X) - SmoothRadius,
+            points.Values.Min(p => p.X) - SmoothRadius,
             0,
-            points.Min(p => p.Z) - SmoothRadius
+            points.Values.Min(p => p.Z) - SmoothRadius
         );
         var endCorner = new Vector3(
-            points.Max(p => p.X) + SmoothRadius,
-            points.Max(p => p.Y),
-            points.Max(p => p.Z) + SmoothRadius
+            points.Values.Max(p => p.X) + SmoothRadius,
+            points.Values.Max(p => p.Y),
+            points.Values.Max(p => p.Z) + SmoothRadius
         );
         var bbox = new Aabb(startCorner, endCorner - startCorner);
         var intSize = Utils.RoundToInt(bbox.Size) + new Vector3I(StructureRadius * 2, 0, StructureRadius * 2);
@@ -68,7 +75,7 @@ public partial class TopicIsland : Node3D
 
         Heightmap = new byte[intSize.Z, intSize.X];
         // ComputeLeveledHeightmap(points, bbox);
-        ComputeSmoothHeightmap(points, bbox);
+        ComputeSmoothHeightmap(points.Values, bbox);
 
         for (int y = 0; y < Heightmap.GetLength(0); ++y)
         {
@@ -104,7 +111,7 @@ public partial class TopicIsland : Node3D
         var mesh = mesher.BuildMesh(buffer.Data, [Material]);
         if (mesh is null)
         {
-            GD.PushWarning($"Topic island '{Topic.Title}' did not produce a mesh.");
+            GD.PushWarning($"Topic island '{Topic.GetPreferredTitle()}' did not produce a mesh.");
             return;
         }
 
@@ -136,7 +143,7 @@ public partial class TopicIsland : Node3D
         var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
         var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.3);
         var kdTree = new KdTree<Issue>();
-        foreach (var id in Topic.Ids)
+        foreach (var id in itemIds)
         {
             var pos = Overlord.Instance.Positions[id];
             kdTree.Insert(new Coordinate(pos.X, pos.Z), Overlord.Instance.Data[id]);

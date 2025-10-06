@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=18 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/test_structure.tscn" id="2_jyhfs"]
@@ -14,35 +14,7 @@
 script = ExtResource("5_85g3d")
 Name = "Lume"
 DataFilePath = "res://sample/lume.json"
-PositionsFilePath = "res://sample/lume_pos.csv"
-metadata/_custom_type_script = "uid://bq3k6c84mk42x"
-
-[sub_resource type="Resource" id="Resource_ya4ey"]
-script = ExtResource("5_85g3d")
-Name = "DotVVM"
-DataFilePath = "res://sample/dotvvm.json"
-PositionsFilePath = "res://sample/dotvvm_pos.csv"
-metadata/_custom_type_script = "uid://bq3k6c84mk42x"
-
-[sub_resource type="Resource" id="Resource_eb6dy"]
-script = ExtResource("5_85g3d")
-Name = "JetUML"
-DataFilePath = "res://sample/jetuml.json"
-PositionsFilePath = "res://sample/jetuml_pos.csv"
-metadata/_custom_type_script = "uid://bq3k6c84mk42x"
-
-[sub_resource type="Resource" id="Resource_trceg"]
-script = ExtResource("5_85g3d")
-Name = "nothings/stb"
-DataFilePath = "res://sample/stb.json"
-PositionsFilePath = "res://sample/stb_pos.csv"
-metadata/_custom_type_script = "uid://bq3k6c84mk42x"
-
-[sub_resource type="Resource" id="Resource_85g3d"]
-script = ExtResource("5_85g3d")
-Name = "Stable Diffusion"
-DataFilePath = "res://sample/stable-diffusion.json"
-PositionsFilePath = "res://sample/stable-diffusion_pos.csv"
+TopicFilePath = "res://sample/lume-topics.json"
 metadata/_custom_type_script = "uid://bq3k6c84mk42x"
 
 [sub_resource type="VoxelGeneratorFlat" id="VoxelGeneratorFlat_tefeu"]
@@ -89,7 +61,7 @@ PositionsCsvPath = "res://sample/lume_pos.csv"
 ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
 Player = NodePath("Player")
 ControlsContainer = NodePath("UI/Controls/ControlsContainer")
-Datasets = Array[Resource]([SubResource("Resource_choun"), SubResource("Resource_ya4ey"), SubResource("Resource_eb6dy"), SubResource("Resource_trceg"), SubResource("Resource_85g3d")])
+Datasets = Array[Resource]([SubResource("Resource_choun")])
 DatasetDropdown = NodePath("UI/Controls/ControlsContainer/OptionButton")
 
 [node name="VoxelTerrain" type="VoxelTerrain" parent="."]

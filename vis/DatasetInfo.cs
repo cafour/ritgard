@@ -12,5 +12,5 @@ public partial class DatasetInfo : Resource
     public string DataFilePath { get; set; }
 
     [Export]
-    public string PositionsFilePath { get; set; }
+    public string TopicFilePath { get; set; }
 }
