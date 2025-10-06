@@ -48,6 +48,7 @@ class Topic(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
 
+    id: int
     representations: dict[str, list[tuple[str, float]]]
 
 

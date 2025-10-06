@@ -164,7 +164,7 @@ def write_topics(
         full_info: Mapping[str, list[tuple[str, float]]] = topic_model.get_topic(topic_id, full=True)
         representations = {method: [candidate for candidate in candidates if candidate[0] != ""] for
                            (method, candidates) in full_info.items()}
-        topics[topic_id] = dt.Topic(representations=representations)
+        topics[topic_id] = dt.Topic(id=topic_id, representations=representations)
 
     topic_items = {}
     for doc_id, pos, topic, probs in zip(ids, positions, topic_model.topics_, topic_model.probabilities_):
