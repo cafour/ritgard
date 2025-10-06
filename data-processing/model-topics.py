@@ -3,7 +3,6 @@ from sklearn.manifold import MDS
 from sklearn.metrics import pairwise_distances
 from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
-from datetime import datetime
 from bertopic import BERTopic
 from bertopic.representation import KeyBERTInspired
 from bertopic.representation import PartOfSpeech
@@ -18,6 +17,8 @@ import torch
 import logging
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS as SKLEARN_STOP_WORDS
 import nltk
+
+from utils import get_now_string
 
 nltk.download("stopwords")
 from nltk.corpus import stopwords as nltk_stopwords
@@ -127,8 +128,6 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
         }
         topic_model.set_topic_labels(llm_labels)
 
-    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
-
     linkage_function = lambda x: sch.linkage(x, "single", optimal_ordering=True)
     hierarchical_topics = topic_model.hierarchical_topics(
         docs, linkage_function=linkage_function
@@ -136,6 +135,7 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
     fig_hierarchy = topic_model.visualize_hierarchy(
         hierarchical_topics=hierarchical_topics
     )
+    formatted_datetime = get_now_string()
     fig_hierarchy.write_html(
         f"./out/hierarchy_{project_name}_{formatted_datetime}.html"
     )
@@ -178,10 +178,10 @@ def write_topics(
     )
     json = result.model_dump_json()
 
-    formatted_datetime = datetime.now().strftime("%d_%b_%Y_%H_%M_%S")
+    formatted_datetime = get_now_string()
     out_path = f"./out/topics_{project_name}_{formatted_datetime}.json"
     log.info(f"Writing data processing result to '{out_path}'")
-    with open(out_path, "w") as json_file:
+    with open(out_path, "w", encoding="utf8") as json_file:
         json_file.write(json)
 
 

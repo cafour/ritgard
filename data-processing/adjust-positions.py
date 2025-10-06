@@ -7,6 +7,8 @@ import datatypes as dt
 import matplotlib.pyplot as plt
 from datetime import datetime, UTC
 
+from utils import get_now_string
+
 PROGRAM_NAME = "ritgard." + Path(__file__).stem
 
 log = logging.getLogger(PROGRAM_NAME)
@@ -132,13 +134,12 @@ def main():
 
     output_path = args.output
     if args.output is None:
-        formatted_datetime = datetime.now(UTC).strftime("%Y-%m-%d_%H-%M-%S")
-        output_path = f"./out/adjusted_{formatted_datetime}.json"
+        output_path = f"./out/adjusted_{get_now_string()}.json"
         log.info(f"Automatically set output path to '{output_path}'")
     output = Path(output_path)
     if output.parent is not None:
         output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w") as output_file:
+    with output.open("w", encoding="utf8") as output_file:
         output_file.write(model.model_dump_json())
 
 
