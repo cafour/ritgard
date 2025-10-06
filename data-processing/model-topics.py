@@ -17,8 +17,6 @@ import argparse
 from pathlib import Path
 import torch
 import logging
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_pascal
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS as SKLEARN_STOP_WORDS
 import nltk
 
@@ -27,86 +25,16 @@ from nltk.corpus import stopwords as nltk_stopwords
 import openai
 from dotenv import load_dotenv
 import os
+import datatypes as dt
 
 load_dotenv()
 
 STOP_WORDS = list(set(nltk_stopwords.words("english")).union(set(SKLEARN_STOP_WORDS)))
 
-log = logging.getLogger("data-processing")
+log = logging.getLogger("ritgard.model-topics")
 
 
-class DocumentItemComment(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
-                              serialize_by_alias=True)
-
-    body: str | None = None
-    plain_text: str | None = None
-
-
-class DocumentItem(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
-                              serialize_by_alias=True)
-
-    id: int
-    title: str
-    labels: list[str] | None = None
-    body: str | None = None
-    plain_text: str | None = None
-    comments: list[DocumentItemComment] | None = None
-
-
-class Repository(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
-                              serialize_by_alias=True)
-
-    id: int
-    owner: str
-    name: str
-
-
-class MiningResult(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
-                              serialize_by_alias=True)
-
-    issues: dict[int, DocumentItem] | None = None
-    pull_requests: dict[int, DocumentItem] | None = None
-    repository: Repository
-
-
-class Topic(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
-                              serialize_by_alias=True)
-
-    representations: dict[str, list[tuple[str, float]]]
-
-
-class TopicItem(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
-                              serialize_by_alias=True)
-
-    id: int
-    x: float
-    y: float
-    topic_id: int
-    probabilities: dict[int, float]
-
-
-class TopicModellingResult(BaseModel):
-    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
-                              serialize_by_alias=True)
-
-    topics: dict[int, Topic]
-    items: dict[int, TopicItem]
-
-
-def read_mining_result(filename: str) -> MiningResult:
-    log.info(f"Reading data from '{filename}'")
-    with open(filename, "r", encoding="utf8") as json_file:
-        json = json_file.read()
-        return MiningResult.model_validate_json(json)
-
-
-def get_documents(data: MiningResult) -> tuple[list[int], list[str]]:
+def get_documents(data: dt.MiningResult) -> tuple[list[int], list[str]]:
     log.info(
         f"Preparing documents for '{data.repository.owner}/{data.repository.name}'"
     )
@@ -116,13 +44,13 @@ def get_documents(data: MiningResult) -> tuple[list[int], list[str]]:
         for issue in data.issues.values():
             ids.append(issue.id)
             doc = ""
-            if issue.labels != None:
+            if issue.labels is not None:
                 for label in issue.labels:
                     doc += f"[{label}] "
             doc += issue.title
             # doc = doc.lower().replace(project_name, "")
             docs.append(doc)
-    return (ids, docs)
+    return ids, docs
 
 
 def reduce_mds(embeddings):
@@ -239,15 +167,15 @@ def write_topics(
         full_info: Mapping[str, list[tuple[str, float]]] = topic_model.get_topic(topic_id, full=True)
         representations = {method: [candidate for candidate in candidates if candidate[0] != ""] for
                            (method, candidates) in full_info.items()}
-        topics[topic_id] = Topic(representations=representations)
+        topics[topic_id] = dt.Topic(representations=representations)
 
     topic_items = {}
     for doc_id, pos, topic, probs in zip(ids, positions, topic_model.topics_, topic_model.probabilities_):
         doc_probs = {index: probability for (index, probability) in enumerate(probs) if not np.isclose(probability, 0)}
-        topic_items[doc_id] = TopicItem(id=doc_id, x=pos[0].item(), y=pos[1].item(), topic_id=topic,
+        topic_items[doc_id] = dt.TopicItem(id=doc_id, x=pos[0].item(), y=pos[1].item(), topic_id=topic,
                                         probabilities=doc_probs)
 
-    result = TopicModellingResult(
+    result = dt.TopicModellingResult(
         topics=topics,
         items=topic_items
     )
@@ -278,7 +206,7 @@ def main():
 
     Path("./out").mkdir(exist_ok=True)
 
-    data = read_mining_result(args.data_path)
+    data = dt.read_mining_result(args.data_path)
     project_name = data.repository.name
     ids, docs = get_documents(data)
 
