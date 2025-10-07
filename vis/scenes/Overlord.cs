@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Ritgard;
 
@@ -19,22 +20,14 @@ public partial class Overlord : Node
 {
     public static Overlord Instance { get; private set; }
 
-    private ConcurrentDictionary<Vector3I, HashSet<Node3D>> structures = [];
-
     [Export]
-    public PackedScene TestStructure { get; set; }
+    public PackedScene ItemStructureScene { get; set; }
 
     [Export]
     public PackedScene TopicIslandScene { get; set; }
 
     [Export]
     public PackedScene OutlierRockScene { get; set; }
-
-    [Export]
-    public string DataJsonPath { get; set; }
-
-    [Export]
-    public string PositionsCsvPath { get; set; }
 
     [Export]
     public Label ItemDescriptionLabel { get; set; }
@@ -54,28 +47,23 @@ public partial class Overlord : Node
     [Export]
     public VoxelBlockyLibrary Library { get; set; }
 
+    [Export]
+    public Label CurrentTimeLabel { get; set; }
+
+    [Export]
+    public SpinBox CurrentStepSpinBox { get; set; }
+
     public int CurrentDataset { get; set; } = -1;
 
-    public const int ByteLengthMappingMin = 3;
-    public const int ByteLengthMappingMax = 20;
-    public const int WordLengthMappingMin = 3;
-    public const int WordLengthMappingMax = 20;
-    public const int TagsLengthMappingMin = 3;
-    public const int TagsLengthMappingMax = 20;
+    public int CurrentStep { get; private set; }
 
-    public Func<long, int> ByteLengthMapping { get; private set; }
-    public Func<long, int> WordLengthMapping { get; private set; }
-    public Func<long, int> TagCountMapping { get; private set; }
-    public MiningResult MiningResult { get; private set; }
-    public TopicModellingResult TopicResult { get; private set; }
-    public ImmutableDictionary<long, Issue> Data { get; private set; }
-    public ImmutableDictionary<long, Vector3> Positions { get; private set; }
-    public DateTimeOffset MinDate { get; private set; }
-    public DateTimeOffset MaxDate { get; private set; }
-    public TimeSpan AvgIssueLength { get; private set; }
+    public ActiveRepository Repo { get; private set; }
+    public Dictionary<long, float> Heights { get; private set; } = [];
 
-    private RandomNumberGenerator rng;
-    private TestStructure currentStructure;
+    private Dictionary<int, TopicIsland> topicIslands = [];
+    private Dictionary<long, ItemStructure> itemStructures = [];
+    private Dictionary<long, OutlierRock> outlierRocks = [];
+    private ItemStructure currentStructure;
     private TopicIsland currentIsland;
     private Node generatedNodesContainer;
 
@@ -93,25 +81,26 @@ public partial class Overlord : Node
         }
         Instance = this;
 
-        rng = new RandomNumberGenerator();
-
         generatedNodesContainer = GetNode<Node>("GeneratedNodesContainer");
 
         Library.Bake();
     }
 
-    public override void _Ready()
+    public override async void _Ready()
     {
         ItemDescriptionLabel.Text = DefaultHint;
         for (int i = 0; i < Datasets.Count; ++i)
         {
             DatasetDropdown.AddItem(Datasets[i].Name, i);
         }
-        DatasetDropdown.ItemSelected += i => ShowDataset((int)i);
-        ShowDataset(0);
+        DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
+        await ShowDataset(0);
+        ShowStep(0);
+
+        CurrentStepSpinBox.ValueChanged += value => ShowStep(Mathf.FloorToInt(value));
     }
 
-    private void ShowDataset(int index)
+    private async Task ShowDataset(int index)
     {
         if (CurrentDataset == index)
         {
@@ -128,61 +117,10 @@ public partial class Overlord : Node
         }
 
         var dataset = Datasets[index];
-        MiningResult = Utils.ReadGodotJson<MiningResult>(dataset.DataFilePath);
-        Data = MiningResult.Issues;
-        MaxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
-        MinDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
-        AvgIssueLength = TimeSpan.FromSeconds(Data.Values.Average(i => i.GetTimeSpan().TotalSeconds));
+        Repo = await ActiveRepository.Load(dataset);
+        CurrentStepSpinBox.MaxValue = Repo.StepCount - 1;
 
-        // var minBytes = data.Values.Min(v => v.ByteLength) ?? 0;
-        // var maxBytes = data.Values.Max(v => v.ByteLength) ?? 1;
-        // ByteLengthMapping = b => Mathf.RoundToInt(Mathf.Remap(
-        //     b,
-        //     minBytes,
-        //     maxBytes,
-        //     ByteLengthMappingMin,
-        //     ByteLengthMappingMax
-        // ));
-
-        // var minWords = data.Values.Min(v => v.WordLength) ?? 0;
-        // var maxWords = data.Values.Max(v => v.WordLength) ?? 1;
-        // WordLengthMapping = w => Mathf.RoundToInt(Mathf.Remap(
-        //     w,
-        //     minWords,
-        //     maxWords,
-        //     WordLengthMappingMin,
-        //     WordLengthMappingMax
-        // ));
-
-        // var minTags = data.Values.Min(v => v.TagCount) ?? 0;
-        // var maxTags = data.Values.Max(v => v.TagCount) ?? 1;
-        // TagCountMapping = t => Mathf.RoundToInt(Mathf.Remap(
-        //     t,
-        //     minTags,
-        //     maxTags,
-        //     TagsLengthMappingMin,
-        //     TagsLengthMappingMax
-        // ));
-
-        TopicResult = Utils.ReadGodotJson<TopicModellingResult>(dataset.TopicFilePath);
-        var bbox = new Rect2(
-            TopicResult.Items.Values.Min(p => (float)p.X),
-            TopicResult.Items.Values.Min(p => (float)p.Y),
-            Vector2.Zero
-        );
-        foreach (var item in TopicResult.Items.Values)
-        {
-            bbox = bbox.Expand(new Vector2((float)item.X, (float)item.Y));
-        }
-        var center = bbox.GetCenter();
-
-        var heightFactor = (float)MaxTerrainHeight / Data.Values.Max(i => i.Events.Length);
-        Positions = TopicResult.Items.ToImmutableDictionary(p => p.Key, p => new Vector3(
-            (float)(p.Value.X - center.X),
-            Mathf.Max(1f, Data[p.Value.Id].Events.Length * heightFactor),
-            (float)(p.Value.Y - center.Y)
-        ));
-        foreach (var (topicId, topic) in TopicResult.Topics)
+        foreach (var (topicId, topic) in Repo.TopicModelling.Topics)
         {
             if (topicId == -1)
             {
@@ -192,6 +130,7 @@ public partial class Overlord : Node
             var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
             topicIsland.Topic = topic;
             generatedNodesContainer.AddChild(topicIsland);
+            topicIslands[topicId] = topicIsland;
         }
 
         // var firstTopic = Topics.Values.OrderBy(t => t.Title).First();
@@ -215,137 +154,176 @@ public partial class Overlord : Node
 
         // ComputeHeighmapCircles(Mathf.RoundToInt(StructureRadius));
 
-        foreach (var (id, position) in Positions)
+        foreach (var item in Repo.Items.Values)
         {
-            var instance = TestStructure.Instantiate<TestStructure>();
-            instance.Id = id;
-            instance.ControlsContainer = ControlsContainer;
-            instance.Item = Data[id];
-            instance.Position = position;
+            var instance = ItemStructureScene.Instantiate<ItemStructure>();
+            instance.Item = item;
             generatedNodesContainer.AddChild(instance);
+            itemStructures[item.Id] = instance;
 
-            if (TopicResult.Items[id].TopicId == -1)
+            if (Repo.TopicModelling.Items[item.Id].TopicId == -1)
             {
                 var outlierRock = OutlierRockScene.Instantiate<OutlierRock>();
-                outlierRock.Height = Mathf.RoundToInt(position.Y);
-                outlierRock.Breadth = 3;
-                outlierRock.Position = position + Vector3.Down * (outlierRock.Height - 1);
+                outlierRock.Item = item;
                 generatedNodesContainer.AddChild(outlierRock);
+                outlierRocks[item.Id] = outlierRock;
             }
         }
 
         Player.HoverChanged += OnHoverChanged;
     }
 
+    private void ShowStep(int step)
+    {
+        if (step < 0)
+        {
+            GD.PushWarning($"There is nothig to show before '{Repo.MinDate}'.");
+            return;
+        }
+
+        if (step >= Repo.StepCount)
+        {
+            GD.PushWarning($"Cannot show step {step} because there are only {Repo.StepCount} steps.");
+            return;
+        }
+
+        var now = Repo.MinDate + Repo.Step * step;
+        foreach (var issue in Repo.Mining.Issues.Values)
+        {
+            var slidingEvents = Repo.Items[issue.Id].Events.GetRange(now - Repo.SlidingWindow, now, true);
+            Heights[issue.Id] = slidingEvents.Count();
+            itemStructures.GetValueOrDefault(issue.Id)?.OnShowStep(step);
+            outlierRocks.GetValueOrDefault(issue.Id)?.OnShowStep(step);
+        }
+
+        foreach (var topicIsland in topicIslands.Values)
+        {
+            topicIsland.OnShowStep(0);
+        }
+
+        CurrentStep = step;
+        CurrentStepSpinBox.SetValueNoSignal(step);
+        CurrentTimeLabel.Text = now.ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
     public override void _Input(InputEvent @event)
     {
         if (@event.IsAction("interact") && @event.IsPressed() && currentStructure is not null)
         {
-            var item = Data.GetValueOrDefault(currentStructure.Id.Value);
+            var item = Repo.Mining.Issues.GetValueOrDefault(currentStructure.Item.Id);
             if (!string.IsNullOrEmpty(item.Url))
             {
                 OS.ShellOpen(item.Url);
             }
         }
-    }
 
-    private void ComputeHeighmapTriangularization()
-    {
-        var inversePositions = Positions.ToImmutableDictionary(
-            t => new Coordinate(t.Value.X, t.Value.Y),
-            t => t.Key
-        );
-        var triangulationBuilder = new DelaunayTriangulationBuilder();
-        triangulationBuilder.SetSites([.. inversePositions.Keys]);
-        var subdivision = triangulationBuilder.GetSubdivision();
-        var dateLength = MaxDate - MinDate;
-
-        double GetHeightAtPoint(double x, double y)
+        if (@event.IsAction(InputActions.StepNext) && @event.IsPressed())
         {
-            if (!inversePositions.TryGetValue(new Coordinate(x, y), out var id))
-            {
-                return 0.0;
-            }
-            var issue = Data[id];
-            var date = issue.UpdatedAt ?? issue.CreatedAt;
-            return (date - MinDate) / dateLength * 100.0;
+            ShowStep(CurrentStep + 1);
         }
-
-        for (int y = -HeightmapSize / 2; y < HeightmapSize / 2; ++y)
+        else if (@event.IsAction(InputActions.StepPrev) && @event.IsPressed())
         {
-            for (int x = -HeightmapSize / 2; x < HeightmapSize / 2; ++x)
-            {
-                var hx = x + HeightmapSize / 2;
-                var hy = y + HeightmapSize / 2;
-                QuadEdge? edge = null;
-                try
-                {
-                    edge = subdivision.Locate(new Coordinate(x, y));
-                }
-                catch (LocateFailureException)
-                {
-                }
-
-                if (edge is null)
-                {
-                    // generator.Heightmap.SetPixel(hx, hy, new Color() { R8 = 0 });
-                    // generator.Heightmap[hy, hx] = 0;
-                    continue;
-                }
-
-                var p1 = edge.Orig;
-                var p2 = edge.Dest;
-                var p3 = edge.ONext.Dest;
-                var height = InterpolateBarycentric(
-                    x, y,
-                    p1.X, p1.Y, GetHeightAtPoint(p1.X, p1.Y),
-                    p2.X, p2.Y, GetHeightAtPoint(p2.X, p2.Y),
-                    p3.X, p3.Y, GetHeightAtPoint(p3.X, p3.Y)
-                );
-                height = Mathf.Max(height, 0.0);
-                // generator.Heightmap.SetPixel(hx, hy, new Color { R8 = Mathf.RoundToInt(height) });
-                // generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
-            }
+            ShowStep(CurrentStep - 1);
         }
     }
 
-    private void ComputeHeighmapCircles(int circleRadius)
-    {
-        var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
-        var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
-        var dateLength = maxDate - minDate;
+    // private void ComputeHeighmapTriangularization()
+    // {
+    //     var inversePositions = Positions.ToImmutableDictionary(
+    //         t => new Coordinate(t.Value.X, t.Value.Y),
+    //         t => t.Key
+    //     );
+    //     var triangulationBuilder = new DelaunayTriangulationBuilder();
+    //     triangulationBuilder.SetSites([.. inversePositions.Keys]);
+    //     var subdivision = triangulationBuilder.GetSubdivision();
+    //     var dateLength = MaxDate - MinDate;
 
-        var radiusSquared = circleRadius * circleRadius;
-        foreach (var (id, pos) in Positions)
-        {
-            // var height = GetHeightForIssue(id);
-            var height = (byte)(GetLevelForIssue(id) * 10);
-            for (int y = -circleRadius + 1; y < circleRadius; ++y)
-            {
-                for (int x = -circleRadius + 1; x < circleRadius; ++x)
-                {
-                    var hx = Mathf.RoundToInt(pos.X) + HeightmapSize / 2 + x;
-                    var hy = Mathf.RoundToInt(pos.Y) + HeightmapSize / 2 + y;
+    //     double GetHeightAtPoint(double x, double y)
+    //     {
+    //         if (!inversePositions.TryGetValue(new Coordinate(x, y), out var id))
+    //         {
+    //             return 0.0;
+    //         }
+    //         var issue = Data[id];
+    //         var date = issue.UpdatedAt ?? issue.CreatedAt;
+    //         return (date - MinDate) / dateLength * 100.0;
+    //     }
 
-                    if (x * x + y * y < radiusSquared + 1)
-                    {
-                        // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], height);
-                    }
-                    else
-                    {
-                        // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], (byte)0);
-                    }
-                }
-            }
-        }
-    }
+    //     for (int y = -HeightmapSize / 2; y < HeightmapSize / 2; ++y)
+    //     {
+    //         for (int x = -HeightmapSize / 2; x < HeightmapSize / 2; ++x)
+    //         {
+    //             var hx = x + HeightmapSize / 2;
+    //             var hy = y + HeightmapSize / 2;
+    //             QuadEdge? edge = null;
+    //             try
+    //             {
+    //                 edge = subdivision.Locate(new Coordinate(x, y));
+    //             }
+    //             catch (LocateFailureException)
+    //             {
+    //             }
+
+    //             if (edge is null)
+    //             {
+    //                 // generator.Heightmap.SetPixel(hx, hy, new Color() { R8 = 0 });
+    //                 // generator.Heightmap[hy, hx] = 0;
+    //                 continue;
+    //             }
+
+    //             var p1 = edge.Orig;
+    //             var p2 = edge.Dest;
+    //             var p3 = edge.ONext.Dest;
+    //             var height = InterpolateBarycentric(
+    //                 x, y,
+    //                 p1.X, p1.Y, GetHeightAtPoint(p1.X, p1.Y),
+    //                 p2.X, p2.Y, GetHeightAtPoint(p2.X, p2.Y),
+    //                 p3.X, p3.Y, GetHeightAtPoint(p3.X, p3.Y)
+    //             );
+    //             height = Mathf.Max(height, 0.0);
+    //             // generator.Heightmap.SetPixel(hx, hy, new Color { R8 = Mathf.RoundToInt(height) });
+    //             // generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
+    //         }
+    //     }
+    // }
+
+    // private void ComputeHeighmapCircles(int circleRadius)
+    // {
+    //     var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
+    //     var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
+    //     var dateLength = maxDate - minDate;
+
+    //     var radiusSquared = circleRadius * circleRadius;
+    //     foreach (var (id, pos) in Positions)
+    //     {
+    //         // var height = GetHeightForIssue(id);
+    //         var height = (byte)(GetLevelForIssue(id) * 10);
+    //         for (int y = -circleRadius + 1; y < circleRadius; ++y)
+    //         {
+    //             for (int x = -circleRadius + 1; x < circleRadius; ++x)
+    //             {
+    //                 var hx = Mathf.RoundToInt(pos.X) + HeightmapSize / 2 + x;
+    //                 var hy = Mathf.RoundToInt(pos.Y) + HeightmapSize / 2 + y;
+
+    //                 if (x * x + y * y < radiusSquared + 1)
+    //                 {
+    //                     // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], height);
+    //                 }
+    //                 else
+    //                 {
+    //                     // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], (byte)0);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     private void OnHoverChanged(CollisionObject3D hoveree)
     {
         var parent = hoveree?.GetParent();
-        if (parent is TestStructure structure)
+        if (parent is ItemStructure structure)
         {
-            if (structure.Id is not null && Data.TryGetValue(structure.Id.Value, out var item))
+            if (Repo.Mining.Issues.TryGetValue(structure.Item.Id, out var item))
             {
                 currentIsland?.ToggleHighlight(false);
                 currentIsland = null;
@@ -462,37 +440,37 @@ public partial class Overlord : Node
         return alpha * z1 + beta * z2 + gamma * z3;
     }
 
-    private byte GetHeightForIssue(long id)
-    {
-        var issue = Data[id];
-        var date = issue.UpdatedAt ?? issue.CreatedAt;
-        var dateLength = MaxDate - MinDate;
-        return (byte)Mathf.RoundToInt(Math.Clamp((date - MinDate) / dateLength * MaxTerrainHeight, 0.0, 255.0));
-    }
+    // private byte GetHeightForIssue(long id)
+    // {
+    //     var issue = Data[id];
+    //     var date = issue.UpdatedAt ?? issue.CreatedAt;
+    //     var dateLength = MaxDate - MinDate;
+    //     return (byte)Mathf.RoundToInt(Math.Clamp((date - MinDate) / dateLength * MaxTerrainHeight, 0.0, 255.0));
+    // }
 
-    private byte GetLevelForIssue(long id)
-    {
-        var issue = Data[id];
-        var date = issue.UpdatedAt ?? issue.CreatedAt;
-        if (date.Date == MaxDate.Date)
-        {
-            return 50;
-        }
-        else if (date > MaxDate - TimeSpan.FromDays(7))
-        {
-            return 40;
-        }
-        else if (date > MaxDate - TimeSpan.FromDays(30))
-        {
-            return 30;
-        }
-        else if (date > MaxDate - TimeSpan.FromDays(365))
-        {
-            return 20;
-        }
-        else
-        {
-            return 10;
-        }
-    }
+    // private byte GetLevelForIssue(long id)
+    // {
+    //     var issue = Data[id];
+    //     var date = issue.UpdatedAt ?? issue.CreatedAt;
+    //     if (date.Date == MaxDate.Date)
+    //     {
+    //         return 50;
+    //     }
+    //     else if (date > MaxDate - TimeSpan.FromDays(7))
+    //     {
+    //         return 40;
+    //     }
+    //     else if (date > MaxDate - TimeSpan.FromDays(30))
+    //     {
+    //         return 30;
+    //     }
+    //     else if (date > MaxDate - TimeSpan.FromDays(365))
+    //     {
+    //         return 20;
+    //     }
+    //     else
+    //     {
+    //         return 10;
+    //     }
+    // }
 }

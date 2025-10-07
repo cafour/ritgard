@@ -8,11 +8,9 @@ using System.Linq;
 
 namespace Ritgard;
 
-public partial class TestStructure : Node3D, IWithVoxelLibrary
+[SceneTree("./item_structure.tscn")]
+public partial class ItemStructure : Node3D, IWithVoxelLibrary
 {
-    private MeshInstance3D mesh;
-    private StaticBody3D body;
-    private static RandomNumberGenerator rng = new();
 
     public const int Radius = 3;
     public const int MaxConeHeight = 20;
@@ -26,39 +24,16 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
     [Export]
     public Material HighlightMaterial { get; set; }
 
-    public long? Id { get; set; }
-
-    public Issue? Item { get; set; }
+    public ActiveItem Item { get; set; }
 
     public bool IsHighlighted { get; set; }
 
-    public Control ControlsContainer { get; set; }
-
-    private CheckBox isClampedCheckbox;
-    private Slider clampHeightSlider;
-    private Slider averageHeightSlider;
-    private Slider maxBreadthSlider;
-
     public override void _Ready()
     {
-        mesh = GetNode<MeshInstance3D>("Mesh");
-        body = GetNode<StaticBody3D>("Body");
-        // GenerateSphere();
-        if (ControlsContainer is not null)
-        {
-            isClampedCheckbox = ControlsContainer.GetNode<CheckBox>("IsClamped");
-            isClampedCheckbox.Toggled += _ => GenerateMesh();
-            clampHeightSlider = ControlsContainer.GetNode<Slider>("ClampedHeight");
-            clampHeightSlider.ValueChanged += _ => GenerateMesh();
-            averageHeightSlider = ControlsContainer.GetNode<Slider>("AverageHeight");
-            averageHeightSlider.ValueChanged += _ => GenerateMesh();
-            maxBreadthSlider = ControlsContainer.GetNode<Slider>("MaxBreadth");
-            maxBreadthSlider.ValueChanged += _ => GenerateMesh();
-        }
-        GenerateMesh();
+        Position = new Vector3(Item.Position.X, -1000, Item.Position.Y);
     }
 
-    private void GenerateMesh()
+    public void OnShowStep(int step)
     {
         // IStructure structure = Item?.ResourceType switch
         // {
@@ -94,32 +69,32 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         //         Leafiness = 1.0f
         //     }
         // };
-        var contributorCount = Item.Comments
-            .Select(c => c.Author)
-            .Concat([Item.Author])
-            .Where(a => a is not null)
-            .Distinct()
-            .Count();
-        var issueLength = Item.GetTimeSpan();
-        var coneHeight = Mathf.CeilToInt(issueLength / Overlord.Instance.AvgIssueLength * averageHeightSlider.Value);
-        if (isClampedCheckbox.ButtonPressed)
-        {
-            coneHeight = Mathf.Clamp(coneHeight, 1, (int)clampHeightSlider.Value);
-        }
+        // var contributorCount = Item.Comments
+        //     .Select(c => c.Author)
+        //     .Concat([Item.Author])
+        //     .Where(a => a is not null)
+        //     .Distinct()
+        //     .Count();
+        // var issueLength = Item.GetTimeSpan();
+        // var coneHeight = Mathf.CeilToInt(issueLength / Overlord.Instance.AvgIssueLength * averageHeightSlider.Value);
+        // if (isClampedCheckbox.ButtonPressed)
+        // {
+        //     coneHeight = Mathf.Clamp(coneHeight, 1, (int)clampHeightSlider.Value);
+        // }
 
-        var step = coneHeight > 0 ? issueLength / coneHeight : TimeSpan.Zero;
-        var layers = new BitArray(coneHeight);
-        layers.Set(0, true); // it was created
-        // layers.Set(coneHeight - 1, true); // it was updated or there must be a comment
-        for (int i = 0; i < coneHeight; ++i)
-        {
-            var start = Item.CreatedAt + i * step;
-            var end = Item.CreatedAt + (i + 1) * step;
-            if (Item.Comments.Any(c => c.CreatedAt >= start && c.CreatedAt < end))
-            {
-                layers.Set(i, true);
-            }
-        }
+        // var step = coneHeight > 0 ? issueLength / coneHeight : TimeSpan.Zero;
+        // var layers = new BitArray(coneHeight);
+        // layers.Set(0, true); // it was created
+        // // layers.Set(coneHeight - 1, true); // it was updated or there must be a comment
+        // for (int i = 0; i < coneHeight; ++i)
+        // {
+        //     var start = Item.CreatedAt + i * step;
+        //     var end = Item.CreatedAt + (i + 1) * step;
+        //     if (Item.Comments.Any(c => c.CreatedAt >= start && c.CreatedAt < end))
+        //     {
+        //         layers.Set(i, true);
+        //     }
+        // }
 
         // var structure = new LayeredConifer
         // {
@@ -128,9 +103,16 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         //     HasCap = Item.State == IssueState.Closed,
         //     MaxBreadth = (int)maxBreadthSlider.Value
         // };
+        var height = Mathf.RoundToInt(Overlord.Instance.Heights[Item.Id]);
+        if (height == 0)
+        {
+            _.Mesh.Visible = false;
+            return;
+        }
+        
         var structure = new Conifer
         {
-            TrunkHeight = contributorCount,
+            TrunkHeight = 2,
             CrownBreadth = 3
         };
 
@@ -142,8 +124,14 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         {
             Library = Library
         };
-        mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
-        mesh.Position = new Vector3(-size.X / 2 + 0.5f, 0, -size.Z / 2 + 0.5f);
+        _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
+        _.Mesh.Position = new Vector3(-size.X / 2 + 0.5f, 0, -size.Z / 2 + 0.5f);
+        _.Mesh.Visible = true;
+        Position = new Vector3(
+            Position.X,
+            height,
+            Position.Z
+        );
         // body.Position = new Vector3(0, Radius - 0.5f, 0);
     }
 
@@ -155,27 +143,27 @@ public partial class TestStructure : Node3D, IWithVoxelLibrary
         }
 
         IsHighlighted = value ?? !IsHighlighted;
-        var material = mesh.GetActiveMaterial(0);
+        var material = _.Mesh.GetActiveMaterial(0);
         if (material is not null)
         {
             material.NextPass = IsHighlighted ? HighlightMaterial : null;
         }
     }
 
-    private void GenerateSphere()
-    {
-        var buffer = new VoxelBuffer();
-        buffer.Create(Radius * 2 + 1, Radius * 2 + 1, Radius * 2 + 1);
-        var tool = buffer.GetVoxelTool();
-        tool.Value = this.GetBlockTypeIndex(Blocks.Important);
-        tool.DoSphere(new Vector3(Radius, Radius, Radius), Radius);
+    // private void GenerateSphere()
+    // {
+    //     var buffer = new VoxelBuffer();
+    //     buffer.Create(Radius * 2 + 1, Radius * 2 + 1, Radius * 2 + 1);
+    //     var tool = buffer.GetVoxelTool();
+    //     tool.Value = this.GetBlockTypeIndex(Blocks.Important);
+    //     tool.DoSphere(new Vector3(Radius, Radius, Radius), Radius);
 
-        var mesher = new VoxelMesherBlocky
-        {
-            Library = Library
-        };
-        mesh.Mesh = mesher.BuildMesh(buffer, [Material]);
-        mesh.Position = new Vector3(-Radius + 0.5f, 0, -Radius + 0.5f);
-        body.Position = new Vector3(0, Radius - 0.5f, 0);
-    }
+    //     var mesher = new VoxelMesherBlocky
+    //     {
+    //         Library = Library
+    //     };
+    //     mesh.Mesh = mesher.BuildMesh(buffer, [Material]);
+    //     mesh.Position = new Vector3(-Radius + 0.5f, 0, -Radius + 0.5f);
+    //     body.Position = new Vector3(0, Radius - 0.5f, 0);
+    // }
 }

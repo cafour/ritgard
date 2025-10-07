@@ -16,19 +16,18 @@ public partial class TopicIsland : Node3D
     public const int GrassWidth = 1;
     public const int DirtWidth = 3;
     public const int StructureRadius = 3;
-    public static ImmutableArray<string> Palette = [
-        "vis01",
-        "vis02",
-        "vis03",
-        "vis04",
-        "vis05",
-        "vis06",
-        "vis07",
-        "vis08",
+    public static ImmutableArray<Blocks> Palette = [
+        Blocks.Vis01,
+        Blocks.Vis02,
+        Blocks.Vis03,
+        Blocks.Vis04,
+        Blocks.Vis05,
+        Blocks.Vis06,
+        Blocks.Vis07,
+        Blocks.Vis08,
     ];
 
     private ImmutableHashSet<long> itemIds;
-    private ImmutableDictionary<long, Vector3> points;
 
     public Topic Topic { get; set; }
 
@@ -50,33 +49,44 @@ public partial class TopicIsland : Node3D
 
     public override void _Ready()
     {
-        GenerateMesh();
-    }
-
-    private void GenerateMesh()
-    {
         if (Topic is null)
         {
             throw new NullReferenceException("Topic is not set.");
         }
-
-        itemIds = [.. Overlord.Instance.TopicResult.Items
+        
+        itemIds = [.. Overlord.Instance.Repo.TopicModelling.Items
             .Where(i => i.Value.TopicId == Topic.Id)
             .Select(i => i.Value.Id)];
-        points = itemIds.ToImmutableDictionary(i => i, i => Overlord.Instance.Positions[i]);
+    }
+
+    public void OnShowStep(int step)
+    {
+        var points = itemIds.Select(i => new Vector3(
+            x: Overlord.Instance.Repo.Items[i].Position.X,
+            y: Overlord.Instance.Heights[i],
+            z: Overlord.Instance.Repo.Items[i].Position.Y
+        ));
 
         var startCorner = new Vector3(
-            points.Values.Min(p => p.X) - SmoothRadius,
+            points.Min(p => p.X) - SmoothRadius,
             0,
-            points.Values.Min(p => p.Z) - SmoothRadius
+            points.Min(p => p.Z) - SmoothRadius
         );
         var endCorner = new Vector3(
-            points.Values.Max(p => p.X) + SmoothRadius,
-            points.Values.Max(p => p.Y),
-            points.Values.Max(p => p.Z) + SmoothRadius
+            points.Max(p => p.X) + SmoothRadius,
+            points.Max(p => p.Y),
+            points.Max(p => p.Z) + SmoothRadius
         );
         var bbox = new Aabb(startCorner, endCorner - startCorner);
         var intSize = Utils.RoundToInt(bbox.Size) + new Vector3I(StructureRadius * 2, 0, StructureRadius * 2);
+        if (intSize.Y == 0)
+        {
+            _.Mesh.Visible = false;
+            return;
+        }
+        
+        _.Mesh.Visible = true;
+
         var buffer = new StructureBuffer(
             size: intSize,
             library: Library,
@@ -85,7 +95,7 @@ public partial class TopicIsland : Node3D
 
         Heightmap = new byte[intSize.Z, intSize.X];
         // ComputeLeveledHeightmap(points, bbox);
-        ComputeSmoothHeightmap(points.Values, bbox);
+        ComputeSmoothHeightmap(points, bbox);
 
         for (int y = 0; y < Heightmap.GetLength(0); ++y)
         {
@@ -125,10 +135,10 @@ public partial class TopicIsland : Node3D
             return;
         }
 
-        shape.SetFaces(mesh.GetFaces());
+        // shape.SetFaces(mesh.GetFaces());
         _.Mesh.Mesh = mesh;
         _.Mesh.Position = bbox.Position;
-        _.Body.Collider.Shape = shape;
+        // _.Body.Collider.Shape = shape;
         _.Body.Get().Position = bbox.Position;
     }
 
@@ -147,59 +157,59 @@ public partial class TopicIsland : Node3D
         }
     }
 
-    private void ComputeLeveledHeightmap(IEnumerable<Vector3> points, Aabb bbox)
-    {
-        var coords = points.Select(v => new Coordinate(v.X, v.Z)).ToArray();
-        var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
-        var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.3);
-        var kdTree = new KdTree<Issue>();
-        foreach (var id in itemIds)
-        {
-            var pos = Overlord.Instance.Positions[id];
-            kdTree.Insert(new Coordinate(pos.X, pos.Z), Overlord.Instance.Data[id]);
-        }
+    // private void ComputeLeveledHeightmap(IEnumerable<Vector3> points, Aabb bbox)
+    // {
+    //     var coords = points.Select(v => new Coordinate(v.X, v.Z)).ToArray();
+    //     var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
+    //     var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.3);
+    //     var kdTree = new KdTree<Issue>();
+    //     foreach (var id in itemIds)
+    //     {
+    //         var pos = Overlord.Instance.Positions[id];
+    //         kdTree.Insert(new Coordinate(pos.X, pos.Z), Overlord.Instance.Data[id]);
+    //     }
 
-        var testPoint = Geometry.DefaultFactory.CreatePoint(new Coordinate(0, 0));
-        for (int z = SmoothRadius; z < Heightmap.GetLength(0); ++z)
-        {
-            for (int x = SmoothRadius; x < Heightmap.GetLength(1); ++x)
-            {
-                var px = x + bbox.Position.X;
-                var py = z + bbox.Position.Z;
+    //     var testPoint = Geometry.DefaultFactory.CreatePoint(new Coordinate(0, 0));
+    //     for (int z = SmoothRadius; z < Heightmap.GetLength(0); ++z)
+    //     {
+    //         for (int x = SmoothRadius; x < Heightmap.GetLength(1); ++x)
+    //         {
+    //             var px = x + bbox.Position.X;
+    //             var py = z + bbox.Position.Z;
 
-                testPoint.Coordinate.X = px;
-                testPoint.Coordinate.Y = py;
+    //             testPoint.Coordinate.X = px;
+    //             testPoint.Coordinate.Y = py;
 
-                var nearestPoint = kdTree.NearestNeighbor(testPoint.Coordinate);
-                if (nearestPoint is null || nearestPoint.Count == 0)
-                {
-                    continue;
-                }
+    //             var nearestPoint = kdTree.NearestNeighbor(testPoint.Coordinate);
+    //             if (nearestPoint is null || nearestPoint.Count == 0)
+    //             {
+    //                 continue;
+    //             }
 
-                var nearestIssue = nearestPoint.Data;
-                var nearestPointHeight = Overlord.Instance.Positions[nearestIssue.Id].Y;
+    //             var nearestIssue = nearestPoint.Data;
+    //             var nearestPointHeight = Overlord.Instance.Positions[nearestIssue.Id].Y;
 
-                if (hull.Contains(testPoint))
-                {
-                    Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 0, 255);
-                }
-                else
-                {
-                    var distance = nearestPoint.Coordinate.Distance(testPoint.Coordinate);
-                    if (distance < StructureRadius)
-                    {
-                        Heightmap[z, x] = (byte)nearestPointHeight;
-                    }
-                    else
-                    {
-                        distance -= StructureRadius;
-                        var height = nearestPointHeight / (distance * distance + 1);
-                        Heightmap[z, x] = (byte)height;
-                    }
-                }
-            }
-        }
-    }
+    //             if (hull.Contains(testPoint))
+    //             {
+    //                 Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 0, 255);
+    //             }
+    //             else
+    //             {
+    //                 var distance = nearestPoint.Coordinate.Distance(testPoint.Coordinate);
+    //                 if (distance < StructureRadius)
+    //                 {
+    //                     Heightmap[z, x] = (byte)nearestPointHeight;
+    //                 }
+    //                 else
+    //                 {
+    //                     distance -= StructureRadius;
+    //                     var height = nearestPointHeight / (distance * distance + 1);
+    //                     Heightmap[z, x] = (byte)height;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     public const int SmoothRadius = 10;
 
@@ -226,7 +236,7 @@ public partial class TopicIsland : Node3D
 
                     var distSquared = x * x + z * z;
                     // var height = point.Y * Mathf.Exp(-distSquared / (float)(SmoothRadius * SmoothRadius));
-                    var desiredHeight = Mathf.Max(1f, point.Y);
+                    var desiredHeight = point.Y;
                     var height = desiredHeight * Mathf.Exp(-Mathf.Log(desiredHeight) / (radius * radius) * distSquared);
                     var byteHeight = (byte)Math.Clamp(Mathf.RoundToInt(height), 0, 255);
                     // Heightmap[hz, hx] = Math.Max(Heightmap[hz, hx], byteHeight);

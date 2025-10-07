@@ -26,10 +26,10 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         OriginOffset = offset ?? new Vector3I(size.X / 2, 1, size.Z / 2);
     }
 
-    public StructureBuffer SetAt(Vector3I pos, string blockType)
+    public StructureBuffer SetAt(Vector3I pos, Blocks blockType)
     {
         pos += OriginOffset;
-        SetRaw(pos, this.GetBlockTypeIndex(blockType));
+        SetRaw(pos, (ulong)blockType);
         return this;
     }
 
@@ -39,17 +39,17 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillSphere(Vector3I pos, int radius, string blockType)
+    public StructureBuffer FillSphere(Vector3I pos, int radius, Blocks blockType)
     {
         ResetTool();
         Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
-        Tool.Value = this.GetBlockTypeIndex(blockType);
+        Tool.Value = (ulong)blockType;
         Tool.Mode = VoxelTool.ModeEnum.Set;
         Tool.DoSphere(pos + OriginOffset, radius);
         return this;
     }
 
-    public StructureBuffer FillSpottySphere(Vector3I pos, int radius, string blockType, float spottiness)
+    public StructureBuffer FillSpottySphere(Vector3I pos, int radius, Blocks blockType, float spottiness)
     {
         spottiness = Mathf.Clamp(spottiness, 0.0f, 1.0f);
         if (spottiness == 0.0f)
@@ -75,7 +75,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     if (x * x + y * y + z * z < radiusSquared && rng.Randf() < spottiness)
                     {
-                        Tool.SetVoxel(pos + new Vector3I(x, y, z), this.GetBlockTypeIndex(blockType));
+                        Tool.SetVoxel(pos + new Vector3I(x, y, z), (ulong)blockType);
                     }
                 }
             }
@@ -84,11 +84,11 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillLine(Vector3I from, Vector3I to, float fromRadius, float toRadius, string blockType)
+    public StructureBuffer FillLine(Vector3I from, Vector3I to, float fromRadius, float toRadius, Blocks blockType)
     {
         ResetTool();
         Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
-        Tool.Value = this.GetBlockTypeIndex(blockType);
+        Tool.Value = (ulong)blockType;
         Tool.Mode = VoxelTool.ModeEnum.Set;
         Span<Vector3> points = stackalloc Vector3[2];
         Span<float> radii = stackalloc float[2];
@@ -100,7 +100,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillBresenhamLine(Vector3I from, Vector3I to, string blockType)
+    public StructureBuffer FillBresenhamLine(Vector3I from, Vector3I to, Blocks blockType)
     {
         from += OriginOffset;
         to += OriginOffset;
@@ -116,10 +116,10 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         int zs = Math.Sign(to.Z - from.Z);
 
         Vector3I current = from;
-        var blockValue = this.GetBlockTypeIndex(blockType);
+
         void Set(Vector3I p)
         {
-            Data.SetVoxel(blockValue, p.X, p.Y, p.Z, (uint)VoxelBuffer.ChannelId.ChannelType);
+            Data.SetVoxel((ulong)blockType, p.X, p.Y, p.Z, (uint)VoxelBuffer.ChannelId.ChannelType);
         }
         Set(from);
 
@@ -209,7 +209,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillSpottyCylinder(Vector3I pos, int radius, int height, string blockType, float spottiness)
+    public StructureBuffer FillSpottyCylinder(Vector3I pos, int radius, int height, Blocks blockType, float spottiness)
     {
         if (radius <= 0 || height <= 0)
         {
@@ -225,7 +225,6 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         var rng = new RandomNumberGenerator();
         pos += OriginOffset;
         var radiusSquared = radius * radius;
-        var blockValue = this.GetBlockTypeIndex(blockType);
 
         for (int x = -radius + 1; x < radius; ++x)
         {
@@ -237,7 +236,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                     {
                         if (spottiness == 1.0f || spottiness < rng.Randf())
                         {
-                            SetRaw(pos + new Vector3I(x, h, z), blockValue);
+                            SetRaw(pos + new Vector3I(x, h, z), (ulong)blockType);
                         }
                     }
                 }
@@ -247,14 +246,12 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillCone(Vector3I pos, int height, int radius, string blockType)
+    public StructureBuffer FillCone(Vector3I pos, int height, int radius, Blocks blockType)
     {
         if (height == 0 || radius == 0)
         {
             return this;
         }
-
-        var blockValue = this.GetBlockTypeIndex(blockType);
 
         for (int h = 0; h < height; ++h)
         {
@@ -266,7 +263,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     if (x * x + z * z < rSquared)
                     {
-                        SetRaw(pos + new Vector3I(x, height - h - 1, z) + OriginOffset, blockValue);
+                        SetRaw(pos + new Vector3I(x, height - h - 1, z) + OriginOffset, (ulong)blockType);
                     }
                 }
             }
@@ -275,7 +272,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillArea(Vector3I min, Vector3I max, string blockType)
+    public StructureBuffer FillArea(Vector3I min, Vector3I max, Blocks blockType)
     {
         min = (min + OriginOffset).Clamp(Vector3I.Zero, Size - new Vector3I(1, 1, 1));
         max = (max + OriginOffset).Clamp(Vector3I.Zero, Size);
@@ -285,7 +282,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         }
 
         Data.FillArea(
-            value: this.GetBlockTypeIndex(blockType),
+            value: (ulong)blockType,
             min: min,
             max: max,
             channel: (int)VoxelBuffer.ChannelId.ChannelType

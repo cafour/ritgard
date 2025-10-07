@@ -26,13 +26,13 @@ public static class VoxelLibraryExtensions
     public static void FillBlockArea(
         this IWithVoxelLibrary self,
         VoxelBuffer buffer,
-        string blockType,
+        Blocks blockType,
         Vector3I min,
         Vector3I max
     )
     {
         buffer.FillArea(
-            value: self.GetBlockTypeIndex(blockType),
+            value: (ulong)blockType,
             min: min,
             max: max,
             channel: (int)VoxelBuffer.ChannelId.ChannelType

@@ -12,16 +12,37 @@ public partial class OutlierRock : Node3D, IWithVoxelLibrary
     [Export]
     public Material Material { get; set; }
 
-    public int Height { get; set; }
-
-    public int Breadth { get; set; }
+    public ActiveItem Item { get; set; }
+    
+    public int Height { get; private set; }
 
     public override void _Ready()
     {
+        Position = new Vector3(Item.Position.X, 0, Item.Position.Y);
+    }
+
+    public void OnShowStep(int step)
+    {
+        var height = Mathf.RoundToInt(Overlord.Instance.Heights[Item.Id]);
+        if (height == Height)
+        {
+            return;
+        }
+        
+        Height = height;
+
+        if (Height == 0)
+        {
+            _.Mesh.Visible = false;
+            return;
+        }
+
+        _.Mesh.Visible = true;
+
         var structure = new Rock
         {
             Height = Height,
-            Breadth = Breadth,
+            Breadth = 3,
             Pointiness = 1
         };
 
@@ -34,6 +55,10 @@ public partial class OutlierRock : Node3D, IWithVoxelLibrary
             Library = Library
         };
         _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
-        _.Mesh.Position = new Vector3(-size.X / 2 + 0.5f, 0, -size.Z / 2 + 0.5f);
+        _.Mesh.Position = new Vector3(
+            x: -size.X / 2 + 0.5f,
+            y: 0,
+            z: -size.Z / 2 + 0.5f
+        );
     }
 }

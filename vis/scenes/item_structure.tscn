@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://bx4226wl622ht"]
 
-[ext_resource type="Script" uid="uid://d2hce27v0el6e" path="res://scenes/TestStructure.cs" id="1_kiqts"]
+[ext_resource type="Script" uid="uid://05vfpmdpi2il" path="res://scenes/ItemStructure.cs" id="1_kiqts"]
 [ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="2_v15mh"]
 [ext_resource type="Material" uid="uid://cep2p2lt1vumq" path="res://voxel_material.tres" id="3_38n5f"]
 [ext_resource type="Shader" uid="uid://bnqc2iav2loar" path="res://shaders/outline.gdshader" id="3_fjski"]
