@@ -193,7 +193,7 @@ public partial class Overlord : Node
             var slidingEvents = Repo.Items[issue.Id].Events.GetRange(now - Repo.SlidingWindow, now, true);
             Heights[issue.Id] = slidingEvents.Count();
             itemStructures.GetValueOrDefault(issue.Id)?.OnShowStep(step);
-            outlierRocks.GetValueOrDefault(issue.Id)?.OnShowStep(step);
+            // outlierRocks.GetValueOrDefault(issue.Id)?.OnShowStep(step);
         }
 
         foreach (var topicIsland in topicIslands.Values)

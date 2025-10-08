@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Godot;
 using NetTopologySuite.Algorithm.Hull;
 using NetTopologySuite.Geometries;
@@ -34,7 +35,9 @@ public partial class TopicIsland : Node3D
     private ImmutableHashSet<long> itemIds;
     private ImmutableArray<Vector2> itemPoints;
     private Rect2I heightmapBox;
-    private PlaneMesh plane;
+    private ArrayMesh arrayMesh = new();
+    private RenderingDevice device;
+    private float[] vertices;
 
     public Topic Topic { get; set; }
 
@@ -67,12 +70,17 @@ public partial class TopicIsland : Node3D
             .Select(i => i.Value.Id)];
         InitializeHeightmap();
         InitializePlane();
+
+        device = RenderingServer.GetRenderingDevice();
     }
 
     public void OnShowStep(int step)
     {
         // ComputeLeveledHeightmap(points, bbox);
-        ComputeBlockyMesh();
+        ComputeSmoothHeightmap();
+        // ComputeBlockyMesh();
+        UpdatePlane();
+        
     }
 
     public void ToggleHighlight(bool? value)
@@ -218,15 +226,72 @@ public partial class TopicIsland : Node3D
 
     private void InitializePlane()
     {
-        if (plane is not null)
+        if (Heightmap.GetLength(0) < 1 || Heightmap.GetLength(1) < 1)
         {
-            plane.Free();
+            GD.PushWarning($"Island for topic {Topic.Id} has a heightmap that is too small to be turned into mesh.");
+            return;
         }
 
-        plane = new PlaneMesh();
-        plane.Size = new Vector2(Heightmap.GetLength(0), Heightmap.GetLength(1));
-        plane.SubdivideWidth = Heightmap.GetLength(0) - 2;
-        plane.SubdivideDepth = Heightmap.GetLength(1) - 2;
+        var hh = Heightmap.GetLength(0);
+        var hw = Heightmap.GetLength(1);
+        vertices = new float[3 * hh * hw];
+        var indices = new int[(hh - 1) * (hw - 1) * 3 * 2];
+        // x goes right, y is actually z and goes "down", towards the camera
+        for (int y = 0; y < hh; ++y)
+        {
+            for (int x = 0; x < hw; ++x)
+            {
+                var baseIndex = y * hw + x;
+                vertices[3 * baseIndex + 0] = x;
+                vertices[3 * baseIndex + 1] = 0;
+                vertices[3 * baseIndex + 2] = y;
+
+                if (x < hw - 1 && y < hh - 1)
+                {
+                    var baseTriIndex = 6 * (y * (hw - 1) + x);
+                    indices[baseTriIndex + 0] = baseIndex;
+                    indices[baseTriIndex + 1] = baseIndex + 1;
+                    indices[baseTriIndex + 2] = baseIndex + hw;
+
+                    indices[baseTriIndex + 3] = baseIndex + hw;
+                    indices[baseTriIndex + 4] = baseIndex + 1;
+                    indices[baseTriIndex + 5] = baseIndex + hw + 1;
+                }
+            }
+        }
+
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = new Vector3[hh * hw];
+        arrays[(int)Mesh.ArrayType.Index] = indices;
+        arrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        _.Mesh.Mesh = arrayMesh;
+        _.Mesh.Position = new Vector3(heightmapBox.Position.X, 0, heightmapBox.Position.Y);
+    }
+
+    private void UpdatePlane()
+    {
+        var hh = Heightmap.GetLength(0);
+        var hw = Heightmap.GetLength(1);
+        // var format = arrayMesh.SurfaceGetFormat(0);
+        // var testOffset = RenderingServer.MeshSurfaceGetFormatOffset(
+        //     (RenderingServer.ArrayFormat)format,
+        //     hh * hw,
+        //     0
+        // );
+        // var testStride = RenderingServer.MeshSurfaceGetFormatVertexStride(
+        //     (RenderingServer.ArrayFormat)format,
+        //     hh * hw
+        // );
+        for (int y = 0; y < hh; ++y)
+        {
+            for (int x = 0; x < hw; ++x)
+            {
+                vertices[3 * (y * hw + x) + 1] = Heightmap[y, x];
+            }
+        }
+        var bytes = MemoryMarshal.Cast<float, byte>(vertices.AsSpan());
+        arrayMesh.SurfaceUpdateVertexRegion(0, 0, bytes);
     }
 
     private void ComputeBlockyMesh()
@@ -246,8 +311,6 @@ public partial class TopicIsland : Node3D
             library: Library,
             offset: new Vector3I(1, 1, 1)
         );
-        
-        ComputeSmoothHeightmap();
 
         for (int y = 0; y < Heightmap.GetLength(0); ++y)
         {
