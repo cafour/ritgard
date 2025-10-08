@@ -5,6 +5,7 @@ using System.Linq;
 using Godot;
 using NetTopologySuite.Algorithm.Hull;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Index.HPRtree;
 using NetTopologySuite.Index.KdTree;
 using Ritgard.Mining;
 
@@ -16,6 +17,9 @@ public partial class TopicIsland : Node3D
     public const int GrassWidth = 1;
     public const int DirtWidth = 3;
     public const int StructureRadius = 3;
+    public const int HeightmapPadding = 8;
+    public const int MaxHeight = 70;
+
     public static ImmutableArray<Blocks> Palette = [
         Blocks.Vis01,
         Blocks.Vis02,
@@ -28,6 +32,9 @@ public partial class TopicIsland : Node3D
     ];
 
     private ImmutableHashSet<long> itemIds;
+    private ImmutableArray<Vector2> itemPoints;
+    private Rect2I heightmapBox;
+    private PlaneMesh plane;
 
     public Topic Topic { get; set; }
 
@@ -47,99 +54,25 @@ public partial class TopicIsland : Node3D
 
     public byte[,] Heightmap { get; set; }
 
+
     public override void _Ready()
     {
         if (Topic is null)
         {
             throw new NullReferenceException("Topic is not set.");
         }
-        
+
         itemIds = [.. Overlord.Instance.Repo.TopicModelling.Items
             .Where(i => i.Value.TopicId == Topic.Id)
             .Select(i => i.Value.Id)];
+        InitializeHeightmap();
+        InitializePlane();
     }
 
     public void OnShowStep(int step)
     {
-        var points = itemIds.Select(i => new Vector3(
-            x: Overlord.Instance.Repo.Items[i].Position.X,
-            y: Overlord.Instance.Heights[i],
-            z: Overlord.Instance.Repo.Items[i].Position.Y
-        ));
-
-        var startCorner = new Vector3(
-            points.Min(p => p.X) - SmoothRadius,
-            0,
-            points.Min(p => p.Z) - SmoothRadius
-        );
-        var endCorner = new Vector3(
-            points.Max(p => p.X) + SmoothRadius,
-            points.Max(p => p.Y),
-            points.Max(p => p.Z) + SmoothRadius
-        );
-        var bbox = new Aabb(startCorner, endCorner - startCorner);
-        var intSize = Utils.RoundToInt(bbox.Size) + new Vector3I(StructureRadius * 2, 0, StructureRadius * 2);
-        if (intSize.Y == 0)
-        {
-            _.Mesh.Visible = false;
-            return;
-        }
-        
-        _.Mesh.Visible = true;
-
-        var buffer = new StructureBuffer(
-            size: intSize,
-            library: Library,
-            offset: new Vector3I(1, 1, 1)
-        );
-
-        Heightmap = new byte[intSize.Z, intSize.X];
         // ComputeLeveledHeightmap(points, bbox);
-        ComputeSmoothHeightmap(points, bbox);
-
-        for (int y = 0; y < Heightmap.GetLength(0); ++y)
-        {
-            for (int x = 0; x < Heightmap.GetLength(1); ++x)
-            {
-                var height = Heightmap[y, x];
-                if (height == 0)
-                {
-                    continue;
-                }
-
-                buffer.FillArea(
-                    new(x, 0, y),
-                    new(x + 1, height - DirtWidth - GrassWidth, y + 1),
-                    Blocks.Stone
-                );
-                buffer.FillArea(
-                    new(x, height - DirtWidth - GrassWidth, y),
-                    new(x + 1, height - GrassWidth, y + 1),
-                    Blocks.Dirt
-                );
-                buffer.FillArea(
-                    new(x, height - GrassWidth, y),
-                    new(x + 1, height, y + 1),
-                    Palette[Topic.Id % Palette.Length]
-                );
-            }
-        }
-
-        var shape = new ConcavePolygonShape3D();
-        var mesher = new VoxelMesherBlocky();
-        mesher.Library = Library;
-        var mesh = mesher.BuildMesh(buffer.Data, [Material]);
-        if (mesh is null)
-        {
-            GD.PushWarning($"Topic island '{Topic.GetPreferredTitle()}' did not produce a mesh.");
-            return;
-        }
-
-        // shape.SetFaces(mesh.GetFaces());
-        _.Mesh.Mesh = mesh;
-        _.Mesh.Position = bbox.Position;
-        // _.Body.Collider.Shape = shape;
-        _.Body.Get().Position = bbox.Position;
+        ComputeBlockyMesh();
     }
 
     public void ToggleHighlight(bool? value)
@@ -213,14 +146,20 @@ public partial class TopicIsland : Node3D
 
     public const int SmoothRadius = 10;
 
-    private void ComputeSmoothHeightmap(IEnumerable<Vector3> points, Aabb bbox)
+    private void ComputeSmoothHeightmap()
     {
-        foreach (var point in points)
+        ClearHeightmap();
+        foreach (var id in itemIds)
         {
+            var point = new Vector3(
+                x: Overlord.Instance.Repo.Items[id].Position.X,
+                y: Overlord.Instance.Heights[id],
+                z: Overlord.Instance.Repo.Items[id].Position.Y
+            );
             var radius = SmoothRadius;
             for (int z = -radius; z < radius; ++z)
             {
-                var hz = Mathf.RoundToInt(point.Z - bbox.Position.Z + z);
+                var hz = Mathf.RoundToInt(point.Z - heightmapBox.Position.Y + z);
                 if (hz < 0 || hz >= Heightmap.GetLength(0))
                 {
                     continue;
@@ -228,7 +167,7 @@ public partial class TopicIsland : Node3D
 
                 for (int x = -radius; x < radius; ++x)
                 {
-                    var hx = Mathf.RoundToInt(point.X - bbox.Position.X + x);
+                    var hx = Mathf.RoundToInt(point.X - heightmapBox.Position.X + x);
                     if (hx < 0 || hx >= Heightmap.GetLength(1))
                     {
                         continue;
@@ -244,5 +183,115 @@ public partial class TopicIsland : Node3D
                 }
             }
         }
+    }
+
+    private void InitializeHeightmap()
+    {
+        itemPoints = itemIds.Select(i => new Vector2(
+            x: Overlord.Instance.Repo.Items[i].Position.X,
+            y: Overlord.Instance.Repo.Items[i].Position.Y
+        )).ToImmutableArray();
+        var min = new Vector2I(
+            x: Mathf.FloorToInt(itemPoints.Min(i => i.X)) - HeightmapPadding,
+            y: Mathf.FloorToInt(itemPoints.Min(i => i.Y)) - HeightmapPadding
+        );
+        var max = new Vector2I(
+            x: Mathf.CeilToInt(itemPoints.Max(i => i.X)) + HeightmapPadding,
+            y: Mathf.CeilToInt(itemPoints.Max(i => i.Y)) + HeightmapPadding
+        );
+        heightmapBox = new Rect2I(min, max - min);
+        Heightmap = new byte[heightmapBox.Size.Y, heightmapBox.Size.X];
+    }
+
+    private void ClearHeightmap()
+    {
+        var height = Heightmap.GetLength(0);
+        var width = Heightmap.GetLength(1);
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                Heightmap[y, x] = 0;
+            }
+        }
+    }
+
+    private void InitializePlane()
+    {
+        if (plane is not null)
+        {
+            plane.Free();
+        }
+
+        plane = new PlaneMesh();
+        plane.Size = new Vector2(Heightmap.GetLength(0), Heightmap.GetLength(1));
+        plane.SubdivideWidth = Heightmap.GetLength(0) - 2;
+        plane.SubdivideDepth = Heightmap.GetLength(1) - 2;
+    }
+
+    private void ComputeBlockyMesh()
+    {
+        var maxHeight = Mathf.RoundToInt(itemIds.Max(i => Overlord.Instance.Heights[i]));
+        var intSize = new Vector3I(heightmapBox.Size.X, maxHeight, heightmapBox.Size.Y);
+        if (intSize.Y == 0)
+        {
+            _.Mesh.Visible = false;
+            return;
+        }
+
+        _.Mesh.Visible = true;
+
+        var buffer = new StructureBuffer(
+            size: intSize,
+            library: Library,
+            offset: new Vector3I(1, 1, 1)
+        );
+        
+        ComputeSmoothHeightmap();
+
+        for (int y = 0; y < Heightmap.GetLength(0); ++y)
+        {
+            for (int x = 0; x < Heightmap.GetLength(1); ++x)
+            {
+                var height = Heightmap[y, x];
+                if (height == 0)
+                {
+                    continue;
+                }
+
+                buffer.FillArea(
+                    new(x, 0, y),
+                    new(x + 1, height - DirtWidth - GrassWidth, y + 1),
+                    Blocks.Stone
+                );
+                buffer.FillArea(
+                    new(x, height - DirtWidth - GrassWidth, y),
+                    new(x + 1, height - GrassWidth, y + 1),
+                    Blocks.Dirt
+                );
+                buffer.FillArea(
+                    new(x, height - GrassWidth, y),
+                    new(x + 1, height, y + 1),
+                    Palette[Topic.Id % Palette.Length]
+                );
+            }
+        }
+
+        var shape = new ConcavePolygonShape3D();
+        var mesher = new VoxelMesherBlocky();
+        mesher.Library = Library;
+        var mesh = mesher.BuildMesh(buffer.Data, [Material]);
+        if (mesh is null)
+        {
+            GD.PushWarning($"Topic island '{Topic.GetPreferredTitle()}' did not produce a mesh.");
+            return;
+        }
+
+        // shape.SetFaces(mesh.GetFaces());
+        var position = new Vector3(heightmapBox.Position.X, 0, heightmapBox.Position.Y);
+        _.Mesh.Mesh = mesh;
+        _.Mesh.Position = position;
+        _.Body.Get().Position = position;
+        // _.Body.Collider.Shape = shape;
     }
 }

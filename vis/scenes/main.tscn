@@ -53,6 +53,8 @@ size = Vector3(10, 10, 10)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_choun"]
 size = Vector2(4096, 4096)
+subdivide_width = 1
+subdivide_depth = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ya4ey"]
 albedo_color = Color(0, 0.356863, 0.670588, 1)
@@ -82,6 +84,7 @@ Crosshair = NodePath("../UI/CenterContainer/Crosshair")
 [node name="Camera" type="Camera3D" parent="Player"]
 environment = ExtResource("6_tipki")
 current = true
+size = 1000.0
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player/Camera"]
 view_distance = 512
