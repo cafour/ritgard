@@ -1,10 +1,14 @@
-[gd_scene load_steps=7 format=3 uid="uid://rvdfdq5klsk4"]
+[gd_scene load_steps=8 format=3 uid="uid://rvdfdq5klsk4"]
 
 [ext_resource type="Script" uid="uid://ej67kysjwwlq" path="res://scenes/TopicIsland.cs" id="1_cfvs4"]
 [ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="2_xsgby"]
 [ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_wc82c"]
-[ext_resource type="Material" uid="uid://cep2p2lt1vumq" path="res://voxel_material.tres" id="4_4m8o0"]
+[ext_resource type="Shader" uid="uid://qr2pwcp5cim5" path="res://shaders/topic_island.gdshader" id="4_4m8o0"]
 [ext_resource type="Shader" uid="uid://bnqc2iav2loar" path="res://shaders/outline.gdshader" id="5_4m8o0"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_j52l4"]
+render_priority = 0
+shader = ExtResource("4_4m8o0")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pnkat"]
 render_priority = 0
@@ -16,7 +20,7 @@ shader_parameter/thickness = 0.25
 script = ExtResource("1_cfvs4")
 Library = ExtResource("2_xsgby")
 Mesher = ExtResource("3_wc82c")
-Material = ExtResource("4_4m8o0")
+Material = SubResource("ShaderMaterial_j52l4")
 HighlightMaterial = SubResource("ShaderMaterial_pnkat")
 
 [node name="Mesh" type="MeshInstance3D" parent="."]

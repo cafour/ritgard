@@ -265,8 +265,22 @@ public partial class TopicIsland : Node3D
         arrays[(int)Mesh.ArrayType.Vertex] = new Vector3[hh * hw];
         arrays[(int)Mesh.ArrayType.Index] = indices;
         arrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        arrayMesh.CustomAabb = new Aabb(
+            position: new Vector3(
+                0,
+                0,
+                0
+            ),
+            size: new Vector3(
+                heightmapBox.Size.X,
+                MaxHeight,
+                heightmapBox.Size.Y
+            )
+        );
+
         _.Mesh.Mesh = arrayMesh;
-        _.Mesh.Position = new Vector3(heightmapBox.Position.X, 0, heightmapBox.Position.Y);
+        _.Mesh.Position = new Vector3(heightmapBox.Position.X, 0.01f, heightmapBox.Position.Y);
+        _.Mesh.SetSurfaceOverrideMaterial(0, Material);
     }
 
     private void UpdatePlane()
