@@ -21,7 +21,7 @@ public partial class TopicIsland : Node3D
     public const int HeightmapPadding = 8;
     public const int MaxHeight = 70;
 
-    public static ImmutableArray<Blocks> Palette = [
+    public static readonly ImmutableArray<Blocks> Palette = [
         Blocks.Vis01,
         Blocks.Vis02,
         Blocks.Vis03,
@@ -31,13 +31,12 @@ public partial class TopicIsland : Node3D
         Blocks.Vis07,
         Blocks.Vis08,
     ];
-
     private ImmutableHashSet<long> itemIds;
     private ImmutableArray<Vector2> itemPoints;
     private Rect2I heightmapBox;
     private ArrayMesh arrayMesh = new();
-    private RenderingDevice device;
     private float[] vertices;
+    private Color islandColor;
 
     public Topic Topic { get; set; }
 
@@ -68,10 +67,13 @@ public partial class TopicIsland : Node3D
         itemIds = [.. Overlord.Instance.Repo.TopicModelling.Items
             .Where(i => i.Value.TopicId == Topic.Id)
             .Select(i => i.Value.Id)];
+        var colorPalette = Palette
+            .Select(b => ((VoxelBlockyModelCube)Library.GetModel((uint)b)).Color)
+            .ToImmutableArray();
+        islandColor = colorPalette[Topic.Id % colorPalette.Length];
+
         InitializeHeightmap();
         InitializePlane();
-
-        device = RenderingServer.GetRenderingDevice();
     }
 
     public void OnShowStep(int step)
@@ -293,7 +295,13 @@ public partial class TopicIsland : Node3D
 
         _.Mesh.Mesh = arrayMesh;
         _.Mesh.Position = new Vector3(heightmapBox.Position.X, -0.01f, heightmapBox.Position.Y);
-        _.Mesh.SetSurfaceOverrideMaterial(0, Material);
+        var material = Material.Duplicate();
+        if (material is ShaderMaterial shaderMaterial)
+        {
+            shaderMaterial.SetShaderParameter("color", islandColor);
+        }
+
+        _.Mesh.SetSurfaceOverrideMaterial(0, material as Material);
         _.Body.Get().Position = _.Mesh.Position;
     }
 

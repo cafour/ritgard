@@ -65,7 +65,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "C:\\dev\\ext\\godot\\voxel-441\\godot.windows.editor.x86_64.mono.exe",
+            "program": "C:\\dev\\ext\\godot\\bin\\godot.windows.editor.x86_64.mono.exe",
             "args": [
                 "scenes/main.tscn"
             ],
