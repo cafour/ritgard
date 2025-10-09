@@ -249,13 +249,26 @@ public partial class TopicIsland : Node3D
                 if (x < hw - 1 && y < hh - 1)
                 {
                     var baseTriIndex = 6 * (y * (hw - 1) + x);
-                    indices[baseTriIndex + 0] = baseIndex;
-                    indices[baseTriIndex + 1] = baseIndex + 1;
-                    indices[baseTriIndex + 2] = baseIndex + hw;
+                    if (baseIndex % 2 == 0)
+                    {
+                        indices[baseTriIndex + 0] = baseIndex;
+                        indices[baseTriIndex + 1] = baseIndex + 1;
+                        indices[baseTriIndex + 2] = baseIndex + hw;
 
-                    indices[baseTriIndex + 3] = baseIndex + hw;
-                    indices[baseTriIndex + 4] = baseIndex + 1;
-                    indices[baseTriIndex + 5] = baseIndex + hw + 1;
+                        indices[baseTriIndex + 3] = baseIndex + hw;
+                        indices[baseTriIndex + 4] = baseIndex + 1;
+                        indices[baseTriIndex + 5] = baseIndex + hw + 1;
+                    }
+                    else
+                    {
+                        indices[baseTriIndex + 0] = baseIndex;
+                        indices[baseTriIndex + 1] = baseIndex + hw + 1;
+                        indices[baseTriIndex + 2] = baseIndex + hw;
+
+                        indices[baseTriIndex + 3] = baseIndex + hw + 1;
+                        indices[baseTriIndex + 4] = baseIndex;
+                        indices[baseTriIndex + 5] = baseIndex + 1;
+                    }
                 }
             }
         }
@@ -281,6 +294,7 @@ public partial class TopicIsland : Node3D
         _.Mesh.Mesh = arrayMesh;
         _.Mesh.Position = new Vector3(heightmapBox.Position.X, -0.01f, heightmapBox.Position.Y);
         _.Mesh.SetSurfaceOverrideMaterial(0, Material);
+        _.Body.Get().Position = _.Mesh.Position;
     }
 
     private void UpdatePlane()
@@ -306,6 +320,10 @@ public partial class TopicIsland : Node3D
         }
         var bytes = MemoryMarshal.Cast<float, byte>(vertices.AsSpan());
         arrayMesh.SurfaceUpdateVertexRegion(0, 0, bytes);
+
+        // var shape = new ConvexPolygonShape3D();
+        // shape.Points = arrayMesh.SurfaceGetArrays(0)[0].AsVector3Array();
+        // _.Body.Collider.Shape = shape;
     }
 
     private void ComputeBlockyMesh()
