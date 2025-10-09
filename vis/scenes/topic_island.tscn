@@ -31,3 +31,15 @@ collision_layer = 2
 collision_mask = 0
 
 [node name="Collider" type="CollisionShape3D" parent="Body"]
+
+[node name="Label" type="Label3D" parent="."]
+pixel_size = 0.001
+billboard = 1
+double_sided = false
+fixed_size = true
+alpha_cut = 1
+render_priority = 10
+outline_render_priority = 9
+text = "The Topic Title"
+font_size = 30
+outline_size = 4

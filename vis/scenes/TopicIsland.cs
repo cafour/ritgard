@@ -8,6 +8,7 @@ using NetTopologySuite.Algorithm.Hull;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Index.HPRtree;
 using NetTopologySuite.Index.KdTree;
+using NetTopologySuite.Triangulate.Tri;
 using Ritgard.Mining;
 
 namespace Ritgard.Structures;
@@ -22,7 +23,8 @@ public partial class TopicIsland : Node3D
     public const int MaxHeight = 70;
     public const int SmoothRadius = 10;
 
-    public static readonly ImmutableArray<Blocks> Palette = [
+    public static readonly ImmutableArray<Blocks> Palette =
+    [
         Blocks.Vis01,
         Blocks.Vis02,
         Blocks.Vis03,
@@ -32,6 +34,7 @@ public partial class TopicIsland : Node3D
         Blocks.Vis07,
         Blocks.Vis08,
     ];
+
     private ImmutableHashSet<long> itemIds;
     private ImmutableArray<Vector2> itemPoints;
     private Rect2I heightmapBox;
@@ -41,22 +44,17 @@ public partial class TopicIsland : Node3D
 
     public Topic Topic { get; set; }
 
-    [Export]
-    public VoxelBlockyLibrary Library { get; set; }
+    [Export] public VoxelBlockyLibrary Library { get; set; }
 
-    [Export]
-    public VoxelMesherBlocky Mesher { get; set; }
+    [Export] public VoxelMesherBlocky Mesher { get; set; }
 
-    [Export]
-    public Material Material { get; set; }
+    [Export] public Material Material { get; set; }
 
-    [Export]
-    public Material HighlightMaterial { get; set; }
+    [Export] public Material HighlightMaterial { get; set; }
 
     public bool IsHighlighted { get; set; }
 
     public byte[,] Heightmap { get; set; }
-    public int[,] Trianglemap { get; set; }
 
 
     public override void _Ready()
@@ -66,9 +64,19 @@ public partial class TopicIsland : Node3D
             throw new NullReferenceException("Topic is not set.");
         }
 
-        itemIds = [.. Overlord.Instance.Repo.TopicModelling.Items
-            .Where(i => i.Value.TopicId == Topic.Id)
-            .Select(i => i.Value.Id)];
+        itemIds =
+        [
+            .. Overlord.Instance.Repo.TopicModelling.Items
+                .Where(i => i.Value.TopicId == Topic.Id)
+                .Select(i => i.Value.Id)
+        ];
+        itemPoints =
+        [
+            ..itemIds.Select(i => new Vector2(
+                x: Overlord.Instance.Repo.Items[i].Position.X,
+                y: Overlord.Instance.Repo.Items[i].Position.Y
+            ))
+        ];
         var colorPalette = Palette
             .Select(b => ((VoxelBlockyModelCube)Library.GetModel((uint)b)).Color)
             .ToImmutableArray();
@@ -78,13 +86,21 @@ public partial class TopicIsland : Node3D
         InitializePlane();
     }
 
+    public override void _Input(InputEvent @event)
+    {
+        if (@event.IsAction(InputActions.ToggleLabels) && @event.IsPressed())
+        {
+            _.Label.Visible = !_.Label.Visible;
+        }
+    }
+
+
     public void OnShowStep(int step)
     {
         ComputeLeveledHeightmap();
         // ComputeSmoothHeightmap();
         // ComputeBlockyMesh();
         UpdatePlane();
-
     }
 
     public void ToggleHighlight(bool? value)
@@ -109,9 +125,10 @@ public partial class TopicIsland : Node3D
         var hull = new ConcaveHull(pointCloud)
         {
             MaximumEdgeLengthRatio = 0.3,
-            HolesAllowed = false
+            HolesAllowed = true
         };
         var hullTris = hull.GetHullTris();
+        var triTree = new KdTree<Tri>();
         for (int i = hullTris.Count - 1; i >= 0; --i)
         {
             var tri = hullTris[i];
@@ -124,10 +141,23 @@ public partial class TopicIsland : Node3D
                 .ToImmutableArray();
             if (intrudingPoints.Length > 0)
             {
+                tri.Remove();
                 hullTris.RemoveAt(i);
             }
+            else
+            {
+                var triCentroid = tri.GetCentroid();
+                triTree.Insert(new Coordinate(triCentroid.X, triCentroid.Y), tri);
+            }
         }
+
+        if (hullTris.Count == 0)
+        {
+            GD.PushWarning("Removed too many triangles that contained a point from another topic.");
+        }
+
         var hullPolygon = hull.GetHull(hullTris);
+        hullPolygon = hullPolygon.Buffer(StructureRadius);
 
         var kdTree = new KdTree<Issue>();
         foreach (var (id, pos) in itemIds.Zip(itemPoints))
@@ -135,44 +165,91 @@ public partial class TopicIsland : Node3D
             kdTree.Insert(new Coordinate(pos.X, pos.Y), Overlord.Instance.Repo.Mining.Issues[id]);
         }
 
-        var testPoint = Geometry.DefaultFactory.CreatePoint(new Coordinate(0, 0));
-        for (int z = SmoothRadius; z < Heightmap.GetLength(0); ++z)
+        for (int z = 0; z < Heightmap.GetLength(0); ++z)
         {
-            for (int x = SmoothRadius; x < Heightmap.GetLength(1); ++x)
+            for (int x = 0; x < Heightmap.GetLength(1); ++x)
             {
                 var px = x + heightmapBox.Position.X;
                 var py = z + heightmapBox.Position.Y;
 
-                testPoint.Coordinate.X = px;
-                testPoint.Coordinate.Y = py;
+                var coord = new Coordinate(px, py);
 
-                var nearestPoint = kdTree.NearestNeighbor(testPoint.Coordinate);
-                if (nearestPoint is null || nearestPoint.Count == 0)
+                if (hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
                 {
+                    Heightmap[z, x] = 1;
+                }
+
+                var nearestTri = triTree.NearestNeighbor(coord);
+                var (containingTri, (alpha, beta, gamma)) = Utils.LocateTriangle(nearestTri.Data, new Vector2(px, py));
+                if (containingTri is null)
+                {
+                    // TODO: Gaussian blur on the edges of tris
                     continue;
                 }
 
-                var nearestIssue = nearestPoint.Data;
-                var nearestPointHeight = Overlord.Instance.Heights[nearestIssue.Id];
-
-                if (hullPolygon.Contains(testPoint))
+                var v0Item = kdTree.NearestNeighbor(containingTri.GetCoordinate(0));
+                var v1Item = kdTree.NearestNeighbor(containingTri.GetCoordinate(1));
+                var v2Item = kdTree.NearestNeighbor(containingTri.GetCoordinate(2));
+                if (v0Item is null
+                    || v1Item is null
+                    || v2Item is null
+                    || v0Item == v1Item
+                    || v0Item == v2Item
+                    || v1Item == v2Item
+                   )
                 {
-                    Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 1, 255);
+                    GD.PushWarning("Couldn't re-determine which item is at a coordinate. :(");
+                    continue;
+                }
+
+                var v0Height = Overlord.Instance.Heights[v0Item.Data.Id];
+                var v1Height = Overlord.Instance.Heights[v1Item.Data.Id];
+                var v2Height = Overlord.Instance.Heights[v2Item.Data.Id];
+
+                var height = v0Height * alpha + v1Height * beta + v2Height * gamma;
+                var intHeight = Mathf.RoundToInt(height);
+                // NB: height 0 and 1 have special meanings; 0 is invisible deep sea; 1 is shallow sea
+                if (intHeight > 0)
+                {
+                    // NB: above sea level
+                    intHeight += 2;
                 }
                 else
                 {
-                    var distance = nearestPoint.Coordinate.Distance(testPoint.Coordinate);
-                    if (distance < StructureRadius)
-                    {
-                        Heightmap[z, x] = (byte)nearestPointHeight;
-                    }
-                    else
-                    {
-                        distance -= StructureRadius;
-                        var height = nearestPointHeight / (distance * distance + 1);
-                        Heightmap[z, x] = (byte)height;
-                    }
+                    // NB: shallow sea
+                    intHeight = 1;
                 }
+
+                Heightmap[z, x] = (byte)intHeight;
+
+                // var nearestPoint = kdTree.NearestNeighbor(coord);
+                // if (nearestPoint is null || nearestPoint.Count == 0)
+                // {
+                //     continue;
+                // }
+                //
+                // var nearestIssue = nearestPoint.Data;
+                // var nearestPointHeight = Overlord.Instance.Heights[nearestIssue.Id];
+                //
+                // if (hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
+                // {
+                //     Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 1, 255);
+                // }
+                // else
+                // {
+                //     var distance = nearestPoint.Coordinate.Distance(coord);
+                //     if (distance < StructureRadius)
+                //     {
+                //         Heightmap[z, x] = (byte)nearestPointHeight;
+                //         Heightmap[z, x] = (byte)Mathf.Max(Heightmap[z, x], 1);
+                //     }
+                //     else
+                //     {
+                //         distance -= StructureRadius;
+                //         var height = nearestPointHeight / (distance * distance + 1);
+                //         Heightmap[z, x] = (byte)height;
+                //     }
+                // }
             }
         }
     }
@@ -218,10 +295,6 @@ public partial class TopicIsland : Node3D
 
     private void InitializeHeightmap()
     {
-        itemPoints = itemIds.Select(i => new Vector2(
-            x: Overlord.Instance.Repo.Items[i].Position.X,
-            y: Overlord.Instance.Repo.Items[i].Position.Y
-        )).ToImmutableArray();
         var min = new Vector2I(
             x: Mathf.FloorToInt(itemPoints.Min(i => i.X)) - HeightmapPadding,
             y: Mathf.FloorToInt(itemPoints.Min(i => i.Y)) - HeightmapPadding
@@ -324,6 +397,9 @@ public partial class TopicIsland : Node3D
 
         _.Mesh.SetSurfaceOverrideMaterial(0, material as Material);
         _.Body.Get().Position = _.Mesh.Position;
+        _.Label.Text = Topic.GetPreferredTitle();
+        var halfSize = (Vector2)heightmapBox.Size * 0.5f;
+        _.Label.Position = _.Mesh.Position + new Vector3(halfSize.X, 2, halfSize.Y);
     }
 
     private void UpdatePlane()
@@ -334,9 +410,13 @@ public partial class TopicIsland : Node3D
         {
             for (int x = 0; x < hw; ++x)
             {
-                vertices[3 * (y * hw + x) + 1] = Heightmap[y, x];
+                var height = Heightmap[y, x];
+                vertices[3 * (y * hw + x) + 1] = height == 0 ? -10f
+                    : height == 1 ? -1f
+                    : height;
             }
         }
+
         var bytes = MemoryMarshal.Cast<float, byte>(vertices.AsSpan());
         arrayMesh.SurfaceUpdateVertexRegion(0, 0, bytes);
 

@@ -57,7 +57,8 @@ subdivide_width = 1
 subdivide_depth = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ya4ey"]
-albedo_color = Color(0, 0.356863, 0.670588, 1)
+transparency = 1
+albedo_color = Color(0, 0.35686275, 0.67058825, 0.78431374)
 
 [node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player", "ControlsContainer", "DatasetDropdown", "CurrentTimeLabel", "CurrentStepSpinBox")]
 script = ExtResource("1_o5qli")
