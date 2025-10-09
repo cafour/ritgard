@@ -1,0 +1,7 @@
+<Project>
+    <Target Name="SilenceWarnings" BeforeTargets="BeforeBuild">
+        <PropertyGroup>
+            <NoWarn>$(NoWarn);CS1591;CS0108;CS1572;CS1573;CS1574;CS0419;CS1723</NoWarn>
+        </PropertyGroup>
+    </Target>
+</Project>

@@ -1,0 +1,3 @@
+[submodule "submodules/NetTopologySuite"]
+	path = submodules/NetTopologySuite
+	url = git@github.com:cafour/NetTopologySuite.git
