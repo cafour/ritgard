@@ -20,6 +20,7 @@ public partial class TopicIsland : Node3D
     public const int StructureRadius = 3;
     public const int HeightmapPadding = 8;
     public const int MaxHeight = 70;
+    public const int SmoothRadius = 10;
 
     public static readonly ImmutableArray<Blocks> Palette = [
         Blocks.Vis01,
@@ -78,8 +79,8 @@ public partial class TopicIsland : Node3D
 
     public void OnShowStep(int step)
     {
-        // ComputeLeveledHeightmap(points, bbox);
-        ComputeSmoothHeightmap();
+        ComputeLeveledHeightmap();
+        // ComputeSmoothHeightmap();
         // ComputeBlockyMesh();
         UpdatePlane();
         
@@ -100,61 +101,58 @@ public partial class TopicIsland : Node3D
         }
     }
 
-    // private void ComputeLeveledHeightmap(IEnumerable<Vector3> points, Aabb bbox)
-    // {
-    //     var coords = points.Select(v => new Coordinate(v.X, v.Z)).ToArray();
-    //     var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
-    //     var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.3);
-    //     var kdTree = new KdTree<Issue>();
-    //     foreach (var id in itemIds)
-    //     {
-    //         var pos = Overlord.Instance.Positions[id];
-    //         kdTree.Insert(new Coordinate(pos.X, pos.Z), Overlord.Instance.Data[id]);
-    //     }
+    private void ComputeLeveledHeightmap()
+    {
+        var coords = itemPoints.Select(v => new Coordinate(v.X, v.Y)).ToArray();
+        var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
+        var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.3);
+        var kdTree = new KdTree<Issue>();
+        foreach (var (id, pos) in itemIds.Zip(itemPoints))
+        {
+            kdTree.Insert(new Coordinate(pos.X, pos.Y), Overlord.Instance.Repo.Mining.Issues[id]);
+        }
 
-    //     var testPoint = Geometry.DefaultFactory.CreatePoint(new Coordinate(0, 0));
-    //     for (int z = SmoothRadius; z < Heightmap.GetLength(0); ++z)
-    //     {
-    //         for (int x = SmoothRadius; x < Heightmap.GetLength(1); ++x)
-    //         {
-    //             var px = x + bbox.Position.X;
-    //             var py = z + bbox.Position.Z;
+        var testPoint = Geometry.DefaultFactory.CreatePoint(new Coordinate(0, 0));
+        for (int z = SmoothRadius; z < Heightmap.GetLength(0); ++z)
+        {
+            for (int x = SmoothRadius; x < Heightmap.GetLength(1); ++x)
+            {
+                var px = x + heightmapBox.Position.X;
+                var py = z + heightmapBox.Position.Y;
 
-    //             testPoint.Coordinate.X = px;
-    //             testPoint.Coordinate.Y = py;
+                testPoint.Coordinate.X = px;
+                testPoint.Coordinate.Y = py;
 
-    //             var nearestPoint = kdTree.NearestNeighbor(testPoint.Coordinate);
-    //             if (nearestPoint is null || nearestPoint.Count == 0)
-    //             {
-    //                 continue;
-    //             }
+                var nearestPoint = kdTree.NearestNeighbor(testPoint.Coordinate);
+                if (nearestPoint is null || nearestPoint.Count == 0)
+                {
+                    continue;
+                }
 
-    //             var nearestIssue = nearestPoint.Data;
-    //             var nearestPointHeight = Overlord.Instance.Positions[nearestIssue.Id].Y;
+                var nearestIssue = nearestPoint.Data;
+                var nearestPointHeight = Overlord.Instance.Heights[nearestIssue.Id];
 
-    //             if (hull.Contains(testPoint))
-    //             {
-    //                 Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 0, 255);
-    //             }
-    //             else
-    //             {
-    //                 var distance = nearestPoint.Coordinate.Distance(testPoint.Coordinate);
-    //                 if (distance < StructureRadius)
-    //                 {
-    //                     Heightmap[z, x] = (byte)nearestPointHeight;
-    //                 }
-    //                 else
-    //                 {
-    //                     distance -= StructureRadius;
-    //                     var height = nearestPointHeight / (distance * distance + 1);
-    //                     Heightmap[z, x] = (byte)height;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    public const int SmoothRadius = 10;
+                if (hull.Contains(testPoint))
+                {
+                    Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 0, 255);
+                }
+                else
+                {
+                    var distance = nearestPoint.Coordinate.Distance(testPoint.Coordinate);
+                    if (distance < StructureRadius)
+                    {
+                        Heightmap[z, x] = (byte)nearestPointHeight;
+                    }
+                    else
+                    {
+                        distance -= StructureRadius;
+                        var height = nearestPointHeight / (distance * distance + 1);
+                        Heightmap[z, x] = (byte)height;
+                    }
+                }
+            }
+        }
+    }
 
     private void ComputeSmoothHeightmap()
     {
@@ -309,16 +307,6 @@ public partial class TopicIsland : Node3D
     {
         var hh = Heightmap.GetLength(0);
         var hw = Heightmap.GetLength(1);
-        // var format = arrayMesh.SurfaceGetFormat(0);
-        // var testOffset = RenderingServer.MeshSurfaceGetFormatOffset(
-        //     (RenderingServer.ArrayFormat)format,
-        //     hh * hw,
-        //     0
-        // );
-        // var testStride = RenderingServer.MeshSurfaceGetFormatVertexStride(
-        //     (RenderingServer.ArrayFormat)format,
-        //     hh * hw
-        // );
         for (int y = 0; y < hh; ++y)
         {
             for (int x = 0; x < hw; ++x)
