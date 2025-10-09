@@ -124,7 +124,7 @@ public partial class TopicIsland : Node3D
         var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
         var hull = new ConcaveHull(pointCloud)
         {
-            MaximumEdgeLengthRatio = 0.3,
+            MaximumEdgeLengthRatio = 0.5,
             HolesAllowed = true
         };
         var hullTris = hull.GetHullTris();
@@ -206,7 +206,9 @@ public partial class TopicIsland : Node3D
                 var v1Height = Overlord.Instance.Heights[v1Item.Data.Id];
                 var v2Height = Overlord.Instance.Heights[v2Item.Data.Id];
 
-                var height = v0Height * alpha + v1Height * beta + v2Height * gamma;
+                var height = v0Height * Mathf.SmoothStep(0, 1, alpha)
+                    + v1Height * Mathf.SmoothStep(0, 1, beta)
+                    + v2Height * Mathf.SmoothStep(0, 1, gamma);
                 var intHeight = Mathf.RoundToInt(height);
                 // NB: height 0 and 1 have special meanings; 0 is invisible deep sea; 1 is shallow sea
                 if (intHeight > 0)
@@ -413,7 +415,7 @@ public partial class TopicIsland : Node3D
                 var height = Heightmap[y, x];
                 vertices[3 * (y * hw + x) + 1] = height == 0 ? -10f
                     : height == 1 ? -1f
-                    : height;
+                    : height - 2f;
             }
         }
 

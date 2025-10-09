@@ -10,7 +10,7 @@ namespace Ritgard;
 
 public class ActiveRepository
 {
-    public static readonly TimeSpan DefaultSlidingWindow = TimeSpan.FromDays(90);
+    public static readonly TimeSpan DefaultSlidingWindow = TimeSpan.FromDays(365);
     public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
 
     public DatasetInfo Dataset { get; private set; }
