@@ -56,6 +56,7 @@ public partial class TopicIsland : Node3D
     public bool IsHighlighted { get; set; }
 
     public byte[,] Heightmap { get; set; }
+    public int[,] Trianglemap { get; set; }
 
 
     public override void _Ready()
@@ -83,7 +84,7 @@ public partial class TopicIsland : Node3D
         // ComputeSmoothHeightmap();
         // ComputeBlockyMesh();
         UpdatePlane();
-        
+
     }
 
     public void ToggleHighlight(bool? value)
@@ -105,7 +106,29 @@ public partial class TopicIsland : Node3D
     {
         var coords = itemPoints.Select(v => new Coordinate(v.X, v.Y)).ToArray();
         var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
-        var hull = ConcaveHull.ConcaveHullByLengthRatio(pointCloud, 0.3);
+        var hull = new ConcaveHull(pointCloud)
+        {
+            MaximumEdgeLengthRatio = 0.3,
+            HolesAllowed = false
+        };
+        var hullTris = hull.GetHullTris();
+        for (int i = hullTris.Count - 1; i >= 0; --i)
+        {
+            var tri = hullTris[i];
+            var triPolygon = tri.ToPolygon(GeometryFactory.Default);
+            var intrudingPoints = Overlord.Instance.Repo.ItemTree.Query(triPolygon.EnvelopeInternal)
+                .Where(n => Overlord.Instance.Repo.TopicModelling.Items[n.Data.Id].TopicId != Topic.Id)
+                .Where(n => triPolygon.Contains(GeometryFactory.Default.CreatePoint(
+                    new Coordinate(n.Data.Position.X, n.Data.Position.Y)
+                )))
+                .ToImmutableArray();
+            if (intrudingPoints.Length > 0)
+            {
+                hullTris.RemoveAt(i);
+            }
+        }
+        var hullPolygon = hull.GetHull(hullTris);
+
         var kdTree = new KdTree<Issue>();
         foreach (var (id, pos) in itemIds.Zip(itemPoints))
         {
@@ -132,9 +155,9 @@ public partial class TopicIsland : Node3D
                 var nearestIssue = nearestPoint.Data;
                 var nearestPointHeight = Overlord.Instance.Heights[nearestIssue.Id];
 
-                if (hull.Contains(testPoint))
+                if (hullPolygon.Contains(testPoint))
                 {
-                    Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 0, 255);
+                    Heightmap[z, x] = (byte)Math.Clamp(Mathf.RoundToInt(nearestPointHeight), 1, 255);
                 }
                 else
                 {

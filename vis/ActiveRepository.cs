@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Godot;
+using NetTopologySuite.Index.KdTree;
 using Ritgard.Mining;
 
 namespace Ritgard;
@@ -20,6 +21,8 @@ public class ActiveRepository
 
     public ImmutableDictionary<long, ActiveItem> Items { get; private set; }
 
+    public KdTree<ActiveItem> ItemTree { get; private set; }
+
     public TimeSpan SlidingWindow { get; private set; } = DefaultSlidingWindow;
 
     public TimeSpan Step { get; private set; } = DefaultStep;
@@ -29,7 +32,7 @@ public class ActiveRepository
     public DateTimeOffset MaxDate { get; private set; }
 
     public TimeSpan AvgIssueLength { get; private set; }
-    
+
     public int StepCount { get; private set; }
 
     public static async Task<ActiveRepository> Load(
@@ -79,6 +82,16 @@ public class ActiveRepository
         );
         repo.AvgIssueLength = TimeSpan.FromSeconds(mining.Issues.Values.Average(i => i.GetTimeSpan().TotalSeconds));
         repo.StepCount = Mathf.CeilToInt((repo.MaxDate - repo.MinDate) / repo.Step);
+
+        var kdTree = new KdTree<ActiveItem>();
+        foreach (var item in repo.Items.Values)
+        {
+            kdTree.Insert(
+                new NetTopologySuite.Geometries.Coordinate(item.Position.X, item.Position.Y),
+                item
+            );
+        }
+        repo.ItemTree = kdTree;
         return repo;
     }
 }
