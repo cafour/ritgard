@@ -279,7 +279,7 @@ public partial class TopicIsland : Node3D
         );
 
         _.Mesh.Mesh = arrayMesh;
-        _.Mesh.Position = new Vector3(heightmapBox.Position.X, 0.01f, heightmapBox.Position.Y);
+        _.Mesh.Position = new Vector3(heightmapBox.Position.X, -0.01f, heightmapBox.Position.Y);
         _.Mesh.SetSurfaceOverrideMaterial(0, Material);
     }
 
