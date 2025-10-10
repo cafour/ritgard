@@ -64,9 +64,9 @@ public class TopDownMovementMode(Player player) : IMovementMode
         }
         else if (Input.IsMouseButtonPressed(MouseButton.Right) && @event is InputEventMouseMotion rot)
         {
-            Pitch += rot.ScreenRelative.Y * 0.005f;
+            Pitch -= rot.ScreenRelative.Y * 0.005f;
             Pitch = Mathf.Clamp(Pitch, -Mathf.Pi / 2, -Mathf.Pi / 6);
-            Yaw += rot.ScreenRelative.X * 0.005f;
+            Yaw -= rot.ScreenRelative.X * 0.005f;
             Yaw = Mathf.Wrap(Yaw, -Mathf.Pi, Mathf.Pi);
 
             RotateCamera();

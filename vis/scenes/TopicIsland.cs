@@ -42,7 +42,7 @@ public partial class TopicIsland : Node3D
     private ImmutableArray<Vector2> itemPoints;
     private Rect2I heightmapBox;
     private ArrayMesh arrayMesh = new();
-    private float[] vertices;
+    private Vector3[] vertices;
     private Color islandColor;
     private float[,] blurTemp;
 
@@ -333,7 +333,7 @@ public partial class TopicIsland : Node3D
 
         var hh = Heightmap.GetLength(0);
         var hw = Heightmap.GetLength(1);
-        vertices = new float[3 * hh * hw];
+        vertices = new Vector3[hh * hw];
         var indices = new int[(hh - 1) * (hw - 1) * 3 * 2];
         // x goes right, y is actually z and goes "down", towards the camera
         for (int y = 0; y < hh; ++y)
@@ -341,9 +341,7 @@ public partial class TopicIsland : Node3D
             for (int x = 0; x < hw; ++x)
             {
                 var baseIndex = y * hw + x;
-                vertices[3 * baseIndex + 0] = x;
-                vertices[3 * baseIndex + 1] = 0;
-                vertices[3 * baseIndex + 2] = y;
+                vertices[baseIndex] = new Vector3(x, 0, y);
 
                 if (x < hw - 1 && y < hh - 1)
                 {
@@ -374,7 +372,7 @@ public partial class TopicIsland : Node3D
 
         var arrays = new Godot.Collections.Array();
         arrays.Resize((int)Mesh.ArrayType.Max);
-        arrays[(int)Mesh.ArrayType.Vertex] = new Vector3[hh * hw];
+        arrays[(int)Mesh.ArrayType.Vertex] = vertices;
         arrays[(int)Mesh.ArrayType.Index] = indices;
         arrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         arrayMesh.CustomAabb = new Aabb(
@@ -414,16 +412,16 @@ public partial class TopicIsland : Node3D
             for (int x = 0; x < hw; ++x)
             {
                 var height = Heightmap[y, x];
-                vertices[3 * (y * hw + x) + 1] = ToFloatHeight(height);
+                vertices[y * hw + x].Y = ToFloatHeight(height);
             }
         }
 
-        var bytes = MemoryMarshal.Cast<float, byte>(vertices.AsSpan());
+        var bytes = MemoryMarshal.AsBytes(vertices.AsSpan());
         arrayMesh.SurfaceUpdateVertexRegion(0, 0, bytes);
 
-        // var shape = new ConvexPolygonShape3D();
-        // shape.Points = arrayMesh.SurfaceGetArrays(0)[0].AsVector3Array();
-        // _.Body.Collider.Shape = shape;
+        var shape = new ConvexPolygonShape3D();
+        shape.Points = vertices;
+        _.Body.Collider.Shape = shape;
     }
 
     private void ComputeBlockyMesh()

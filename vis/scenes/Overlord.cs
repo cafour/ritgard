@@ -60,12 +60,14 @@ public partial class Overlord : Node
     public ActiveRepository Repo { get; private set; }
     public Dictionary<long, float> Heights { get; private set; } = [];
 
-    private Dictionary<int, TopicIsland> topicIslands = [];
-    private Dictionary<long, ItemStructure> itemStructures = [];
-    private Dictionary<long, OutlierRock> outlierRocks = [];
+    private readonly Dictionary<int, TopicIsland> topicIslands = [];
+    private readonly Dictionary<long, ItemStructure> itemStructures = [];
+    private readonly Dictionary<long, OutlierRock> outlierRocks = [];
     private ItemStructure currentStructure;
     private TopicIsland currentIsland;
     private Node generatedNodesContainer;
+    private Texture2D topicIdTexture;
+    private Texture2D itemIdTexture;
 
     public const float ItemRadius = 256.0f;
     public const float StructureRadius = 10f;
