@@ -4,14 +4,16 @@ namespace Ritgard;
 
 public class TopDownMovementMode(Player player) : IMovementMode
 {
-    public const float BaseHeight = 100f;
+    public const float BaseHeight = 0f;
     public const float CameraBaseSize = 1000f;
+    public const float DefaultPitch = -Mathf.Pi / 6;
+    public const float DefaultYaw = -Mathf.Pi / 6;
 
     public Player Player { get; } = player;
 
-    public float Pitch { get; private set; } = -Mathf.Pi / 6;
+    public float Pitch { get; private set; } = DefaultPitch;
 
-    public float Yaw { get; private set; } = -Mathf.Pi / 6;
+    public float Yaw { get; private set; } = DefaultYaw;
 
     public float ZoomLevel { get; private set; } = 1f;
 
@@ -20,18 +22,21 @@ public class TopDownMovementMode(Player player) : IMovementMode
         Input.MouseMode = Input.MouseModeEnum.Visible;
         Player.Crosshair.Visible = false;
 
-        Player.Camera.Basis = Basis.Identity;
-        Player.Camera.RotateObjectLocal(Vector3.Up, Pitch);
-        Player.Camera.RotateObjectLocal(Vector3.Right, Yaw);
-        Player.Camera.Projection = Camera3D.ProjectionType.Orthogonal;
         Player.Camera.Size = CameraBaseSize * ZoomLevel;
-        Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Player.Camera.Size);
+        RotateCamera();
 
         Player.Position = Player.Position with { Y = BaseHeight };
     }
 
     public void OnInput(InputEvent @event)
     {
+        if (@event.IsAction(InputActions.ResetCamera) && @event.IsPressed())
+        {
+            Pitch = DefaultPitch;
+            Yaw = DefaultYaw;
+            RotateCamera();
+        }
+
         var step = Player.ZoomStep;
         if (Input.IsActionPressed(InputActions.MoveRun))
         {
@@ -49,13 +54,22 @@ public class TopDownMovementMode(Player player) : IMovementMode
 
         ZoomLevel = Mathf.Clamp(ZoomLevel, 0.1f, 10f);
 
-        if (Input.IsMouseButtonPressed(MouseButton.Left) && @event is InputEventMouseMotion motion)
+        if (Input.IsMouseButtonPressed(MouseButton.Left) && @event is InputEventMouseMotion pan)
         {
             var windowFactor = Player.Camera.Size / Player.Camera.GetWindow().Size.Y;
             var pitchFactor = -1f / Mathf.Sin(Pitch);
-            var diff = new Vector2(motion.ScreenRelative.X, motion.ScreenRelative.Y * pitchFactor);
+            var diff = new Vector2(pan.ScreenRelative.X, pan.ScreenRelative.Y * pitchFactor);
             diff = diff.Rotated(-Yaw) * windowFactor;
             Player.Position += new Vector3(-diff.X, 0, -diff.Y);
+        }
+        else if (Input.IsMouseButtonPressed(MouseButton.Right) && @event is InputEventMouseMotion rot)
+        {
+            Pitch += rot.ScreenRelative.Y * 0.005f;
+            Pitch = Mathf.Clamp(Pitch, -Mathf.Pi / 2, -Mathf.Pi / 6);
+            Yaw += rot.ScreenRelative.X * 0.005f;
+            Yaw = Mathf.Wrap(Yaw, -Mathf.Pi, Mathf.Pi);
+
+            RotateCamera();
         }
     }
 
@@ -88,5 +102,13 @@ public class TopDownMovementMode(Player player) : IMovementMode
     public void OnPhysicsProcess(double delta)
     {
         Player.Hover(Player.Camera.GetViewport().GetMousePosition());
+    }
+
+    private void RotateCamera()
+    {
+        Player.Camera.Basis = Basis.Identity;
+        Player.Camera.RotateObjectLocal(Vector3.Up, Yaw);
+        Player.Camera.RotateObjectLocal(Vector3.Right, Pitch);
+        Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Player.Camera.Size);
     }
 }
