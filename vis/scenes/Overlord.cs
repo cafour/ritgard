@@ -95,7 +95,6 @@ public partial class Overlord : Node
         }
         DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
         await ShowDataset(0);
-        ShowStep(0);
 
         CurrentStepSpinBox.ValueChanged += value => ShowStep(Mathf.FloorToInt(value));
     }
@@ -171,6 +170,8 @@ public partial class Overlord : Node
         }
 
         Player.HoverChanged += OnHoverChanged;
+
+        ShowStep(0);
     }
 
     private void ShowStep(int step)
@@ -201,9 +202,7 @@ public partial class Overlord : Node
             topicIsland.OnShowStep(0);
         }
 
-        CurrentStep = step;
-        CurrentStepSpinBox.SetValueNoSignal(step);
-        CurrentTimeLabel.Text = now.ToString("yyyy-MM-dd HH:mm:ss");
+        RefreshCurrentStepControls(step);
     }
 
     public override void _Input(InputEvent @event)
@@ -419,25 +418,12 @@ public partial class Overlord : Node
         // }
     }
 
-    public static double InterpolateBarycentric(
-        double x,
-        double y,
-        double x1,
-        double y1,
-        double z1,
-        double x2,
-        double y2,
-        double z2,
-        double x3,
-        double y3,
-        double z3
-    )
+    private void RefreshCurrentStepControls(int step)
     {
-        double detT = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
-        double alpha = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / detT;
-        double beta = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / detT;
-        double gamma = 1.0 - alpha - beta;
-        return alpha * z1 + beta * z2 + gamma * z3;
+        var now = Repo.MinDate + Repo.Step * step;
+        CurrentStep = step;
+        CurrentStepSpinBox.SetValueNoSignal(step);
+        CurrentTimeLabel.Text = now.ToString("yyyy-MM-dd HH:mm:ss");
     }
 
     // private byte GetHeightForIssue(long id)
