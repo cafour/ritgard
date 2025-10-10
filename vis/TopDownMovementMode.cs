@@ -21,10 +21,11 @@ public class TopDownMovementMode(Player player) : IMovementMode
         Player.Crosshair.Visible = false;
 
         Player.Camera.Basis = Basis.Identity;
-        Player.Camera.RotateObjectLocal(Vector3.Up, -Mathf.Pi / 6);
-        Player.Camera.RotateObjectLocal(Vector3.Right, -Mathf.Pi / 6);
+        Player.Camera.RotateObjectLocal(Vector3.Up, Pitch);
+        Player.Camera.RotateObjectLocal(Vector3.Right, Yaw);
         Player.Camera.Projection = Camera3D.ProjectionType.Orthogonal;
         Player.Camera.Size = CameraBaseSize * ZoomLevel;
+        Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Player.Camera.Size);
 
         Player.Position = Player.Position with { Y = BaseHeight };
     }
@@ -47,6 +48,15 @@ public class TopDownMovementMode(Player player) : IMovementMode
         }
 
         ZoomLevel = Mathf.Clamp(ZoomLevel, 0.1f, 10f);
+
+        if (Input.IsMouseButtonPressed(MouseButton.Left) && @event is InputEventMouseMotion motion)
+        {
+            var windowFactor = Player.Camera.Size / Player.Camera.GetWindow().Size.Y;
+            var pitchFactor = -1f / Mathf.Sin(Pitch);
+            var diff = new Vector2(motion.ScreenRelative.X, motion.ScreenRelative.Y * pitchFactor);
+            diff = diff.Rotated(-Yaw) * windowFactor;
+            Player.Position += new Vector3(-diff.X, 0, -diff.Y);
+        }
     }
 
     public void Move(double delta)
@@ -58,9 +68,9 @@ public class TopDownMovementMode(Player player) : IMovementMode
             InputActions.MoveBackward
         );
 
-        move = move.Rotated(-Player.Camera.Rotation.Y);
+        move = move.Rotated(-Yaw);
 
-        var speed = Player.MoveSpeed * Mathf.Clamp(ZoomLevel, 0.5f, 2f);
+        var speed = Player.PanSpeed * Player.Camera.Size;
         if (Input.IsActionPressed(InputActions.MoveRun))
         {
             speed *= 2;
@@ -72,6 +82,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
             CameraBaseSize * ZoomLevel,
             Mathf.Min(1.0f, (float)delta * Player.ZoomSpeed)
         );
+        Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Player.Camera.Size);
     }
 
     public void OnPhysicsProcess(double delta)
