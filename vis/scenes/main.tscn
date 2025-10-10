@@ -79,13 +79,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
 script = ExtResource("5_tbgi4")
 LookaroundSpeed = 0.004
 MoveSpeed = 20.0
-ZoomStep = 3.0
 Crosshair = NodePath("../UI/CenterContainer/Crosshair")
 
 [node name="Camera" type="Camera3D" parent="Player"]
 environment = ExtResource("6_tipki")
+projection = 1
 current = true
-size = 1000.0
 
 [node name="VoxelViewer" type="VoxelViewer" parent="Player/Camera"]
 view_distance = 512
