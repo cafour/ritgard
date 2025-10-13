@@ -4,11 +4,12 @@
   "extensions": {
     "strawberryShake": {
       "name": "GitHubGraphQLClient",
-      "namespace": "Ritgard.Mining",
-      "url": ".\\github.graphql",
+      "namespace": "Ritgard.Mining.GitHub",
+      "url": "https://docs.github.com/public/fpt/schema.docs.graphql",
+      "dependencyInjection": false,
       "records": {
-        "inputs": false,
-        "entities": false
+        "inputs": true,
+        "entities": true
       },
       "transportProfiles": [
         {

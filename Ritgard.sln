@@ -12,6 +12,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ritgard.Console", "console\Ritgard.Console.csproj", "{6BBB213B-1C57-41E3-BCE7-668708611F63}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mining", "mining", "{04107616-D916-0EED-B594-AF01AB8247EE}"
+	ProjectSection(SolutionItems) = preProject
+		Utils.GitHub.cs = Utils.GitHub.cs
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ritgard.Mining", "mining\Ritgard.Mining.csproj", "{10448306-2E2E-47F3-86DA-0D439E1DF6CE}"
 EndProject

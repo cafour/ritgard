@@ -1,0 +1,41 @@
+query DiscussionCommentQuery(
+    $discussionId: ID!,
+    $after: String
+)
+{
+    rateLimit {
+        remaining
+        resetAt
+    }
+
+    node(id: $discussionId) {
+        ... on Discussion {
+            comments(first: 100, after: $after)
+            {
+                totalCount
+
+                pageInfo {
+                    endCursor
+                    hasNextPage
+                }
+
+                edges {
+                    node {
+                        author {
+                            ... on User {
+                                login
+                            }
+                        }
+                        id
+                        isAnswer
+                        body
+                        createdAt
+                        publishedAt
+                        lastEditedAt
+                        updatedAt
+                    }
+                }
+            }
+        }
+    }
+}

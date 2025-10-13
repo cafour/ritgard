@@ -12,6 +12,7 @@ using CsvHelper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Octokit;
+using Ritgard.Mining.GitHub;
 
 namespace Ritgard.Mining;
 
@@ -31,13 +32,22 @@ public class RepoMiner
 
     public GitHubClient GH { get; private set; } = null!;
 
+    public GitHubGraphQLClient GHQ { get; private set; } = null!;
+
     public Task Initialize()
     {
         Configuration = Utils.BuildConfiguration();
+        var authToken = Configuration["GitHubToken"];
+        if (authToken is null)
+        {
+            throw new InvalidOperationException("Cannot mine GitHub repositories without an authorization token.");
+        }
+
         GH = new GitHubClient(new ProductHeaderValue("ritgard"))
         {
-            Credentials = new Credentials(Configuration["GitHubToken"])
+            Credentials = new Credentials(authToken)
         };
+        GHQ = Utils.CreateGitHubGraphQLClient(authToken);
         logger.LogInformation("Initialized");
         return Task.CompletedTask;
     }
@@ -47,6 +57,7 @@ public class RepoMiner
         string repoName,
         bool shouldMineIssues = true,
         bool shouldMinePRs = true,
+        bool shouldMineDiscussions = true,
         bool shouldMineMilestones = true
     )
     {
@@ -64,9 +75,10 @@ public class RepoMiner
         {
             logger.LogInformation("Mining issues");
             var octoIssues = await GH.Issue.GetAllForRepository(octoRepo.Id, new RepositoryIssueRequest
-            {
-                State = ItemStateFilter.All
-            });
+                {
+                    State = ItemStateFilter.All
+                }
+            );
             foreach (var octoIssue in octoIssues)
             {
                 var issue = OctokitMapping.MapIssue(octoIssue);
@@ -91,9 +103,10 @@ public class RepoMiner
         {
             logger.LogInformation("Mining pull requests");
             var octoPRs = await GH.PullRequest.GetAllForRepository(octoRepo.Id, new PullRequestRequest
-            {
-                State = ItemStateFilter.All
-            });
+                {
+                    State = ItemStateFilter.All
+                }
+            );
 
             foreach (var octoPR in octoPRs)
             {
@@ -106,13 +119,56 @@ public class RepoMiner
             }
         }
 
+        if (shouldMineDiscussions)
+        {
+            logger.LogInformation("Mining discussions");
+            string? cursor = null;
+            do
+            {
+                var discussionQueryResult = await GHQ.DiscussionQuery.ExecuteAsync(owner, repoName, after: cursor);
+                if (discussionQueryResult.Errors.Count > 0)
+                {
+                    logger.LogError(
+                        "Failed to mine discussions of '{Owner}/{RepoName}'. The query returned errors: {Errors}",
+                        owner,
+                        repoName,
+                        discussionQueryResult.Errors.Select(e => e.Message)
+                    );
+                    break;
+                }
+
+                if (discussionQueryResult.Data?.Repository is null)
+                {
+                    logger.LogError(
+                        "Failed to mine discussions of '{Owner}/{RepoName}'. The query returned null.",
+                        owner,
+                        repoName
+                    );
+                    break;
+                }
+
+                foreach (var discussion in discussionQueryResult.Data.Repository.Discussions.Edges ?? [])
+                {
+                    if (discussion is null || discussion.Node is null)
+                    {
+                        continue;
+                    }
+
+                    logger.LogInformation("\t#{Number}: {Title}", discussion.Node.Number, discussion.Node.Title);
+                }
+
+                cursor = discussionQueryResult.Data.Repository.Discussions.PageInfo.EndCursor;
+            } while (cursor is not null);
+        }
+
         if (shouldMineMilestones)
         {
             logger.LogInformation("Mining milestones");
             var octoMilestones = await GH.Issue.Milestone.GetAllForRepository(octoRepo.Id, new MilestoneRequest
-            {
-                State = ItemStateFilter.All
-            });
+                {
+                    State = ItemStateFilter.All
+                }
+            );
 
             foreach (var octoMilestone in octoMilestones)
             {
@@ -138,6 +194,7 @@ public class RepoMiner
         {
             return [];
         }
+
         return [.. comments.Select(c => OctokitMapping.MapIssueComment(c))];
     }
 
@@ -150,8 +207,7 @@ public class RepoMiner
         {
             return [];
         }
+
         return [.. events.Select(e => OctokitMapping.MapTimelineEventInfo(e))];
     }
-
-
 }

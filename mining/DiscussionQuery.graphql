@@ -1,0 +1,62 @@
+query DiscussionQuery (
+    $repoOwner: String!,
+    $repoName: String!,
+    $after: String
+) {
+    rateLimit {
+        remaining
+        resetAt
+    }
+
+    repository(owner: $repoOwner, name: $repoName) {
+        discussions(first: 100, after: $after) {
+            totalCount
+
+            pageInfo {
+                endCursor
+                hasNextPage
+            }
+
+            edges {
+                node {
+                    id
+                    title
+                    number
+                    body
+                    upvoteCount
+                    createdAt
+                    publishedAt
+                    lastEditedAt
+                    updatedAt
+                    url
+                    answerChosenAt
+                    category {
+                        name
+                    }
+                    author {
+                        ... on User {
+                            login
+                        }
+                    }
+                    answer {
+                        author {
+                            ... on User {
+                                login
+                            }
+                        }
+                    }
+                    labels(first: 100) {
+                        edges {
+                            node {
+                                name
+                            }
+                        }
+                    }
+                    comments {
+                        totalCount
+                    }
+                }
+            }
+        }
+    }
+}

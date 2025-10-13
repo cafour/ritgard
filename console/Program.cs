@@ -23,6 +23,7 @@ public class Commands
         [Argument] string repo,
         bool noIssues,
         bool noPrs,
+        bool noDiscussions,
         bool noMilestones
     )
     {
@@ -34,6 +35,7 @@ public class Commands
             repoName,
             !noIssues,
             !noPrs,
+            !noDiscussions,
             !noMilestones
         );
         if (result is not null)
