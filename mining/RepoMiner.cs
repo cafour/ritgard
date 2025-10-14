@@ -25,8 +25,8 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
     private IAsyncDisposable ghqDisposable = null!;
     private string currentGraphQlToken = null!;
     private string currentHttpToken = null!;
-    private readonly Lock httpLock = new();
-    private readonly Lock graphQlLock = new();
+    private readonly SemaphoreSlim httpLock = new(1, 1);
+    private readonly SemaphoreSlim graphQlLock = new(1, 1);
 
     private ImmutableDictionary<string, GitHubClient> githubClients =
         ImmutableDictionary<string, GitHubClient>.Empty;
@@ -582,28 +582,19 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             logger.LogInformation(
                 "HTTP API is waiting for token '{TokenName}' to cool down till {CooldownTime}.",
                 tokenName,
-                tokenCooldown
+                tokenCooldown.ToLocalTime()
             );
             await Task.Delay(tokenCooldown - DateTimeOffset.UtcNow, cancellationToken);
         }
 
-        var tokenValue = options.GitHubTokens[tokenName];
         if (currentHttpToken == tokenName)
         {
             return;
         }
 
-        lock (httpLock)
-        {
-            if (currentHttpToken == tokenName)
-            {
-                return;
-            }
-
-            logger.LogInformation("Switching GitHub HTTP API token to '{TokenApi}'.", tokenName);
-            Http = githubClients[tokenName];
-            currentHttpToken = tokenName;
-        }
+        logger.LogInformation("Switching GitHub HTTP API token to '{TokenName}'.", tokenName);
+        Http = githubClients[tokenName];
+        currentHttpToken = tokenName;
     }
 
     private async Task RefreshGraphQlApi(CancellationToken cancellationToken = default)
@@ -614,11 +605,11 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         if (tokenCooldown > DateTimeOffset.UtcNow)
         {
             logger.LogInformation(
-                "GraphQL PI is waiting for token '{TokenName}' to cool down till {CooldownTime}.",
+                "GraphQL API is waiting for token '{TokenName}' to cool down till {CooldownTime}.",
                 tokenName,
-                tokenCooldown
+                tokenCooldown.ToLocalTime()
             );
-            await Task.Delay(DateTimeOffset.UtcNow - tokenCooldown, cancellationToken);
+            await Task.Delay(tokenCooldown - DateTimeOffset.UtcNow, cancellationToken);
         }
 
         if (currentGraphQlToken == tokenName)
@@ -632,19 +623,10 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             GraphQl = null!;
         }
 
-        lock (graphQlLock)
-        {
-            if (currentGraphQlToken == tokenName)
-            {
-                // some other thread got here first
-                return;
-            }
-
-            logger.LogInformation("Switching GitHub GraphQL API token to '{TokenApi}'.", tokenName);
-            var tokenValue = options.GitHubTokens[tokenName];
-            (GraphQl, ghqDisposable) = Utils.CreateGitHubGraphQLClient(tokenValue);
-            currentGraphQlToken = tokenName;
-        }
+        logger.LogInformation("Switching GitHub GraphQL API token to '{TokenName}'.", tokenName);
+        var tokenValue = options.GitHubTokens[tokenName];
+        (GraphQl, ghqDisposable) = Utils.CreateGitHubGraphQLClient(tokenValue);
+        currentGraphQlToken = tokenName;
     }
 
     private async Task<TResult> QueryGraphQl<TResult>(
@@ -664,9 +646,24 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
             if (errors is [{ Code: "graphql_rate_limit" }])
             {
-                await SetCooldownsFor(currentGraphQlToken, cancellationToken);
-                await RefreshGraphQlApi(cancellationToken);
-                continue;
+                var tmpName = currentGraphQlToken;
+                await graphQlLock.WaitAsync(cancellationToken);
+                try
+                {
+                    if (currentGraphQlToken != tmpName)
+                    {
+                        // some other thread switched the token first
+                        continue;
+                    }
+
+                    await SetCooldownsFor(currentGraphQlToken, cancellationToken);
+                    await RefreshGraphQlApi(cancellationToken);
+                    continue;
+                }
+                finally
+                {
+                    graphQlLock.Release();
+                }
             }
 
             return queryResult;
@@ -686,8 +683,23 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             }
             catch (RateLimitExceededException)
             {
-                await SetCooldownsFor(currentHttpToken, cancellationToken);
-                await RefreshHttpApi(cancellationToken);
+                var tmpName = currentHttpToken;
+                await httpLock.WaitAsync(cancellationToken);
+                try
+                {
+                    if (currentHttpToken != tmpName)
+                    {
+                        // some other thread switched the token first
+                        continue;
+                    }
+
+                    await SetCooldownsFor(currentHttpToken, cancellationToken);
+                    await RefreshHttpApi(cancellationToken);
+                }
+                finally
+                {
+                    httpLock.Release();
+                }
             }
         }
     }
