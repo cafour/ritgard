@@ -134,10 +134,9 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             }
         );
 
-        foreach (var (tokenName, _) in options.GitHubTokens)
+        foreach (var token in githubTokens.Values)
         {
-            httpCooldowns.TryAdd(tokenName, default);
-            graphQlCooldowns.TryAdd(tokenName, default);
+            await SetCooldownsFor(token);
         }
 
         await RefreshHttpApi(cancellationToken);
@@ -570,7 +569,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         var httpThreshold = token.HttpLimit == -1 ? 0 : limits.Resources.Core.Limit - token.HttpLimit;
         if (limits.Resources.Core.Remaining <= httpThreshold)
         {
-            logger.LogInformation("Reached threshold of {Threshold} remaining HTTP requests.", httpThreshold);
+            logger.LogInformation(
+                "Reached {Remaining} remaining HTTP requests, which is below the {Threshold} threshold of '{TokenName}'.",
+                limits.Resources.Core.Remaining,
+                httpThreshold,
+                token.Name
+            );
             httpCooldowns.AddOrUpdate(
                 token.Name,
                 _ => limits.Resources.Core.Reset,
@@ -581,7 +585,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         var graphQlThreshold = token.GraphQlLimit == -1 ? 0 : limits.Resources.Graphql.Limit - token.GraphQlLimit;
         if (limits.Resources.Graphql.Remaining <= graphQlThreshold)
         {
-            logger.LogInformation("Reached threshold of {Threshold} remaining GraphQL requests.", graphQlThreshold);
+            logger.LogInformation(
+                "Reached {Remaining} remaining GraphQL requests, which is below the {Threshold} threshold of '{TokenName}'.",
+                limits.Resources.Graphql.Remaining,
+                graphQlThreshold,
+                token.Name
+            );
             graphQlCooldowns.AddOrUpdate(
                 token.Name,
                 _ => limits.Resources.Graphql.Reset,
@@ -605,7 +614,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             await Task.Delay(tokenCooldown - DateTimeOffset.UtcNow, cancellationToken);
         }
 
-        if (currentHttpToken.Name == tokenName)
+        if (currentHttpToken?.Name == tokenName)
         {
             return;
         }
@@ -631,7 +640,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             await Task.Delay(tokenCooldown - DateTimeOffset.UtcNow, cancellationToken);
         }
 
-        if (currentGraphQlToken.Name == tokenName)
+        if (currentGraphQlToken?.Name == tokenName)
         {
             return;
         }
@@ -698,7 +707,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         CancellationToken cancellationToken = default
     )
     {
-        if (graphQlSpent >= currentHttpToken.GraphQlLimit)
+        if (currentHttpToken.GraphQlLimit != -1 && graphQlSpent >= currentHttpToken.GraphQlLimit)
         {
             await EnsureGraphQlAvailable(cancellationToken);
         }
@@ -729,7 +738,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         CancellationToken cancellationToken = default
     )
     {
-        if (httpSpent >= currentHttpToken.HttpLimit)
+        if (currentHttpToken.HttpLimit != -1 && httpSpent >= currentHttpToken.HttpLimit)
         {
             await EnsureHttpAvailable(cancellationToken);
         }
