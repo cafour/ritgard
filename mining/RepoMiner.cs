@@ -21,7 +21,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
     private readonly ConcurrentDictionary<string, Milestone> milestones = [];
     private readonly MiningOptions options = new();
     private readonly ConcurrentDictionary<string, DateTimeOffset> httpCooldowns = [];
-    private readonly ConcurrentDictionary<string, DateTimeOffset> grapgQlCooldowns = [];
+    private readonly ConcurrentDictionary<string, DateTimeOffset> graphQlCooldowns = [];
     private IAsyncDisposable ghqDisposable = null!;
     private string currentGraphQlToken = null!;
     private string currentHttpToken = null!;
@@ -50,7 +50,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         var startedAt = DateTimeOffset.UtcNow;
 
         logger.LogInformation("Started mining '{RepoOwner}/{RepoName}'.", RepoOwner, RepoName);
-        var octoRepo = await Http.Repository.Get(RepoOwner, RepoName);
+        var octoRepo = await QueryHttp(_ => Http.Repository.Get(RepoOwner, RepoName), cancellationToken);
         if (octoRepo is null)
         {
             logger.LogInformation("Repo '{RepoOwner}/{RepoName}' could not be found.", RepoOwner, RepoName);
@@ -126,7 +126,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         foreach (var (tokenName, _) in options.GitHubTokens)
         {
             httpCooldowns.TryAdd(tokenName, default);
-            grapgQlCooldowns.TryAdd(tokenName, default);
+            graphQlCooldowns.TryAdd(tokenName, default);
         }
 
         await RefreshHttpApi(cancellationToken);
@@ -148,18 +148,19 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var octoIssues = await Http.Issue.GetAllForRepository(
-                repoId,
-                new RepositoryIssueRequest
-                {
-                    State = ItemStateFilter.All
-                },
-                new ApiOptions
-                {
-                    PageCount = 1,
-                    PageSize = 100,
-                    StartPage = pageIndex
-                }
+            var octoIssues = await QueryHttp(_ => Http.Issue.GetAllForRepository(
+                    repoId,
+                    new RepositoryIssueRequest
+                    {
+                        State = ItemStateFilter.All
+                    },
+                    new ApiOptions
+                    {
+                        PageCount = 1,
+                        PageSize = 100,
+                        StartPage = pageIndex
+                    }
+                )
             );
             if (octoIssues.Count == 0)
             {
@@ -180,32 +181,36 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             if (Scope.HasFlag(RepoMinerScope.IssueComments))
             {
                 await Task.WhenAll(
-                    octoIssues.Select(async octoIssue =>
-                        {
-                            var comments = await MineComments(repoId, octoIssue.Number);
-                            issues.AddOrUpdate(
-                                octoIssue.NodeId,
-                                _ => throw new InvalidOperationException(),
-                                (_, issue) => issue with { Comments = comments }
-                            );
-                        }
-                    )
+                    octoIssues
+                        .Where(i => i.PullRequest is null)
+                        .Select(async octoIssue =>
+                            {
+                                var comments = await MineComments(repoId, octoIssue.Number);
+                                issues.AddOrUpdate(
+                                    octoIssue.NodeId,
+                                    _ => throw new InvalidOperationException(),
+                                    (_, issue) => issue with { Comments = comments }
+                                );
+                            }
+                        )
                 );
             }
 
             if (Scope.HasFlag(RepoMinerScope.IssueEvents))
             {
                 await Task.WhenAll(
-                    octoIssues.Select(async octoIssue =>
-                        {
-                            var events = await MineIssueEvents(repoId, octoIssue.Number);
-                            issues.AddOrUpdate(
-                                octoIssue.NodeId,
-                                _ => throw new InvalidOperationException(),
-                                (_, issue) => issue with { Events = events }
-                            );
-                        }
-                    )
+                    octoIssues
+                        .Where(i => i.PullRequest is null)
+                        .Select(async octoIssue =>
+                            {
+                                var events = await MineIssueEvents(repoId, octoIssue.Number);
+                                issues.AddOrUpdate(
+                                    octoIssue.NodeId,
+                                    _ => throw new InvalidOperationException(),
+                                    (_, issue) => issue with { Events = events }
+                                );
+                            }
+                        )
                 );
             }
         }
@@ -224,18 +229,19 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var octoPrs = await Http.PullRequest.GetAllForRepository(
-                repoId,
-                new PullRequestRequest
-                {
-                    State = ItemStateFilter.All
-                },
-                new ApiOptions
-                {
-                    PageCount = 1,
-                    PageSize = 100,
-                    StartPage = pageIndex
-                }
+            var octoPrs = await QueryHttp(_ => Http.PullRequest.GetAllForRepository(
+                    repoId,
+                    new PullRequestRequest
+                    {
+                        State = ItemStateFilter.All
+                    },
+                    new ApiOptions
+                    {
+                        PageCount = 1,
+                        PageSize = 100,
+                        StartPage = pageIndex
+                    }
+                )
             );
             if (octoPrs is null || octoPrs.Count == 0)
             {
@@ -386,18 +392,19 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var octoMilestones = await Http.Issue.Milestone.GetAllForRepository(
-                repoId,
-                new MilestoneRequest
-                {
-                    State = ItemStateFilter.All
-                },
-                new ApiOptions
-                {
-                    PageCount = 1,
-                    PageSize = 100,
-                    StartPage = pageIndex
-                }
+            var octoMilestones = await QueryHttp(_ => Http.Issue.Milestone.GetAllForRepository(
+                    repoId,
+                    new MilestoneRequest
+                    {
+                        State = ItemStateFilter.All
+                    },
+                    new ApiOptions
+                    {
+                        PageCount = 1,
+                        PageSize = 100,
+                        StartPage = pageIndex
+                    }
+                )
             );
             if (octoMilestones is null || octoMilestones.Count == 0)
             {
@@ -425,15 +432,16 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var comments = await Http.Issue.Comment.GetAllForIssue(
-                repoId,
-                number,
-                new ApiOptions
-                {
-                    PageCount = 1,
-                    PageSize = 100,
-                    StartPage = pageIndex
-                }
+            var comments = await QueryHttp(_ => Http.Issue.Comment.GetAllForIssue(
+                    repoId,
+                    number,
+                    new ApiOptions
+                    {
+                        PageCount = 1,
+                        PageSize = 100,
+                        StartPage = pageIndex
+                    }
+                )
             );
             if (comments is null || comments.Count == 0)
             {
@@ -519,15 +527,16 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var events = await Http.Issue.Timeline.GetAllForIssue(
-                repoId,
-                number,
-                new ApiOptions
-                {
-                    PageCount = 1,
-                    PageSize = 100,
-                    StartPage = pageIndex
-                }
+            var events = await QueryHttp(_ => Http.Issue.Timeline.GetAllForIssue(
+                    repoId,
+                    number,
+                    new ApiOptions
+                    {
+                        PageCount = 1,
+                        PageSize = 100,
+                        StartPage = pageIndex
+                    }
+                )
             );
             if (events is null || events.Count == 0)
             {
@@ -555,7 +564,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         if (limits.Resources.Graphql.Remaining == 0)
         {
-            grapgQlCooldowns.AddOrUpdate(
+            graphQlCooldowns.AddOrUpdate(
                 tokenName,
                 _ => limits.Resources.Graphql.Reset,
                 (_, existing) => Utils.Max(existing, limits.Resources.Graphql.Reset)
@@ -565,7 +574,9 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
     private async Task RefreshHttpApi(CancellationToken cancellationToken = default)
     {
-        var (tokenName, tokenCooldown) = httpCooldowns.MinBy(p => p.Value);
+        var (tokenName, tokenCooldown) = httpCooldowns
+            .OrderBy(p => p.Key)
+            .MinBy(p => p.Value);
         if (tokenCooldown > DateTimeOffset.UtcNow)
         {
             logger.LogInformation(
@@ -573,7 +584,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 tokenName,
                 tokenCooldown
             );
-            await Task.Delay(DateTimeOffset.UtcNow - tokenCooldown, cancellationToken);
+            await Task.Delay(tokenCooldown - DateTimeOffset.UtcNow, cancellationToken);
         }
 
         var tokenValue = options.GitHubTokens[tokenName];
@@ -597,7 +608,9 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
     private async Task RefreshGraphQlApi(CancellationToken cancellationToken = default)
     {
-        var (tokenName, tokenCooldown) = grapgQlCooldowns.MinBy(p => p.Value);
+        var (tokenName, tokenCooldown) = graphQlCooldowns
+            .OrderBy(p => p.Key)
+            .MinBy(p => p.Value);
         if (tokenCooldown > DateTimeOffset.UtcNow)
         {
             logger.LogInformation(
@@ -657,6 +670,25 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             }
 
             return queryResult;
+        }
+    }
+
+    private async Task<TResult> QueryHttp<TResult>(
+        Func<CancellationToken, Task<TResult>> execute,
+        CancellationToken cancellationToken = default
+    )
+    {
+        while (true)
+        {
+            try
+            {
+                return await execute(cancellationToken);
+            }
+            catch (RateLimitExceededException)
+            {
+                await SetCooldownsFor(currentHttpToken, cancellationToken);
+                await RefreshHttpApi(cancellationToken);
+            }
         }
     }
 }
