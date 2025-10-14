@@ -12,7 +12,15 @@ await app.RunAsync(args);
 internal class Commands
 {
     public static readonly ILoggerFactory LoggerFactory
-        = Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddConsole());
+        = Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddSimpleConsole(c =>
+        {
+            c.SingleLine = true;
+            c.TimestampFormat = "HH:mm:ss.fff ";
+            c.UseUtcTimestamp = true;
+        }));
+
+    public static readonly ILogger Log
+        = LoggerFactory.CreateLogger("Global");
 
     /// <summary>
     /// Mine a GitHub repo.
@@ -37,9 +45,11 @@ internal class Commands
         var result = await miner.MineRepo(cancellationToken);
         if (result is not null)
         {
+            var filename = $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
+            Log.LogInformation("Saving to '{OutputPath}'.", filename);
             await Utils.WriteJson(
                 result,
-                $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json",
+                filename,
                 cancellationToken
             );
         }

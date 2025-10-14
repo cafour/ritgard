@@ -2,18 +2,14 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using CsvHelper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Octokit;
 using Ritgard.Mining.GitHub;
+using StrawberryShake;
 
 namespace Ritgard.Mining;
 
@@ -24,20 +20,32 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
     private readonly ConcurrentDictionary<string, Discussion> discussions = [];
     private readonly ConcurrentDictionary<string, Milestone> milestones = [];
     private readonly MiningOptions options = new();
-    private readonly ConcurrentDictionary<string, DateTimeOffset> ghTokenCooldowns = [];
-    private readonly ConcurrentDictionary<string, DateTimeOffset> ghqTokenCooldowns = [];
+    private readonly ConcurrentDictionary<string, DateTimeOffset> httpCooldowns = [];
+    private readonly ConcurrentDictionary<string, DateTimeOffset> grapgQlCooldowns = [];
     private IAsyncDisposable ghqDisposable = null!;
+    private string currentGraphQlToken = null!;
+    private string currentHttpToken = null!;
+    private readonly Lock httpLock = new();
+    private readonly Lock graphQlLock = new();
+
+    private ImmutableDictionary<string, GitHubClient> githubClients =
+        ImmutableDictionary<string, GitHubClient>.Empty;
 
     public string RepoOwner { get; } = repoOwner;
     public string RepoName { get; } = repoName;
     public RepoMinerScope Scope { get; } = scope;
     public IConfiguration Configuration { get; private set; } = new ConfigurationBuilder().Build();
-    public GitHubClient Http { get; private set; } = null!;
+    public GitHubClient? Http { get; private set; }
     public GitHubGraphQLClient? GraphQl { get; private set; }
 
     public async Task<MiningResult?> MineRepo(CancellationToken cancellationToken = default)
     {
         await Initialize(cancellationToken);
+
+        if (Http is null)
+        {
+            throw new InvalidOperationException("Cannot mine the repo without the GitHub HTTP API client.");
+        }
 
         var startedAt = DateTimeOffset.UtcNow;
 
@@ -63,7 +71,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         if (Scope.HasFlag(RepoMinerScope.Discussions))
         {
-            tasks.Add(MineDiscussions());
+            tasks.Add(MineDiscussions(cancellationToken));
         }
 
         if (Scope.HasFlag(RepoMinerScope.Milestones))
@@ -76,9 +84,15 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             await Task.WhenAll(tasks);
         }
 
+        var completedAt = DateTimeOffset.UtcNow;
+        logger.LogInformation(
+            "Mining complete in {Duration}.",
+            completedAt - startedAt
+        );
+
         return new MiningResult(
             MiningStartedAt: startedAt,
-            MiningCompletedAt: DateTimeOffset.UtcNow,
+            MiningCompletedAt: completedAt,
             Repository: OctokitMapping.MapRepository(octoRepo),
             Issues: issues.ToImmutableDictionary(),
             PullRequests: pullRequests.ToImmutableDictionary(),
@@ -101,11 +115,18 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             throw new InvalidOperationException("Cannot mine GitHub repositories without any tokens.");
         }
 
-        Http = new GitHubClient(new ProductHeaderValue("ritgard"));
+        githubClients = options.GitHubTokens.ToImmutableDictionary(
+            p => p.Key,
+            p => new GitHubClient(new ProductHeaderValue($"ritgard-{p.Key}"))
+            {
+                Credentials = new Credentials(p.Value)
+            }
+        );
+
         foreach (var (tokenName, _) in options.GitHubTokens)
         {
-            ghTokenCooldowns.TryAdd(tokenName, default);
-            ghqTokenCooldowns.TryAdd(tokenName, default);
+            httpCooldowns.TryAdd(tokenName, default);
+            grapgQlCooldowns.TryAdd(tokenName, default);
         }
 
         await RefreshHttpApi(cancellationToken);
@@ -116,6 +137,11 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
     private async Task MineIssues(long repoId)
     {
+        if (Http is null)
+        {
+            throw new InvalidOperationException("Cannot mine issues without the GitHub HTTP API client.");
+        }
+
         logger.LogInformation("Mining issues");
         var pageIndex = 0;
         while (true)
@@ -187,6 +213,11 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
     private async Task MinePullRequests(long repoId)
     {
+        if (Http is null)
+        {
+            throw new InvalidOperationException("Cannot mine pull requests without the GitHub HTTP API client.");
+        }
+
         logger.LogInformation("Mining pull requests");
         var pageIndex = 0;
         while (true)
@@ -262,24 +293,29 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         string? cursor = null;
         do
         {
-            var discussionQueryResult = await GraphQl.DiscussionQuery.ExecuteAsync(
-                RepoOwner,
-                RepoName,
-                after: cursor,
+            var queryResult = await QueryGraphQl(
+                execute: ct => GraphQl.DiscussionQuery.ExecuteAsync(
+                    RepoOwner,
+                    RepoName,
+                    after: cursor,
+                    cancellationToken: ct
+                ),
+                errorsAccessor: r => r.Errors,
                 cancellationToken: cancellationToken
             );
-            if (discussionQueryResult.Errors.Count > 0)
+
+            if (queryResult.Errors.Count > 0)
             {
                 logger.LogError(
                     "Failed to mine discussions of '{RepoOwner}/{RepoName}'. The query returned errors: {Errors}",
                     RepoOwner,
                     RepoName,
-                    discussionQueryResult.Errors.Select(e => e.Message)
+                    queryResult.Errors.Select(e => e.Message)
                 );
                 break;
             }
 
-            if (discussionQueryResult.Data?.Repository is null)
+            if (queryResult.Data?.Repository is null)
             {
                 logger.LogError(
                     "Failed to mine discussions of '{RepoOwner}/{RepoName}'. The query returned null.",
@@ -289,7 +325,17 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 break;
             }
 
-            foreach (var octoDiscussion in discussionQueryResult.Data.Repository.Discussions.Edges ?? [])
+            if (cursor is null)
+            {
+                logger.LogInformation(
+                    "Repository '{RepoOwner}/{RepoName}' has {DiscussionCount} discussions.",
+                    RepoOwner,
+                    RepoName,
+                    queryResult.Data.Repository.Discussions.TotalCount
+                );
+            }
+
+            foreach (var octoDiscussion in queryResult.Data.Repository.Discussions.Edges ?? [])
             {
                 if (octoDiscussion?.Node is null)
                 {
@@ -300,10 +346,10 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             }
 
             if (Scope.HasFlag(RepoMinerScope.DiscussionComments)
-                && discussionQueryResult.Data.Repository.Discussions.Edges is not null)
+                && queryResult.Data.Repository.Discussions.Edges is not null)
             {
                 await Task.WhenAll(
-                    discussionQueryResult.Data.Repository.Discussions.Edges
+                    queryResult.Data.Repository.Discussions.Edges
                         .Where(d => d?.Node != null)
                         .Select(async octoDiscussion =>
                             {
@@ -321,14 +367,19 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 );
             }
 
-            cursor = discussionQueryResult.Data.Repository.Discussions.PageInfo.HasNextPage
-                ? discussionQueryResult.Data.Repository.Discussions.PageInfo.EndCursor
+            cursor = queryResult.Data.Repository.Discussions.PageInfo.HasNextPage
+                ? queryResult.Data.Repository.Discussions.PageInfo.EndCursor
                 : null;
         } while (cursor is not null);
     }
 
     private async Task MineMilestones(long repoId)
     {
+        if (Http is null)
+        {
+            throw new InvalidOperationException("Cannot mine milestones event without the GitHub HTTP API client.");
+        }
+
         logger.LogInformation("Mining milestones");
         var pageIndex = 0;
         while (true)
@@ -362,6 +413,11 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
     private async Task<ImmutableArray<Comment>> MineComments(long repoId, int number)
     {
+        if (Http is null)
+        {
+            throw new InvalidOperationException("Cannot issue comments without the GitHub HTTP API client.");
+        }
+
         logger.LogInformation("Mining comments for #{Number}", number);
         var pageIndex = 0;
         var builder = ImmutableArray.CreateBuilder<Comment>();
@@ -405,7 +461,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         var builder = ImmutableArray.CreateBuilder<Comment>();
         do
         {
-            var queryResult = await GraphQl.DiscussionCommentQuery.ExecuteAsync(nodeId, cursor, cancellationToken);
+            var queryResult = await QueryGraphQl(
+                execute: ct => GraphQl.DiscussionCommentQuery.ExecuteAsync(nodeId, cursor, ct),
+                errorsAccessor: r => r.Errors,
+                cancellationToken: cancellationToken
+            );
+
             if (queryResult.Errors.Count > 0)
             {
                 logger.LogError(
@@ -445,6 +506,11 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
     private async Task<ImmutableArray<IssueEvent>> MineIssueEvents(long repoId, int number)
     {
+        if (Http is null)
+        {
+            throw new InvalidOperationException("Cannot mine issue event without the GitHub HTTP API client.");
+        }
+
         logger.LogInformation("Mining issue events for #{Number}", number);
         // var events = await GH.Issue.Events.GetAllForIssue(repoId, number);
         int pageIndex = 0;
@@ -474,9 +540,32 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return builder.ToImmutable();
     }
 
+    private async Task SetCooldownsFor(string tokenName, CancellationToken cancellationToken = default)
+    {
+        var gh = githubClients[tokenName];
+        var limits = await gh.RateLimit.GetRateLimits();
+        if (limits.Resources.Core.Remaining == 0)
+        {
+            httpCooldowns.AddOrUpdate(
+                tokenName,
+                _ => limits.Resources.Core.Reset,
+                (_, existing) => Utils.Max(existing, limits.Resources.Core.Reset)
+            );
+        }
+
+        if (limits.Resources.Graphql.Remaining == 0)
+        {
+            grapgQlCooldowns.AddOrUpdate(
+                tokenName,
+                _ => limits.Resources.Graphql.Reset,
+                (_, existing) => Utils.Max(existing, limits.Resources.Graphql.Reset)
+            );
+        }
+    }
+
     private async Task RefreshHttpApi(CancellationToken cancellationToken = default)
     {
-        var (tokenName, tokenCooldown) = ghTokenCooldowns.MinBy(p => p.Value);
+        var (tokenName, tokenCooldown) = httpCooldowns.MinBy(p => p.Value);
         if (tokenCooldown > DateTimeOffset.UtcNow)
         {
             logger.LogInformation(
@@ -488,26 +577,27 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         }
 
         var tokenValue = options.GitHubTokens[tokenName];
-        if (Http.Credentials.Password == tokenValue)
+        if (currentHttpToken == tokenName)
         {
             return;
         }
 
-        lock (Http)
+        lock (httpLock)
         {
-            if (Http.Credentials.Password == tokenValue)
+            if (currentHttpToken == tokenName)
             {
                 return;
             }
 
             logger.LogInformation("Switching GitHub HTTP API token to '{TokenApi}'.", tokenName);
-            Http.Credentials = new Credentials(tokenValue);
+            Http = githubClients[tokenName];
+            currentHttpToken = tokenName;
         }
     }
 
     private async Task RefreshGraphQlApi(CancellationToken cancellationToken = default)
     {
-        var (tokenName, tokenCooldown) = ghqTokenCooldowns.MinBy(p => p.Value);
+        var (tokenName, tokenCooldown) = grapgQlCooldowns.MinBy(p => p.Value);
         if (tokenCooldown > DateTimeOffset.UtcNow)
         {
             logger.LogInformation(
@@ -518,13 +608,55 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             await Task.Delay(DateTimeOffset.UtcNow - tokenCooldown, cancellationToken);
         }
 
+        if (currentGraphQlToken == tokenName)
+        {
+            return;
+        }
+
         if (GraphQl is not null)
         {
             await ghqDisposable.DisposeAsync();
             GraphQl = null!;
         }
 
-        var tokenValue = options.GitHubTokens[tokenName];
-        (GraphQl, ghqDisposable) = Utils.CreateGitHubGraphQLClient(tokenValue);
+        lock (graphQlLock)
+        {
+            if (currentGraphQlToken == tokenName)
+            {
+                // some other thread got here first
+                return;
+            }
+
+            logger.LogInformation("Switching GitHub GraphQL API token to '{TokenApi}'.", tokenName);
+            var tokenValue = options.GitHubTokens[tokenName];
+            (GraphQl, ghqDisposable) = Utils.CreateGitHubGraphQLClient(tokenValue);
+            currentGraphQlToken = tokenName;
+        }
+    }
+
+    private async Task<TResult> QueryGraphQl<TResult>(
+        Func<CancellationToken, Task<TResult>> execute,
+        Func<TResult, IReadOnlyList<IClientError>> errorsAccessor,
+        CancellationToken cancellationToken = default
+    )
+    {
+        while (true)
+        {
+            var queryResult = await execute(cancellationToken);
+            var errors = errorsAccessor(queryResult);
+            if (errors.Count == 0)
+            {
+                return queryResult;
+            }
+
+            if (errors is [{ Code: "graphql_rate_limit" }])
+            {
+                await SetCooldownsFor(currentGraphQlToken, cancellationToken);
+                await RefreshGraphQlApi(cancellationToken);
+                continue;
+            }
+
+            return queryResult;
+        }
     }
 }
