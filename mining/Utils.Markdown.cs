@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using Markdig;
+using Markdig.Extensions.Tables;
 using Markdig.Parsers;
 using Markdig.Renderers.Html;
 using Markdig.Renderers.Html.Inlines;
@@ -22,8 +23,17 @@ public static partial class Utils
             r is HtmlObjectRenderer<CodeBlock>
             || r is HtmlObjectRenderer<AutolinkInline>
             || r is HtmlObjectRenderer<LinkInline>
+            || r is HtmlObjectRenderer<Table>
+            || r is HtmlObjectRenderer<PipeTableDelimiterInline>
         );
-        renderer.ObjectRenderers.Add(new PlainTextLinkInlineRenderer());
+        renderer.ObjectRenderers.InsertRange(
+            0,
+            [
+                new PlainTextLinkInlineRenderer(),
+                new PlainTextTableRenderer(),
+                new PlainTextPipeTableDelimiterInlineRenderer()
+            ]
+        );
         renderer.Render(document);
         writer.Flush();
     }
