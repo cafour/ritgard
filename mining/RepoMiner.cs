@@ -23,8 +23,11 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
     private readonly ConcurrentDictionary<string, DateTimeOffset> httpCooldowns = [];
     private readonly ConcurrentDictionary<string, DateTimeOffset> graphQlCooldowns = [];
     private IAsyncDisposable ghqDisposable = null!;
-    private string currentGraphQlToken = null!;
-    private string currentHttpToken = null!;
+    private ImmutableDictionary<string, GhToken> githubTokens = ImmutableDictionary<string, GhToken>.Empty;
+    private GhToken currentGraphQlToken = null!;
+    private GhToken currentHttpToken = null!;
+    private int httpSpent = 0;
+    private int graphQlSpent = 0;
     private readonly SemaphoreSlim httpLock = new(1, 1);
     private readonly SemaphoreSlim graphQlLock = new(1, 1);
 
@@ -50,7 +53,10 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         var startedAt = DateTimeOffset.UtcNow;
 
         logger.LogInformation("Started mining '{RepoOwner}/{RepoName}'.", RepoOwner, RepoName);
-        var octoRepo = await QueryHttp(_ => Http.Repository.Get(RepoOwner, RepoName), cancellationToken);
+        var octoRepo = await QueryHttp(
+            _ => Http.Repository.Get(RepoOwner, RepoName),
+            cancellationToken: cancellationToken
+        );
         if (octoRepo is null)
         {
             logger.LogInformation("Repo '{RepoOwner}/{RepoName}' could not be found.", RepoOwner, RepoName);
@@ -115,11 +121,16 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             throw new InvalidOperationException("Cannot mine GitHub repositories without any tokens.");
         }
 
-        githubClients = options.GitHubTokens.ToImmutableDictionary(
+        githubTokens = options.GitHubTokens.ToImmutableDictionary(
+            p => p.Key,
+            p => new GhToken(p.Key, p.Value.Token, p.Value.HttpLimit, p.Value.GraphQlLimit)
+        );
+
+        githubClients = githubTokens.ToImmutableDictionary(
             p => p.Key,
             p => new GitHubClient(new ProductHeaderValue($"ritgard-{p.Key}"))
             {
-                Credentials = new Credentials(p.Value)
+                Credentials = new Credentials(p.Value.Token)
             }
         );
 
@@ -307,6 +318,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                     cancellationToken: ct
                 ),
                 errorsAccessor: r => r.Errors,
+                costAccessor: r => r.Data?.RateLimit.Cost ?? 1,
                 cancellationToken: cancellationToken
             );
 
@@ -364,7 +376,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                                     cancellationToken
                                 );
                                 discussions.AddOrUpdate(
-                                    octoDiscussion!.Node!.Id,
+                                    octoDiscussion.Node.Id,
                                     _ => throw new InvalidOperationException(),
                                     (_, pr) => pr with { Comments = comments }
                                 );
@@ -472,6 +484,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             var queryResult = await QueryGraphQl(
                 execute: ct => GraphQl.DiscussionCommentQuery.ExecuteAsync(nodeId, cursor, ct),
                 errorsAccessor: r => r.Errors,
+                costAccessor: r => r.Data?.RateLimit.Cost ?? 1,
                 cancellationToken: cancellationToken
             );
 
@@ -549,23 +562,28 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return builder.ToImmutable();
     }
 
-    private async Task SetCooldownsFor(string tokenName, CancellationToken cancellationToken = default)
+    private async Task SetCooldownsFor(GhToken token)
     {
-        var gh = githubClients[tokenName];
+        var gh = githubClients[token.Name];
         var limits = await gh.RateLimit.GetRateLimits();
-        if (limits.Resources.Core.Remaining == 0)
+
+        var httpThreshold = token.HttpLimit == -1 ? 0 : limits.Resources.Core.Limit - token.HttpLimit;
+        if (limits.Resources.Core.Remaining <= httpThreshold)
         {
+            logger.LogInformation("Reached threshold of {Threshold} remaining HTTP requests.", httpThreshold);
             httpCooldowns.AddOrUpdate(
-                tokenName,
+                token.Name,
                 _ => limits.Resources.Core.Reset,
                 (_, existing) => Utils.Max(existing, limits.Resources.Core.Reset)
             );
         }
 
-        if (limits.Resources.Graphql.Remaining == 0)
+        var graphQlThreshold = token.GraphQlLimit == -1 ? 0 : limits.Resources.Graphql.Limit - token.GraphQlLimit;
+        if (limits.Resources.Graphql.Remaining <= graphQlThreshold)
         {
+            logger.LogInformation("Reached threshold of {Threshold} remaining GraphQL requests.", graphQlThreshold);
             graphQlCooldowns.AddOrUpdate(
-                tokenName,
+                token.Name,
                 _ => limits.Resources.Graphql.Reset,
                 (_, existing) => Utils.Max(existing, limits.Resources.Graphql.Reset)
             );
@@ -587,14 +605,15 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             await Task.Delay(tokenCooldown - DateTimeOffset.UtcNow, cancellationToken);
         }
 
-        if (currentHttpToken == tokenName)
+        if (currentHttpToken.Name == tokenName)
         {
             return;
         }
 
         logger.LogInformation("Switching GitHub HTTP API token to '{TokenName}'.", tokenName);
         Http = githubClients[tokenName];
-        currentHttpToken = tokenName;
+        currentHttpToken = githubTokens[tokenName];
+        httpSpent = 0;
     }
 
     private async Task RefreshGraphQlApi(CancellationToken cancellationToken = default)
@@ -612,7 +631,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             await Task.Delay(tokenCooldown - DateTimeOffset.UtcNow, cancellationToken);
         }
 
-        if (currentGraphQlToken == tokenName)
+        if (currentGraphQlToken.Name == tokenName)
         {
             return;
         }
@@ -625,19 +644,70 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         logger.LogInformation("Switching GitHub GraphQL API token to '{TokenName}'.", tokenName);
         var tokenValue = options.GitHubTokens[tokenName];
-        (GraphQl, ghqDisposable) = Utils.CreateGitHubGraphQLClient(tokenValue);
-        currentGraphQlToken = tokenName;
+        (GraphQl, ghqDisposable) = Utils.CreateGitHubGraphQLClient(tokenValue.Token);
+        currentGraphQlToken = githubTokens[tokenName];
+        graphQlSpent = 0;
+    }
+
+    private async Task EnsureHttpAvailable(CancellationToken cancellationToken = default)
+    {
+        var tmpToken = currentHttpToken;
+        await httpLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (currentHttpToken != tmpToken)
+            {
+                // some other thread switched the token first
+                return;
+            }
+
+            await SetCooldownsFor(currentHttpToken);
+            await RefreshHttpApi(cancellationToken);
+        }
+        finally
+        {
+            httpLock.Release();
+        }
+    }
+
+    private async Task EnsureGraphQlAvailable(CancellationToken cancellationToken = default)
+    {
+        var tmpToken = currentGraphQlToken;
+        await graphQlLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (currentGraphQlToken != tmpToken)
+            {
+                // some other thread switched the token first
+                return;
+            }
+
+            await SetCooldownsFor(currentGraphQlToken);
+            await RefreshGraphQlApi(cancellationToken);
+        }
+        finally
+        {
+            graphQlLock.Release();
+        }
     }
 
     private async Task<TResult> QueryGraphQl<TResult>(
         Func<CancellationToken, Task<TResult>> execute,
         Func<TResult, IReadOnlyList<IClientError>> errorsAccessor,
+        Func<TResult, int> costAccessor,
         CancellationToken cancellationToken = default
     )
     {
+        if (graphQlSpent >= currentHttpToken.GraphQlLimit)
+        {
+            await EnsureGraphQlAvailable(cancellationToken);
+        }
+
         while (true)
         {
             var queryResult = await execute(cancellationToken);
+            var cost = costAccessor(queryResult);
+            Interlocked.Add(ref graphQlSpent, cost);
             var errors = errorsAccessor(queryResult);
             if (errors.Count == 0)
             {
@@ -646,24 +716,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
             if (errors is [{ Code: "graphql_rate_limit" }])
             {
-                var tmpName = currentGraphQlToken;
-                await graphQlLock.WaitAsync(cancellationToken);
-                try
-                {
-                    if (currentGraphQlToken != tmpName)
-                    {
-                        // some other thread switched the token first
-                        continue;
-                    }
-
-                    await SetCooldownsFor(currentGraphQlToken, cancellationToken);
-                    await RefreshGraphQlApi(cancellationToken);
-                    continue;
-                }
-                finally
-                {
-                    graphQlLock.Release();
-                }
+                await EnsureGraphQlAvailable(cancellationToken);
             }
 
             return queryResult;
@@ -672,35 +725,33 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
     private async Task<TResult> QueryHttp<TResult>(
         Func<CancellationToken, Task<TResult>> execute,
+        int cost = 1,
         CancellationToken cancellationToken = default
     )
     {
+        if (httpSpent >= currentHttpToken.HttpLimit)
+        {
+            await EnsureHttpAvailable(cancellationToken);
+        }
+
         while (true)
         {
             try
             {
+                Interlocked.Add(ref httpSpent, cost);
                 return await execute(cancellationToken);
             }
             catch (RateLimitExceededException)
             {
-                var tmpName = currentHttpToken;
-                await httpLock.WaitAsync(cancellationToken);
-                try
-                {
-                    if (currentHttpToken != tmpName)
-                    {
-                        // some other thread switched the token first
-                        continue;
-                    }
-
-                    await SetCooldownsFor(currentHttpToken, cancellationToken);
-                    await RefreshHttpApi(cancellationToken);
-                }
-                finally
-                {
-                    httpLock.Release();
-                }
+                await EnsureHttpAvailable(cancellationToken);
             }
         }
     }
+
+    private record GhToken(
+        string Name,
+        string Token,
+        int HttpLimit,
+        int GraphQlLimit
+    );
 }
