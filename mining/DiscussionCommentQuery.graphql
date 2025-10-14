@@ -26,7 +26,9 @@ query DiscussionCommentQuery(
                                 login
                             }
                         }
+                        authorAssociation
                         id
+                        databaseId
                         isAnswer
                         body
                         createdAt

@@ -5,6 +5,7 @@
     <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UserSecretsId>26efcdaa-ab55-4c0e-86bb-a4e3cdb375d3</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

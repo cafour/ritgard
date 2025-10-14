@@ -3,7 +3,7 @@ using System;
 namespace Ritgard.Mining;
 
 public record Milestone(
-    long Id,
+    string Id,
     int Number,
     string Url,
     string Title,

@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 namespace Ritgard.Mining;
 
 public record PullRequest(
-    long Id,
+    string Id,
     int Number,
     string Url,
     IssueState State,
@@ -35,5 +35,6 @@ public record PullRequest(
     ImmutableArray<string> RequestedReviewers,
     ImmutableArray<string> RequestedTeams,
     ImmutableArray<string> Labels,
-    ImmutableArray<Comment> Comments
+    ImmutableArray<Comment> Comments,
+    ImmutableArray<IssueEvent> Events
 );

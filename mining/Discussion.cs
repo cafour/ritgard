@@ -1,11 +1,14 @@
+using System.Collections.Immutable;
+
 namespace Ritgard.Mining;
 
 public record Discussion(
-    long Id,
+    string Id,
     int Number,
     string Url,
     string Title,
     string Body,
-    string Author,
-    int CommentCount
+    string? Author,
+    int CommentCount,
+    ImmutableArray<Comment> Comments
 );

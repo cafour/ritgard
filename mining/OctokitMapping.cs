@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Octokit;
+using Ritgard.Mining.GitHub;
 
 namespace Ritgard.Mining;
 
@@ -91,7 +92,7 @@ public static class OctokitMapping
         }
 
         return new Issue(
-            Id: value.Id,
+            Id: value.NodeId,
             Number: value.Number,
             Url: value.HtmlUrl,
             Title: value.Title,
@@ -125,7 +126,7 @@ public static class OctokitMapping
         }
 
         return new PullRequest(
-            Id: value.Id,
+            Id: value.NodeId,
             Number: value.Number,
             Url: value.HtmlUrl,
             State: MapItemState(UnwrapStringEnum<ItemState>(value.State)) ?? default,
@@ -156,7 +157,8 @@ public static class OctokitMapping
             RequestedReviewers: [.. value.RequestedReviewers.Select(r => r.Login)],
             RequestedTeams: [.. value.RequestedTeams.Select(t => t.Slug)],
             Labels: [.. value.Labels.Select(l => l.Name)],
-            Comments: []
+            Comments: [],
+            Events: []
         );
     }
 
@@ -169,7 +171,7 @@ public static class OctokitMapping
         }
 
         return new Milestone(
-            Id: value.Id,
+            Id: value.NodeId,
             Number: value.Number,
             Url: value.HtmlUrl,
             Title: value.Title,
@@ -200,6 +202,23 @@ public static class OctokitMapping
     }
 
     [return: NotNullIfNotNull(nameof(value))]
+    public static AuthorAssociation? MapCommentAuthorAssociation(CommentAuthorAssociation? value)
+    {
+        return value switch
+        {
+            null => null,
+            CommentAuthorAssociation.Collaborator => AuthorAssociation.Collaborator,
+            CommentAuthorAssociation.Contributor => AuthorAssociation.Contributor,
+            CommentAuthorAssociation.FirstTimer => AuthorAssociation.FirstTimer,
+            CommentAuthorAssociation.FirstTimeContributor => AuthorAssociation.FirstTimeContributor,
+            CommentAuthorAssociation.Member => AuthorAssociation.Member,
+            CommentAuthorAssociation.Owner => AuthorAssociation.Owner,
+            CommentAuthorAssociation.None => AuthorAssociation.None,
+            _ => throw new NotImplementedException()
+        };
+    }
+
+    [return: NotNullIfNotNull(nameof(value))]
     public static Comment? MapIssueComment(IssueComment? value)
     {
         if (value is null)
@@ -208,7 +227,7 @@ public static class OctokitMapping
         }
 
         return new Comment(
-            Id: value.Id,
+            Id: value.NodeId,
             Body: value.Body,
             CreatedAt: value.CreatedAt,
             UpdatedAt: value.UpdatedAt,
@@ -325,6 +344,44 @@ public static class OctokitMapping
             MilestoneId: value.Milestone?.Id,
             SourceActor: value.Source?.Actor?.Login,
             SourceIssueId: value.Source?.Issue?.Id
+        );
+    }
+
+    [return: NotNullIfNotNull(nameof(value))]
+    public static Discussion? MapDiscussion(IDiscussionQuery_Repository_Discussions_Edges_Node? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        return new Discussion(
+            Id: value.Id,
+            Number: value.Number,
+            Url: value.Url.ToString(),
+            Title: value.Title,
+            Body: value.Body,
+            Author: (value.Author as IDiscussionQuery_Repository_Discussions_Edges_Node_Author_User)?.Login,
+            CommentCount: value.Comments.TotalCount,
+            Comments: []
+        );
+    }
+
+    [return: NotNullIfNotNull(nameof(value))]
+    public static Comment? MapDiscussionComment(IDiscussionCommentQuery_Node_Comments_Edges_Node? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        return new Comment(
+            Id: value.Id,
+            Body: value.Body,
+            CreatedAt: value.CreatedAt,
+            UpdatedAt: value.UpdatedAt,
+            Author: (value.Author as IDiscussionCommentQuery_Node_Comments_Edges_Node_Author_User)?.Login,
+            AuthorAssociation: MapCommentAuthorAssociation(value.AuthorAssociation)
         );
     }
 

@@ -8,7 +8,7 @@ namespace Ritgard.Mining;
 
 public static partial class Utils
 {
-    public static GitHubGraphQLClient CreateGitHubGraphQLClient(string authToken)
+    public static (GitHubGraphQLClient client, IAsyncDisposable clientDisposable) CreateGitHubGraphQLClient(string authToken)
     {
         var services = new ServiceCollection();
         services.AddGitHubGraphQLClient()
@@ -18,6 +18,7 @@ public static partial class Utils
                     c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authToken);
                 }
             );
-        return services.BuildServiceProvider().GetRequiredService<GitHubGraphQLClient>();
+        var provider = services.BuildServiceProvider();
+        return (provider.GetRequiredService<GitHubGraphQLClient>(), provider);
     }
 }

@@ -3,10 +3,10 @@ using System;
 namespace Ritgard.Mining;
 
 public record Comment(
-    long Id,
+    string Id,
     string Body,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,
-    string Author,
+    string? Author,
     AuthorAssociation? AuthorAssociation
 );

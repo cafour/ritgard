@@ -5,7 +5,7 @@ using System.Linq;
 namespace Ritgard.Mining;
 
 public record Issue(
-    long Id,
+    string Id,
     int Number,
     string Url,
     string Title,

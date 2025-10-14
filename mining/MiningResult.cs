@@ -7,8 +7,8 @@ public record MiningResult(
     DateTimeOffset MiningStartedAt,
     DateTimeOffset MiningCompletedAt,
     Repository Repository,
-    ImmutableDictionary<long, Issue> Issues,
-    ImmutableDictionary<long, PullRequest> PullRequests,
-    ImmutableDictionary<long, Milestone> Milestones
-    // ImmutableDictionary<long, Discussion> Discussions
+    ImmutableDictionary<string, Issue> Issues,
+    ImmutableDictionary<string, PullRequest> PullRequests,
+    ImmutableDictionary<string, Discussion> Discussions,
+    ImmutableDictionary<string, Milestone> Milestones
 );
