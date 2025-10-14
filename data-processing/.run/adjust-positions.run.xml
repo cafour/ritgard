@@ -15,7 +15,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="adjust-positions.py" />
-    <option name="PARAMETERS" value=".\out\topics_lume_06_Oct_2025_15_46_48.json" />
+    <option name="PARAMETERS" value=".\out\topics_godot-proposals_2025-10-14_17-49-39.json" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

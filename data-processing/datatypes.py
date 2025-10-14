@@ -18,7 +18,7 @@ class DocumentItem(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
 
-    id: int
+    id: str
     title: str
     labels: list[str] | None = None
     body: str | None = None
@@ -39,8 +39,9 @@ class MiningResult(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
 
-    issues: dict[int, DocumentItem] | None = None
-    pull_requests: dict[int, DocumentItem] | None = None
+    issues: dict[str, DocumentItem] | None = None
+    pull_requests: dict[str, DocumentItem] | None = None
+    discussions: dict[str, DocumentItem] | None = None
     repository: Repository
 
 
@@ -56,7 +57,7 @@ class TopicItem(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
 
-    id: int
+    id: str
     x: float
     y: float
     topic_id: int
@@ -68,7 +69,7 @@ class TopicModellingResult(BaseModel):
                               serialize_by_alias=True)
 
     topics: dict[int, Topic]
-    items: dict[int, TopicItem]
+    items: dict[str, TopicItem]
 
 
 def read_mining_result(filename: str) -> MiningResult:

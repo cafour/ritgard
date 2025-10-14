@@ -34,24 +34,50 @@ STOP_WORDS = list(set(nltk_stopwords.words("english")).union(set(SKLEARN_STOP_WO
 log = logging.getLogger("ritgard.model-topics")
 
 
-def get_documents(data: dt.MiningResult) -> tuple[list[int], list[str]]:
+def get_documents_from_items(items: dict[str, dt.DocumentItem], embed_labels: bool, embed_bodies: bool):
+    ids = []
+    docs = []
+    if items is None or len(items) == 0:
+        return ids, docs
+
+    for item in items.values():
+        doc = ""
+        if embed_labels and item.labels is not None:
+            for label in item.labels:
+                doc += f"[{label}] "
+
+        doc += item.title
+
+        if embed_bodies and (item.plain_text is not None or item.body is not None):
+            doc += "\n\n"
+            doc += item.plain_text or item.body
+
+        ids.append(item.id)
+        docs.append(doc)
+
+    return ids, docs
+
+def get_documents(data: dt.MiningResult, embed_labels: bool, embed_bodies: bool) -> tuple[list[str], list[str]]:
     log.info(
         f"Preparing documents for '{data.repository.owner}/{data.repository.name}'"
     )
     ids = []
     docs = []
-    if data.issues is not None:
-        for issue in data.issues.values():
-            ids.append(issue.id)
-            doc = ""
-            if issue.labels is not None:
-                for label in issue.labels:
-                    doc += f"[{label}] "
-            doc += issue.title
-            # doc = doc.lower().replace(project_name, "")
-            docs.append(doc)
-    return ids, docs
 
+    if data.issues is not None:
+        issue_ids, issue_docs = get_documents_from_items(data.issues, embed_labels, embed_bodies)
+        ids.extend(issue_ids)
+        docs.extend(issue_docs)
+    if data.pull_requests is not None:
+        pr_ids, pr_docs = get_documents_from_items(data.pull_requests, embed_labels, embed_bodies)
+        ids.extend(pr_ids)
+        docs.extend(pr_docs)
+    if data.discussions is not None:
+        discussion_ids, discussion_docs = get_documents_from_items(data.discussions, embed_labels, embed_bodies)
+        ids.extend(discussion_ids)
+        docs.extend(discussion_docs)
+
+    return ids, docs
 
 def reduce_mds(embeddings):
     cosine_dist = pairwise_distances(embeddings, metric="cosine")
@@ -87,8 +113,6 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
     ctfidf_model = ClassTfidfTransformer(reduce_frequent_words=True)
     keybert_model = KeyBERTInspired()
 
-    # llm, prompt = prepare_llm()
-
     representation_model = {
         "KeyBERT": keybert_model,
         "POS": PartOfSpeech("en_core_web_sm"),
@@ -100,6 +124,8 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
             raise RuntimeError("The METACENTRUM_API_KEY environment variable is not set.");
         llm_client = openai.OpenAI(api_key=api_key, base_url='https://chat.ai.e-infra.cz/api', timeout=60)
         # noinspection PyTypeChecker
+        # NB: "tetřev hlušec" is a dummy value that should (hopefully) never occur in real output.
+        #     I'm not sure why I can't use `null or an empty string...
         representation_model["LLM"] = OpenAI(client=llm_client, model="qwen3-coder",
                                              generator_kwargs={"stop": "tetřev hlušec"})
     topic_model = BERTopic(
@@ -153,7 +179,7 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
 
 
 def write_topics(
-        ids: list[int],
+        ids: list[str],
         positions: np.ndarray[tuple[int, int], np.dtype[np.float64]],
         topic_model: BERTopic,
         project_name: str,
@@ -191,13 +217,15 @@ def main():
     args_parser = argparse.ArgumentParser(prog="ritgard")
     args_parser.add_argument("data_path")
     args_parser.add_argument("--llm", action="store_true")
+    args_parser.add_argument("--embed-labels", action="store_true")
+    args_parser.add_argument("--embed-bodies", action="store_true")
     args = args_parser.parse_args()
 
     Path("./out").mkdir(exist_ok=True)
 
     data = dt.read_mining_result(args.data_path)
     project_name = data.repository.name
-    ids, docs = get_documents(data)
+    ids, docs = get_documents(data, args.embed_labels, args.embed_bodies)
 
     current_gpu = -1
     current_gpu_free_memory = 0
