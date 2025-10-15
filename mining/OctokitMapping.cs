@@ -102,7 +102,6 @@ public static class OctokitMapping
             ClosedAt: value.ClosedAt,
             Labels: [.. value.Labels.Select(l => l.Name)],
             Body: value.Body,
-            PlainText: GetIssuePlainText(value.Title, value.Body),
             State: MapItemState(UnwrapStringEnum<ItemState>(value.State)) ?? default,
             StateReason: MapItemStateReason(UnwrapStringEnum(value.StateReason)),
             ClosedBy: value.ClosedBy?.Login,

@@ -15,7 +15,6 @@ public record Issue(
     DateTimeOffset? ClosedAt,
     ImmutableArray<string> Labels,
     string Body,
-    string PlainText,
     IssueState State,
     IssueStateReason? StateReason,
     string? ClosedBy,

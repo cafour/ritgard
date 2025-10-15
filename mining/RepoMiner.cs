@@ -317,7 +317,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                     cancellationToken: ct
                 ),
                 errorsAccessor: r => r.Errors,
-                costAccessor: r => r.Data?.RateLimit.Cost ?? 1,
+                costAccessor: r => r.Data?.RateLimit?.Cost ?? 1,
                 cancellationToken: cancellationToken
             );
 
@@ -483,7 +483,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             var queryResult = await QueryGraphQl(
                 execute: ct => GraphQl.DiscussionCommentQuery.ExecuteAsync(nodeId, cursor, ct),
                 errorsAccessor: r => r.Errors,
-                costAccessor: r => r.Data?.RateLimit.Cost ?? 1,
+                costAccessor: r => r.Data?.RateLimit?.Cost ?? 1,
                 cancellationToken: cancellationToken
             );
 
@@ -581,6 +581,10 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 (_, existing) => Utils.Max(existing, limits.Resources.Core.Reset)
             );
         }
+        else
+        {
+            httpCooldowns.TryAdd(token.Name, default);
+        }
 
         var graphQlThreshold = token.GraphQlLimit == -1 ? 0 : limits.Resources.Graphql.Limit - token.GraphQlLimit;
         if (limits.Resources.Graphql.Remaining <= graphQlThreshold)
@@ -596,6 +600,10 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 _ => limits.Resources.Graphql.Reset,
                 (_, existing) => Utils.Max(existing, limits.Resources.Graphql.Reset)
             );
+        }
+        else
+        {
+            graphQlCooldowns.TryAdd(token.Name, default);
         }
     }
 

@@ -18,7 +18,7 @@ import logging
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS as SKLEARN_STOP_WORDS
 import nltk
 
-from utils import get_now_string
+from utils import get_now_string, get_plain_text
 
 nltk.download("stopwords")
 from nltk.corpus import stopwords as nltk_stopwords
@@ -46,11 +46,11 @@ def get_documents_from_items(items: dict[str, dt.DocumentItem], embed_labels: bo
             for label in item.labels:
                 doc += f"[{label}] "
 
-        doc += item.title
+        doc += get_plain_text(item.title)
 
-        if embed_bodies and (item.plain_text is not None or item.body is not None):
+        if embed_bodies and item.body is not None:
             doc += "\n\n"
-            doc += item.plain_text or item.body
+            doc += get_plain_text(item.body)
 
         ids.append(item.id)
         docs.append(doc)
