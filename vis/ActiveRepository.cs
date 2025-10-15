@@ -52,6 +52,7 @@ public class ActiveRepository
         {
             bbox = bbox.Expand(new Vector2((float)item.X, (float)item.Y));
         }
+
         var center = bbox.GetCenter();
 
         var repo = new ActiveRepository
@@ -59,28 +60,32 @@ public class ActiveRepository
             Dataset = dataset,
             Mining = mining,
             TopicModelling = topicModelling,
-            Items = mining.Issues.ToImmutableDictionary(
-                i => i.Key,
-                i => ActiveItem.Create(
-                    i.Value,
-                    new Vector2(
-                        x: (float)topicModelling.Items[i.Value.Id].X - center.X,
-                        y: (float)topicModelling.Items[i.Value.Id].Y - center.Y
+            Items = mining.Issues.Values.Cast<IConversation>()
+                .Concat(mining.PullRequests.Values)
+                .Concat(mining.Discussions.Values)
+                .ToImmutableDictionary(
+                    i => i.Id,
+                    i => ActiveItem.FromConversation(
+                        i,
+                        new Vector2(
+                            x: (float)topicModelling.Items[i.Id].X - center.X,
+                            y: (float)topicModelling.Items[i.Id].Y - center.Y
+                        )
                     )
                 )
-            )
         };
         repo.SlidingWindow = slidingWindow ?? repo.SlidingWindow;
         repo.Step = step ?? repo.Step;
         repo.MaxDate = Ritgard.Mining.Utils.Max(
             mining.Repository.UpdatedAt ?? default,
-            mining.Issues.Values.Max(i => i.UpdatedAt ?? i.CreatedAt)
+            repo.Items.Values.Max(i => i.Conversation.UpdatedAt)
         );
         repo.MinDate = Ritgard.Mining.Utils.Min(
             mining.Repository.CreatedAt,
-            mining.Issues.Values.Min(i => i.UpdatedAt ?? i.CreatedAt)
+            repo.Items.Values.Min(i => i.Conversation.CreatedAt)
         );
-        repo.AvgIssueLength = TimeSpan.FromSeconds(mining.Issues.Values.Average(i => i.GetTimeSpan().TotalSeconds));
+        repo.AvgIssueLength =
+            TimeSpan.FromSeconds(repo.Items.Average(i => i.Value.Conversation.GetDuration().TotalSeconds));
         repo.StepCount = Mathf.CeilToInt((repo.MaxDate - repo.MinDate) / repo.Step);
 
         var kdTree = new KdTree<ActiveItem>();
@@ -91,6 +96,7 @@ public class ActiveRepository
                 item
             );
         }
+
         repo.ItemTree = kdTree;
         return repo;
     }

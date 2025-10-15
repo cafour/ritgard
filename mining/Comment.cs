@@ -6,7 +6,7 @@ public record Comment(
     string Id,
     string Body,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt,
+    DateTimeOffset UpdatedAt,
     string? Author,
     AuthorAssociation? AuthorAssociation
 );

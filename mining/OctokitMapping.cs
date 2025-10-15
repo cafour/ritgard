@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -98,7 +99,7 @@ public static class OctokitMapping
             Title: value.Title,
             Author: value.User.Login,
             CreatedAt: value.CreatedAt,
-            UpdatedAt: value.UpdatedAt,
+            UpdatedAt: value.UpdatedAt ?? value.CreatedAt,
             ClosedAt: value.ClosedAt,
             Labels: [.. value.Labels.Select(l => l.Name)],
             Body: value.Body,
@@ -229,7 +230,7 @@ public static class OctokitMapping
             Id: value.NodeId,
             Body: value.Body,
             CreatedAt: value.CreatedAt,
-            UpdatedAt: value.UpdatedAt,
+            UpdatedAt: value.UpdatedAt ?? value.CreatedAt,
             Author: value.User.Login,
             AuthorAssociation: MapAuthorAssociation(
                 UnwrapStringEnum<Octokit.AuthorAssociation>(value.AuthorAssociation)
@@ -361,6 +362,18 @@ public static class OctokitMapping
             Title: value.Title,
             Body: value.Body,
             Author: (value.Author as IDiscussionQuery_Repository_Discussions_Edges_Node_Author_User)?.Login,
+            Category: value.Category.Name,
+            UpvoteCount: value.UpvoteCount,
+            CreatedAt: value.CreatedAt,
+            UpdatedAt: value.UpdatedAt,
+            PublishedAt: value.PublishedAt,
+            LastEditedAt: value.LastEditedAt,
+            AnswerChosenAt: value.AnswerChosenAt,
+            Labels:
+            [
+                ..value.Labels?.Edges?
+                    .Where(l => l?.Node is not null).Select(l => l!.Node!.Name) ?? []
+            ],
             CommentCount: value.Comments.TotalCount,
             Comments: []
         );

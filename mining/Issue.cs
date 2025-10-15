@@ -11,7 +11,7 @@ public record Issue(
     string Title,
     string Author,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt,
+    DateTimeOffset UpdatedAt,
     DateTimeOffset? ClosedAt,
     ImmutableArray<string> Labels,
     string Body,
@@ -26,20 +26,10 @@ public record Issue(
     int CommentCount,
     ImmutableArray<Comment> Comments,
     ImmutableArray<IssueEvent> Events
-)
+) : IConversation
 {
-    public DateTimeOffset GetLastCommentDate()
+    public override string ToString()
     {
-        if (Comments.IsDefaultOrEmpty)
-        {
-            return default;
-        }
-
-        return Comments.Max(i => i.CreatedAt);
-    }
-
-    public TimeSpan GetTimeSpan()
-    {
-        return Utils.Max(UpdatedAt ?? default, GetLastCommentDate()) - CreatedAt;
+        return $"Issue #{Number}: {Title}";
     }
 }

@@ -81,6 +81,7 @@ public partial class Overlord : Node
         {
             Instance.QueueFree();
         }
+
         Instance = this;
 
         generatedNodesContainer = GetNode<Node>("GeneratedNodesContainer");
@@ -95,6 +96,7 @@ public partial class Overlord : Node
         {
             DatasetDropdown.AddItem(Datasets[i].Name, i);
         }
+
         DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
         await ShowDataset(0);
 
@@ -191,7 +193,7 @@ public partial class Overlord : Node
         }
 
         var now = Repo.MinDate + Repo.Step * step;
-        foreach (var issue in Repo.Mining.Issues.Values)
+        foreach (var issue in Repo.Items.Values)
         {
             var slidingEvents = Repo.Items[issue.Id].Events.GetRange(now - Repo.SlidingWindow, now, true);
             Heights[issue.Id] = slidingEvents.Count();
@@ -211,10 +213,10 @@ public partial class Overlord : Node
     {
         if (@event.IsAction("interact") && @event.IsPressed() && currentStructure is not null)
         {
-            var item = Repo.Mining.Issues.GetValueOrDefault(currentStructure.Item.Id);
-            if (!string.IsNullOrEmpty(item.Url))
+            var item = Repo.Items.GetValueOrDefault(currentStructure.Item.Id);
+            if (!string.IsNullOrEmpty(item.Conversation.Url))
             {
-                OS.ShellOpen(item.Url);
+                OS.ShellOpen(item.Conversation.Url);
             }
         }
 
@@ -322,43 +324,46 @@ public partial class Overlord : Node
     private void OnHoverChanged(CollisionObject3D hoveree)
     {
         var parent = hoveree?.GetParent();
-        if (parent is ItemStructure structure)
+        switch (parent)
         {
-            if (Repo.Mining.Issues.TryGetValue(structure.Item.Id, out var item))
-            {
+            case ItemStructure structure:
+                if (Repo.Items.TryGetValue(structure.Item.Id, out var item))
+                {
+                    currentIsland?.ToggleHighlight(false);
+                    currentIsland = null;
+
+                    currentStructure?.ToggleHighlight(false);
+                    structure.ToggleHighlight(true);
+                    currentStructure = structure;
+
+                    ItemDescriptionLabel.Text = item.ToString();
+
+                    Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
+                }
+
+                break;
+
+            case TopicIsland island:
+                currentStructure?.ToggleHighlight(false);
+                currentStructure = null;
+
+                currentIsland?.ToggleHighlight(false);
+                island.ToggleHighlight(true);
+                currentIsland = island;
+
+                ItemDescriptionLabel.Text = $"The '{island.Topic.GetPreferredTitle()}' topic island";
+                break;
+
+            case null:
+                currentStructure?.ToggleHighlight(false);
+                currentStructure = null;
+
                 currentIsland?.ToggleHighlight(false);
                 currentIsland = null;
 
-                currentStructure?.ToggleHighlight(false);
-                structure.ToggleHighlight(true);
-                currentStructure = structure;
-
-                ItemDescriptionLabel.Text = $"#{item.Number} {item.Title}\n\t{item.CreatedAt:s}--{item.UpdatedAt:s} ({item.UpdatedAt - item.CreatedAt:c}, {item.CommentCount} comments)";
-
-                Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
-            }
-        }
-        else if (parent is TopicIsland island)
-        {
-            currentStructure?.ToggleHighlight(false);
-            currentStructure = null;
-
-            currentIsland?.ToggleHighlight(false);
-            island.ToggleHighlight(true);
-            currentIsland = island;
-
-            ItemDescriptionLabel.Text = $"The '{island.Topic.GetPreferredTitle()}' topic island";
-        }
-        else if (parent is null)
-        {
-            currentStructure?.ToggleHighlight(false);
-            currentStructure = null;
-
-            currentIsland?.ToggleHighlight(false);
-            currentIsland = null;
-
-            Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
-            ItemDescriptionLabel.Text = DefaultHint;
+                Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
+                ItemDescriptionLabel.Text = DefaultHint;
+                break;
         }
     }
 

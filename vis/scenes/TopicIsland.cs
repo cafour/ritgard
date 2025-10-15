@@ -65,7 +65,7 @@ public partial class TopicIsland : Node3D
     public byte[,] Heightmap { get; set; }
 
 
-    public override void _Ready()
+    public override void _EnterTree()
     {
         if (Topic is null)
         {
@@ -170,10 +170,10 @@ public partial class TopicIsland : Node3D
         var hullPolygon = hull.GetHull(hullTris);
         hullPolygon = hullPolygon.Buffer(Mathf.Min(1, Mathf.RoundToInt(StructureRadius / 2f)));
 
-        var kdTree = new KdTree<Issue>();
+        var kdTree = new KdTree<ActiveItem>();
         foreach (var (id, pos) in itemIds.Zip(itemPoints))
         {
-            kdTree.Insert(new Coordinate(pos.X, pos.Y), Overlord.Instance.Repo.Mining.Issues[id]);
+            kdTree.Insert(new Coordinate(pos.X, pos.Y), Overlord.Instance.Repo.Items[id]);
         }
 
         for (int z = 0; z < Heightmap.GetLength(0); ++z)

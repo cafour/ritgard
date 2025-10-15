@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using BTree;
 using Godot;
 using Ritgard.Mining;
@@ -7,24 +8,34 @@ namespace Ritgard;
 
 public record ActiveItem(
     string Id,
-    object OriginalItem,
+    IConversation Conversation,
     BPlusTree<DateTimeOffset, ActiveItemEvent> Events,
     Vector2 Position
 )
 {
-    public static ActiveItem Create(Issue item, Vector2 position)
+    public static ActiveItem FromConversation(IConversation conversation, Vector2 position)
     {
         var events = new BPlusTree<DateTimeOffset, ActiveItemEvent>();
-        events.InsertOrUpdate(item.CreatedAt, new ActiveItemEvent(item.CreatedAt, null));
-        foreach (var @event in item.Events)
+        events.InsertOrUpdate(conversation.CreatedAt, new ActiveItemEvent(conversation.CreatedAt, null));
+        // foreach (var @event in item.Events)
+        // {
+        //     events.InsertOrUpdate(@event.CreatedAt, new ActiveItemEvent(@event.CreatedAt, @event));
+        // }
+        foreach (var comment in conversation.Comments)
         {
-            events.InsertOrUpdate(@event.CreatedAt, new ActiveItemEvent(@event.CreatedAt, @event));
+            events.InsertOrUpdate(comment.CreatedAt, new ActiveItemEvent(comment.CreatedAt, comment));
         }
+
         return new ActiveItem(
-            Id: item.Id,
-            OriginalItem: item,
+            Id: conversation.Id,
+            Conversation: conversation,
             Events: events,
             Position: position
         );
+    }
+
+    public override string ToString()
+    {
+        return Conversation.ToString();
     }
 }

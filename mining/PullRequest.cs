@@ -11,7 +11,7 @@ public record PullRequest(
     string Title,
     string Body,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? UpdatedAt,
+    DateTimeOffset UpdatedAt,
     DateTimeOffset? ClosedAt,
     DateTimeOffset? MergedAt,
     GitReference Head,
@@ -37,4 +37,10 @@ public record PullRequest(
     ImmutableArray<string> Labels,
     ImmutableArray<Comment> Comments,
     ImmutableArray<IssueEvent> Events
-);
+) : IConversation
+{
+    public override string ToString()
+    {
+        return $"Pull request #{Number}: {Title}";
+    }
+}
