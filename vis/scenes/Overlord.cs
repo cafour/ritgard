@@ -58,11 +58,11 @@ public partial class Overlord : Node
     public int CurrentStep { get; private set; }
 
     public ActiveRepository Repo { get; private set; }
-    public Dictionary<long, float> Heights { get; private set; } = [];
+    public Dictionary<string, float> Heights { get; private set; } = [];
 
     private readonly Dictionary<int, TopicIsland> topicIslands = [];
-    private readonly Dictionary<long, ItemStructure> itemStructures = [];
-    private readonly Dictionary<long, OutlierRock> outlierRocks = [];
+    private readonly Dictionary<string, ItemStructure> itemStructures = [];
+    private readonly Dictionary<string, OutlierRock> outlierRocks = [];
     private ItemStructure currentStructure;
     private TopicIsland currentIsland;
     private Node generatedNodesContainer;

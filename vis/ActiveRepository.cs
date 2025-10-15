@@ -19,7 +19,7 @@ public class ActiveRepository
 
     public TopicModellingResult TopicModelling { get; private set; }
 
-    public ImmutableDictionary<long, ActiveItem> Items { get; private set; }
+    public ImmutableDictionary<string, ActiveItem> Items { get; private set; }
 
     public KdTree<ActiveItem> ItemTree { get; private set; }
 

@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 namespace Ritgard.Mining;
 
 public record TopicItem(
-    long Id,
+    string Id,
     double X,
     double Y,
     int TopicId,

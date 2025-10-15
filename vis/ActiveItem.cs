@@ -6,7 +6,7 @@ using Ritgard.Mining;
 namespace Ritgard;
 
 public record ActiveItem(
-    long Id,
+    string Id,
     object OriginalItem,
     BPlusTree<DateTimeOffset, ActiveItemEvent> Events,
     Vector2 Position

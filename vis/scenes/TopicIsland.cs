@@ -38,7 +38,7 @@ public partial class TopicIsland : Node3D
 
     private static readonly float[] BlurKernel = GaussianBlur.CreateKernel(2f, StructureRadius - 1);
 
-    private ImmutableHashSet<long> itemIds;
+    private ImmutableHashSet<string> itemIds;
     private ImmutableArray<Vector2> itemPoints;
     private Rect2I heightmapBox;
     private ArrayMesh arrayMesh = new();
