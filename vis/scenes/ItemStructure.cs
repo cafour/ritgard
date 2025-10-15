@@ -109,12 +109,27 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
             _.Mesh.Visible = false;
             return;
         }
-        
-        var structure = new Conifer
+
+        IStructure structure = Item.Conversation switch
         {
-            TrunkHeight = 2,
-            CrownBreadth = 3
+            Issue => new Conifer
+            {
+                TrunkHeight = 2,
+                CrownBreadth = 3
+            },
+            PullRequest => new Broadleaf
+            {
+                TrunkHeight = 2,
+                CrownBreadth = 3
+            },
+            Discussion => new Acacia
+            {
+                TrunkHeight = 2,
+                CrownBreadth = 3
+            },
+            _ => throw new NotSupportedException()
         };
+
 
         var (min, max) = structure.Measure();
         var size = max - min;
@@ -125,7 +140,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
             Library = Library
         };
         _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
-        _.Mesh.Position = new Vector3(-size.X / 2 + 0.5f, 0, -size.Z / 2 + 0.5f);
+        _.Mesh.Position = new Vector3(-size.X / 2f + 0.5f, 0, -size.Z / 2f + 0.5f);
         _.Mesh.Visible = true;
         Position = new Vector3(
             Position.X,
