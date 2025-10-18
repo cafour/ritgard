@@ -16,7 +16,7 @@ mkdir datasets
 cp /storage/brno2/home/xstepan1/ritgard/data-processing/datasets/lume.json ./datasets/
 
 uv sync
-uv run ./model-topics.py --embed-labels --embed-bodies --llm
+uv run ./model-topics.py --llm --llm-model --embed-labels --embed-bodies --embed-comments --embed-model "Qwen/Qwen3-Embedding-8B" --flash-attention
 cp out/* /storage/brno2/home/xstepan1/out/
 
 rm -rf $SCRATCHDIR/*
