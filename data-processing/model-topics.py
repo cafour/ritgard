@@ -106,10 +106,11 @@ def reduce_mds(embeddings):
 def use_bertopic(
         docs: list[str],
         repository: dt.Repository,
-        use_llm: bool,
-        use_flash_attention: bool,
-        min_cluster_size: float,
-        min_samples,
+        batch_size: int = 16,
+        use_llm: bool = False,
+        use_flash_attention: bool = False,
+        min_cluster_size: int = 5,
+        min_samples: int = 3,
         llm_model_name: str = "gpt-oss-120b",
         embed_model_name: str = "Qwen/Qwen3-Embedding-0.6B"
 ):
@@ -128,7 +129,7 @@ def use_bertopic(
         model_kwargs=embedding_model_kwargs,
         tokenizer_kwargs={"padding_side": "left"},
     )
-    embeddings = embedding_model.encode(docs, show_progress_bar=True)
+    embeddings = embedding_model.encode(docs, show_progress_bar=True, batch_size=batch_size)
     umap_model = umap.UMAP(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
     )
@@ -270,6 +271,7 @@ def main():
     args_parser.add_argument("--embed-labels", action="store_true")
     args_parser.add_argument("--embed-bodies", action="store_true")
     args_parser.add_argument("--embed-comments", action="store_true")
+    args_parser.add_argument("--embed-batch-size", default=16, type=int)
     args_parser.add_argument("--flash-attention", action="store_true")
     args_parser.add_argument("--llm-model", default="gpt-oss-120b")
     args_parser.add_argument("--embed-model", default="Qwen/Qwen3-Embedding-0.6B")
