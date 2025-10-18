@@ -8,11 +8,11 @@ set -o errexit
 
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-cp /storage/brno2/home/xstepan1/ritgard $SCRATCHDIR
+cp -r /storage/brno2/home/xstepan1/ritgard $SCRATCHDIR
 
 cd $SCRATCHDIR/ritgard/data-processing
 cp /storage/brno2/home/xstepan1/ritgard/data-processing/.env .
-mkdir datasets
+mkdir -p datasets
 cp /storage/brno2/home/xstepan1/ritgard/data-processing/datasets/lume.json ./datasets/
 
 uv sync --no-build-isolation
