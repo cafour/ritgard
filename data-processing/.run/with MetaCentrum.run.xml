@@ -15,7 +15,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="model-topics.py" />
-    <option name="PARAMETERS" value="./datasets/lume.json --llm --embed-labels --embed-bodies --output output.json --embed-model all-MiniLM-L6-v2" />
+    <option name="PARAMETERS" value="./datasets/lume.json --llm --embed-labels --embed-bodies --embed-model all-MiniLM-L6-v2" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

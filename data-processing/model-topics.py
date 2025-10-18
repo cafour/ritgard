@@ -108,6 +108,8 @@ def use_bertopic(
         repository: dt.Repository,
         use_llm: bool,
         use_flash_attention: bool,
+        min_cluster_size: float,
+        min_samples,
         llm_model_name: str = "gpt-oss-120b",
         embed_model_name: str = "Qwen/Qwen3-Embedding-0.6B"
 ):
@@ -131,8 +133,8 @@ def use_bertopic(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
     )
     hdbscan_model = HDBSCAN(
-        min_cluster_size=15,
-        min_samples=3,
+        min_cluster_size=min_cluster_size,
+        min_samples=min_samples,
         metric="euclidean",
         cluster_selection_method="eom",
         prediction_data=True,
@@ -271,6 +273,8 @@ def main():
     args_parser.add_argument("--flash-attention", action="store_true")
     args_parser.add_argument("--llm-model", default="gpt-oss-120b")
     args_parser.add_argument("--embed-model", default="Qwen/Qwen3-Embedding-0.6B")
+    args_parser.add_argument("--min-cluster-size", default=5, type=float)
+    args_parser.add_argument("--min-samples", default=3, type=float)
     args_parser.add_argument("--output", default=None)
     args = args_parser.parse_args()
 
@@ -303,6 +307,8 @@ def main():
         repository=data.repository,
         use_llm=args.llm,
         use_flash_attention=args.flash_attention,
+        min_cluster_size=args.min_cluster_size,
+        min_samples=args.min_samples,
         llm_model_name=args.llm_model,
         embed_model_name=args.embed_model
     )
