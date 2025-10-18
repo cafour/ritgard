@@ -118,6 +118,7 @@ def use_bertopic(
         "device_map": "auto"
     }
     if use_flash_attention:
+        log.info("Using Flash Attention 2")
         embedding_model_kwargs["dtype"] = torch.bfloat16
         embedding_model_kwargs["attn_implementation"] = "flash_attention_2"
     embedding_model = SentenceTransformer(
@@ -248,7 +249,7 @@ def write_topics(
     json = result.model_dump_json()
 
     if output_path is None:
-        output_path = f"./out/adjusted_{get_now_string()}.json"
+        output_path = f"./out/topics_{project_name}_{get_now_string()}.json"
         log.info(f"Automatically set output path to '{output_path}'")
     output = Path(output_path)
     if output.parent is not None:
