@@ -1535,6 +1535,7 @@ dependencies = [
 dev = [
     { name = "benchmark-imports" },
     { name = "huggingface-hub", extra = ["cli"] },
+    { name = "setuptools" },
 ]
 
 [package.metadata]
@@ -1565,6 +1566,7 @@ requires-dist = [
 dev = [
     { name = "benchmark-imports", specifier = ">=1.0.0" },
     { name = "huggingface-hub", extras = ["cli"], specifier = ">=0.35.3" },
+    { name = "setuptools", specifier = ">=80.9.0" },
 ]
 
 [[package]]
