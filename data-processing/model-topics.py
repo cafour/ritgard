@@ -18,7 +18,7 @@ import logging
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS as SKLEARN_STOP_WORDS
 import nltk
 
-from utils import get_now_string, get_plain_text
+from utils import get_now_string, get_plain_text, get_prompt, LineTokenizer
 
 nltk.download("stopwords")
 from nltk.corpus import stopwords as nltk_stopwords
@@ -105,8 +105,8 @@ def reduce_mds(embeddings):
 
 def use_bertopic(
         docs: list[str],
-        project_name,
-        use_metacentrum: bool,
+        repository: dt.Repository,
+        use_llm: bool,
         use_flash_attention: bool,
         llm_model_name: str = "gpt-oss-120b",
         embed_model_name: str = "Qwen/Qwen3-Embedding-0.6B"
@@ -147,16 +147,24 @@ def use_bertopic(
         "POS": PartOfSpeech("en_core_web_sm"),
         "MMS": MaximalMarginalRelevance(diversity=0.5)
     }
-    if use_metacentrum:
-        api_key = os.getenv("METACENTRUM_API_KEY")
+    if use_llm:
+        api_key = os.getenv("LLM_API_KEY")
+        base_url = os.getenv("LLM_BASE_URL")
         if api_key is None:
-            raise RuntimeError("The METACENTRUM_API_KEY environment variable is not set.");
-        llm_client = openai.OpenAI(api_key=api_key, base_url='https://chat.ai.e-infra.cz/api', timeout=60)
+            raise RuntimeError("The LLM_API_KEY environment variable is not set.");
+        llm_client = openai.OpenAI(api_key=api_key, base_url=base_url, timeout=60)
         # noinspection PyTypeChecker
         # NB: "tetřev hlušec" is a dummy value that should (hopefully) never occur in real output.
         #     I'm not sure why I can't use `null or an empty string...
-        representation_model["LLM"] = OpenAI(client=llm_client, model=llm_model_name,
-                                             generator_kwargs={"stop": "tetřev hlušec"})
+        representation_model["LLM"] = OpenAI(
+            client=llm_client,
+            model=llm_model_name,
+            system_prompt="You are an assistant that extracts high-level topics from software engineering conversations.",
+            prompt=get_prompt(repository.topics),
+            generator_kwargs={"stop": "tetřev hlušec"},
+            tokenizer=LineTokenizer(),
+            doc_length=1
+        )
     topic_model = BERTopic(
         embedding_model=embedding_model,
         umap_model=umap_model,
@@ -195,7 +203,7 @@ def use_bertopic(
     )
     formatted_datetime = get_now_string()
     fig_hierarchy.write_html(
-        f"./out/hierarchy_{project_name}_{formatted_datetime}.html"
+        f"./out/hierarchy_{repository.name}_{formatted_datetime}.html"
     )
 
     fig = topic_model.visualize_documents(
@@ -205,9 +213,9 @@ def use_bertopic(
         reduced_embeddings=positions,  # type: ignore
         custom_labels=True,
         hide_annotations=True,
-        title=project_name,
+        title=repository.name,
     )
-    fig.write_html(f"./out/issues_{project_name}_{formatted_datetime}.html")
+    fig.write_html(f"./out/issues_{repository.name}_{formatted_datetime}.html")
     return topic_model, topics, positions
 
 
@@ -291,8 +299,8 @@ def main():
 
     topic_model, topics, positions = use_bertopic(
         docs=docs,
-        project_name=project_name,
-        use_metacentrum=args.llm,
+        repository=data.repository,
+        use_llm=args.llm,
         use_flash_attention=args.flash_attention,
         llm_model_name=args.llm_model,
         embed_model_name=args.embed_model

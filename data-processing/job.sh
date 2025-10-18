@@ -4,6 +4,8 @@
 #PBS -l select=1:ncpus=4:mem=40gb:scratch_local=40gb:ngpus=1:gpu_mem=40gb
 #PBS -l walltime=1:00:00
 
+set -o errexit
+
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 cd $SCRATCHDIR

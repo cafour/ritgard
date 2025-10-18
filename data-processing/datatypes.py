@@ -33,6 +33,7 @@ class Repository(BaseModel):
     id: int
     owner: str
     name: str
+    topics: list[str]
 
 
 class MiningResult(BaseModel):
