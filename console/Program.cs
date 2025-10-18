@@ -27,11 +27,13 @@ internal class Commands
     /// </summary>
     /// <param name="repo">owner/repo_name</param>
     /// <param name="scope">The scope of the data mining.</param>
+    /// <param name="output">Where to write the mined output.</param>
     /// <param name="cancellationToken">Optional token to cancel the async operation in progress.</param>
     [Command("repo")]
     public async Task MineRepo(
         [Argument] string repo,
         RepoMinerScope scope = RepoMinerScope.All,
+        string? output = null,
         CancellationToken cancellationToken = default
     )
     {
@@ -45,11 +47,19 @@ internal class Commands
         var result = await miner.MineRepo(cancellationToken);
         if (result is not null)
         {
-            var filename = $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
-            Log.LogInformation("Saving to '{OutputPath}'.", filename);
+            if (!string.IsNullOrEmpty(output))
+            {
+                var parentDir = new FileInfo(output).Directory;
+                if (parentDir is not null && !parentDir.Exists)
+                {
+                    parentDir.Create();
+                }
+            }
+            output = $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
+            Log.LogInformation("Saving to '{OutputPath}'.", output);
             await Utils.WriteJson(
                 result,
-                filename,
+                output,
                 cancellationToken
             );
         }
