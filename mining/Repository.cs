@@ -30,6 +30,7 @@ public record Repository(
     bool HasPages,
     int SubscribersCount,
     long Size,
+    int? FileCount,
     ImmutableArray<string> Topics,
     RepositoryVisibility? Visibility
 );

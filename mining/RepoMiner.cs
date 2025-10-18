@@ -63,7 +63,23 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             return null;
         }
 
-        var tasks = new List<Task>(4);
+        var tasks = new List<Task>(5);
+
+        int? fileCount = null;
+        tasks.Add(
+            Task.Run(async () =>
+                {
+                    fileCount = await Utils.GetFileCount(octoRepo.CloneUrl, logger, cancellationToken);
+                    logger.LogInformation(
+                        "Repository '{RepoOwner}/{RepoName}' has {FileCount} files.",
+                        RepoOwner,
+                        RepoName,
+                        fileCount
+                    );
+                },
+                cancellationToken
+            )
+        );
 
         if (Scope.HasFlag(RepoMinerScope.Issues))
         {
@@ -99,7 +115,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return new MiningResult(
             MiningStartedAt: startedAt,
             MiningCompletedAt: completedAt,
-            Repository: OctokitMapping.MapRepository(octoRepo),
+            Repository: OctokitMapping.MapRepository(octoRepo) with { FileCount = fileCount },
             Issues: issues.ToImmutableDictionary(),
             PullRequests: pullRequests.ToImmutableDictionary(),
             Discussions: discussions.ToImmutableDictionary(),

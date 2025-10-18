@@ -65,6 +65,16 @@ internal class Commands
         }
     }
 
+    [Command("count-files")]
+    public async Task CountFiles(
+        [Argument] string gitUrl,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var fileCount = await Utils.GetFileCount(gitUrl, Log, cancellationToken);
+        Log.LogInformation("Repository has {FileCount} files.", fileCount);
+    }
+
     // [Command("wtf")]
     // public void Wtf()
     // {
