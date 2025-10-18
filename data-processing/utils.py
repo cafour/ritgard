@@ -60,7 +60,7 @@ Project topics: {", ".join(repo_topics)}
 
 Keywords: [KEYWORDS]
 
-Based on the information above, extract a short topic label in the following format:
+Based on the information above, extract a short topic label (four words at most) in the following format:
 
 topic: <topic_label>
 """
