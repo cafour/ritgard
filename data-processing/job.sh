@@ -8,11 +8,9 @@ set -o errexit
 
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-cd $SCRATCHDIR
+cp /storage/brno2/home/xstepan1/ritgard $SCRATCHDIR
 
-git clone git@gitlab.com:helveg/ritgard.git
-
-cd ritgard/data-processing
+cd $SCRATCHDIR/ritgard/data-processing
 cp /storage/brno2/home/xstepan1/ritgard/data-processing/.env .
 mkdir datasets
 cp /storage/brno2/home/xstepan1/ritgard/data-processing/datasets/lume.json ./datasets/
