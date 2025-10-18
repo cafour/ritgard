@@ -17,7 +17,7 @@ cp /storage/brno2/home/xstepan1/ritgard/data-processing/.env .
 mkdir datasets
 cp /storage/brno2/home/xstepan1/ritgard/data-processing/datasets/lume.json ./datasets/
 
-uv sync
+uv sync --no-build-isolation
 uv run ./model-topics.py --llm --llm-model --embed-labels --embed-bodies --embed-comments --embed-model "Qwen/Qwen3-Embedding-8B" --flash-attention
 cp out/* /storage/brno2/home/xstepan1/out/
 
