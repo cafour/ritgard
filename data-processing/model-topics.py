@@ -34,7 +34,8 @@ STOP_WORDS = list(set(nltk_stopwords.words("english")).union(set(SKLEARN_STOP_WO
 log = logging.getLogger("ritgard.model-topics")
 
 
-def get_documents_from_items(items: dict[str, dt.DocumentItem], embed_labels: bool, embed_bodies: bool):
+def get_documents_from_items(items: dict[str, dt.DocumentItem], embed_labels: bool, embed_bodies: bool,
+                             embed_comments: bool):
     ids = []
     docs = []
     if items is None or len(items) == 0:
@@ -52,12 +53,20 @@ def get_documents_from_items(items: dict[str, dt.DocumentItem], embed_labels: bo
             doc += "\n\n"
             doc += get_plain_text(item.body)
 
+        if embed_comments and item.comments is not None:
+            for comment in item.comments:
+                if comment.body is not None and len(comment.body) > 0:
+                    doc += "\n\n"
+                    doc += get_plain_text(comment.body)
+
         ids.append(item.id)
         docs.append(doc)
 
     return ids, docs
 
-def get_documents(data: dt.MiningResult, embed_labels: bool, embed_bodies: bool) -> tuple[list[str], list[str]]:
+
+def get_documents(data: dt.MiningResult, embed_labels: bool, embed_bodies: bool, embed_comments: bool) -> tuple[
+    list[str], list[str]]:
     log.info(
         f"Preparing documents for '{data.repository.owner}/{data.repository.name}'"
     )
@@ -65,19 +74,21 @@ def get_documents(data: dt.MiningResult, embed_labels: bool, embed_bodies: bool)
     docs = []
 
     if data.issues is not None:
-        issue_ids, issue_docs = get_documents_from_items(data.issues, embed_labels, embed_bodies)
+        issue_ids, issue_docs = get_documents_from_items(data.issues, embed_labels, embed_bodies, embed_comments)
         ids.extend(issue_ids)
         docs.extend(issue_docs)
     if data.pull_requests is not None:
-        pr_ids, pr_docs = get_documents_from_items(data.pull_requests, embed_labels, embed_bodies)
+        pr_ids, pr_docs = get_documents_from_items(data.pull_requests, embed_labels, embed_bodies, embed_comments)
         ids.extend(pr_ids)
         docs.extend(pr_docs)
     if data.discussions is not None:
-        discussion_ids, discussion_docs = get_documents_from_items(data.discussions, embed_labels, embed_bodies)
+        discussion_ids, discussion_docs = get_documents_from_items(data.discussions, embed_labels, embed_bodies,
+                                                                   embed_comments)
         ids.extend(discussion_ids)
         docs.extend(discussion_docs)
 
     return ids, docs
+
 
 def reduce_mds(embeddings):
     cosine_dist = pairwise_distances(embeddings, metric="cosine")
@@ -92,17 +103,35 @@ def reduce_mds(embeddings):
     return embeddings_2d
 
 
-def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
+def use_bertopic(
+        docs: list[str],
+        project_name,
+        use_metacentrum: bool,
+        use_flash_attention: bool,
+        llm_model_name: str = "gpt-oss-120b",
+        embed_model_name: str = "Qwen/Qwen3-Embedding-0.6B"
+):
     from sentence_transformers import SentenceTransformer
     import umap.umap_ as umap
 
-    embedding_model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
+    embedding_model_kwargs = {
+        "device_map": "auto"
+    }
+    if use_flash_attention:
+        embedding_model_kwargs["dtype"] = torch.bfloat16
+        embedding_model_kwargs["attn_implementation"] = "flash_attention_2"
+    embedding_model = SentenceTransformer(
+        embed_model_name,
+        model_kwargs=embedding_model_kwargs,
+        tokenizer_kwargs={"padding_side": "left"},
+    )
     embeddings = embedding_model.encode(docs, show_progress_bar=True)
     umap_model = umap.UMAP(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
     )
     hdbscan_model = HDBSCAN(
-        min_cluster_size=3,
+        min_cluster_size=15,
+        min_samples=3,
         metric="euclidean",
         cluster_selection_method="eom",
         prediction_data=True,
@@ -126,7 +155,7 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
         # noinspection PyTypeChecker
         # NB: "tetřev hlušec" is a dummy value that should (hopefully) never occur in real output.
         #     I'm not sure why I can't use `null or an empty string...
-        representation_model["LLM"] = OpenAI(client=llm_client, model="qwen3-coder",
+        representation_model["LLM"] = OpenAI(client=llm_client, model=llm_model_name,
                                              generator_kwargs={"stop": "tetřev hlušec"})
     topic_model = BERTopic(
         embedding_model=embedding_model,
@@ -139,7 +168,10 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
         verbose=True,
         calculate_probabilities=True,
     )
-    topic_model.fit_transform(docs, embeddings=embeddings)
+    topics, probs = topic_model.fit_transform(docs, embeddings=embeddings)
+    topics = topic_model.reduce_outliers(docs, topics)
+    # topics = topic_model.reduce_outliers(docs, topics, probabilities=probs, strategy="probabilities")
+
     reduction_umap = umap.UMAP(
         n_neighbors=10, n_components=2, min_dist=0.0, metric="cosine", random_state=42
     )
@@ -168,6 +200,7 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
 
     fig = topic_model.visualize_documents(
         docs,
+        topics=topics,
         embeddings=embeddings,
         reduced_embeddings=positions,  # type: ignore
         custom_labels=True,
@@ -175,39 +208,45 @@ def use_bertopic(docs: list[str], project_name, use_metacentrum: bool):
         title=project_name,
     )
     fig.write_html(f"./out/issues_{project_name}_{formatted_datetime}.html")
-    return topic_model, positions
+    return topic_model, topics, positions
 
 
 def write_topics(
         ids: list[str],
-        positions: np.ndarray[tuple[int, int], np.dtype[np.float64]],
+        positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
         topic_model: BERTopic,
+        topics: list[int],
         project_name: str,
+        output_path: str = None
 ):
-    topics = {}
+    topic_models = {}
     for topic_id in topic_model.topic_representations_.keys():
         # noinspection PyTypeChecker
         full_info: Mapping[str, list[tuple[str, float]]] = topic_model.get_topic(topic_id, full=True)
         representations = {method: [candidate for candidate in candidates if candidate[0] != ""] for
                            (method, candidates) in full_info.items()}
-        topics[topic_id] = dt.Topic(id=topic_id, representations=representations)
+        topic_models[topic_id] = dt.Topic(id=topic_id, representations=representations)
 
     topic_items = {}
-    for doc_id, pos, topic, probs in zip(ids, positions, topic_model.topics_, topic_model.probabilities_):
+    for doc_id, pos, topic, probs in zip(ids, positions, topics, topic_model.probabilities_):
         doc_probs = {index: probability for (index, probability) in enumerate(probs) if not np.isclose(probability, 0)}
         topic_items[doc_id] = dt.TopicItem(id=doc_id, x=pos[0].item(), y=pos[1].item(), topic_id=topic,
                                            probabilities=doc_probs)
 
     result = dt.TopicModellingResult(
-        topics=topics,
+        topics=topic_models,
         items=topic_items
     )
     json = result.model_dump_json()
 
-    formatted_datetime = get_now_string()
-    out_path = f"./out/topics_{project_name}_{formatted_datetime}.json"
-    log.info(f"Writing data processing result to '{out_path}'")
-    with open(out_path, "w", encoding="utf8") as json_file:
+    if output_path is None:
+        output_path = f"./out/adjusted_{get_now_string()}.json"
+        log.info(f"Automatically set output path to '{output_path}'")
+    output = Path(output_path)
+    if output.parent is not None:
+        output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("w", encoding="utf8") as json_file:
+        log.info(f"Writing data processing result to '{output}'")
         json_file.write(json)
 
 
@@ -219,13 +258,18 @@ def main():
     args_parser.add_argument("--llm", action="store_true")
     args_parser.add_argument("--embed-labels", action="store_true")
     args_parser.add_argument("--embed-bodies", action="store_true")
+    args_parser.add_argument("--embed-comments", action="store_true")
+    args_parser.add_argument("--flash-attention", action="store_true")
+    args_parser.add_argument("--llm-model", default="gpt-oss-120b")
+    args_parser.add_argument("--embed-model", default="Qwen/Qwen3-Embedding-0.6B")
+    args_parser.add_argument("--output", default=None)
     args = args_parser.parse_args()
 
     Path("./out").mkdir(exist_ok=True)
 
     data = dt.read_mining_result(args.data_path)
     project_name = data.repository.name
-    ids, docs = get_documents(data, args.embed_labels, args.embed_bodies)
+    ids, docs = get_documents(data, args.embed_labels, args.embed_bodies, args.embed_comments)
 
     current_gpu = -1
     current_gpu_free_memory = 0
@@ -245,8 +289,15 @@ def main():
         torch.cuda.empty_cache()
         log.info(f"Selected GPU {current_gpu}")
 
-    topic_model, positions = use_bertopic(docs, project_name, use_metacentrum=args.llm)
-    write_topics(ids, positions, topic_model, project_name)
+    topic_model, topics, positions = use_bertopic(
+        docs=docs,
+        project_name=project_name,
+        use_metacentrum=args.llm,
+        use_flash_attention=args.flash_attention,
+        llm_model_name=args.llm_model,
+        embed_model_name=args.embed_model
+    )
+    write_topics(ids, positions, topic_model, topics, project_name, output_path=args.output)
 
 
 if __name__ == "__main__":

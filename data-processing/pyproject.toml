@@ -22,13 +22,11 @@ dependencies = [
     "markdown>=3.9",
     "beautifulsoup4>=4.14.2",
     "regex>=2025.9.18",
+    "flash-attn>=2.8.3 ; sys_platform == 'linux'",
 ]
 
 [dependency-groups]
-dev = [
-    "benchmark-imports>=1.0.0",
-    "huggingface-hub[cli]>=0.35.3",
-]
+dev = ["benchmark-imports>=1.0.0", "huggingface-hub[cli]>=0.35.3"]
 
 [tool.uv.sources]
 en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
