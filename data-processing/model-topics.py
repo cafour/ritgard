@@ -181,7 +181,7 @@ def use_bertopic(
         calculate_probabilities=True,
     )
     topics, probs = topic_model.fit_transform(docs, embeddings=embeddings)
-    topics = topic_model.reduce_outliers(docs, topics)
+    # topics = topic_model.reduce_outliers(docs, topics)
     # topics = topic_model.reduce_outliers(docs, topics, probabilities=probs, strategy="probabilities")
 
     reduction_umap = umap.UMAP(
