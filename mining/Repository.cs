@@ -30,7 +30,7 @@ public record Repository(
     bool HasPages,
     int SubscribersCount,
     long Size,
-    int? FileCount,
+    ClocInfo? Cloc,
     ImmutableArray<string> Topics,
     RepositoryVisibility? Visibility
 );

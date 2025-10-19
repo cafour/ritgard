@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Text.Json;
 using System.Threading.Tasks;
 using ConsoleAppFramework;
 using Microsoft.Extensions.Logging;
@@ -13,11 +14,13 @@ internal class Commands
 {
     public static readonly ILoggerFactory LoggerFactory
         = Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddSimpleConsole(c =>
-        {
-            c.SingleLine = true;
-            c.TimestampFormat = "HH:mm:ss.fff ";
-            c.UseUtcTimestamp = true;
-        }));
+                {
+                    c.SingleLine = true;
+                    c.TimestampFormat = "HH:mm:ss.fff ";
+                    c.UseUtcTimestamp = true;
+                }
+            )
+        );
 
     public static readonly ILogger Log
         = LoggerFactory.CreateLogger("Global");
@@ -55,6 +58,7 @@ internal class Commands
                     parentDir.Create();
                 }
             }
+
             output = $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
             Log.LogInformation("Saving to '{OutputPath}'.", output);
             await Utils.WriteJson(
@@ -67,12 +71,38 @@ internal class Commands
 
     [Command("count-files")]
     public async Task CountFiles(
-        [Argument] string gitUrl,
+        [Argument] string repoUrl,
         CancellationToken cancellationToken = default
     )
     {
-        var fileCount = await Utils.GetFileCount(gitUrl, Log, cancellationToken);
+        var fileCount = await Utils.GetFileCount(repoUrl, Log, cancellationToken);
         Log.LogInformation("Repository has {FileCount} files.", fileCount);
+    }
+
+    [Command("cloc")]
+    public async Task Cloc(
+        [Argument] string repoUrl,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var clocInfo = await Utils.GetCloc(repoUrl, Log, cancellationToken);
+        if (clocInfo is not null)
+        {
+            Log.LogInformation(
+                "Repository has {FileCount} files and {LineCount} total lines.",
+                clocInfo.Header.FileCount,
+                clocInfo.Header.LineCount
+            );
+            foreach (var entry in clocInfo.Entries.OrderByDescending(e => e.Value.CodeCount))
+            {
+                Log.LogInformation(
+                    "{FileType}: {FileCount} files, {CodeCount} code lines",
+                    entry.Key,
+                    entry.Value.FileCount,
+                    entry.Value.CodeCount
+                );
+            }
+        }
     }
 
     // [Command("wtf")]

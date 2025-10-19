@@ -21,3 +21,4 @@ csharp_wrap_before_invocation_rpar = true
 csharp_wrap_after_declaration_lpar = true
 csharp_wrap_after_invocation_lpar = true
 csharp_wrap_arguments_style = chop_if_long
+csharp_braces_for_ifelse = required

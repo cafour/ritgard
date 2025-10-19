@@ -65,17 +65,29 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         var tasks = new List<Task>(5);
 
-        int? fileCount = null;
+        ClocInfo? cloc = null;
         tasks.Add(
-            Task.Run(async () =>
+            Task.Run(
+                async () =>
                 {
-                    fileCount = await Utils.GetFileCount(octoRepo.CloneUrl, logger, cancellationToken);
-                    logger.LogInformation(
-                        "Repository '{RepoOwner}/{RepoName}' has {FileCount} files.",
-                        RepoOwner,
-                        RepoName,
-                        fileCount
-                    );
+                    cloc = await Utils.GetCloc(octoRepo.CloneUrl, logger, cancellationToken);
+                    if (cloc is null)
+                    {
+                        logger.LogError(
+                            "Failed to cloc '{RepoOwner}/{RepoName}'. No file and line count data will be available.",
+                            RepoOwner,
+                            RepoName
+                        );
+                    }
+                    else
+                    {
+                        logger.LogInformation(
+                            "Repository '{RepoOwner}/{RepoName}' has {FileCount} files.",
+                            RepoOwner,
+                            RepoName,
+                            cloc.Header.FileCount
+                        );
+                    }
                 },
                 cancellationToken
             )
@@ -115,7 +127,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return new MiningResult(
             MiningStartedAt: startedAt,
             MiningCompletedAt: completedAt,
-            Repository: OctokitMapping.MapRepository(octoRepo) with { FileCount = fileCount },
+            Repository: OctokitMapping.MapRepository(octoRepo) with { Cloc = cloc },
             Issues: issues.ToImmutableDictionary(),
             PullRequests: pullRequests.ToImmutableDictionary(),
             Discussions: discussions.ToImmutableDictionary(),

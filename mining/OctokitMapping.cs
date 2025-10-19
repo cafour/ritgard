@@ -286,7 +286,7 @@ public static class OctokitMapping
             HasPages: value.HasPages,
             SubscribersCount: value.SubscribersCount,
             Size: value.Size,
-            FileCount: null,
+            Cloc: null,
             Topics: [.. value.Topics],
             Visibility: MapRepositoryVisibility(value.Visibility)
         );
