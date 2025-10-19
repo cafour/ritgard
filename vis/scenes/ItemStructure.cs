@@ -11,7 +11,7 @@ namespace Ritgard;
 [SceneTree("./item_structure.tscn")]
 public partial class ItemStructure : Node3D, IWithVoxelLibrary
 {
-
+    public const int TrunkHeight = 2;
     public const int Radius = 3;
     public const int MaxConeHeight = 20;
 
@@ -114,18 +114,18 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         {
             Issue => new Conifer
             {
-                TrunkHeight = 2,
-                CrownBreadth = 3
+                TrunkHeight = TrunkHeight,
+                CrownBreadth = Radius
             },
             PullRequest => new Broadleaf
             {
-                TrunkHeight = 2,
-                CrownBreadth = 3
+                TrunkHeight = TrunkHeight,
+                CrownBreadth = Radius
             },
             Discussion => new Acacia
             {
-                TrunkHeight = 2,
-                CrownBreadth = 3
+                TrunkHeight = TrunkHeight,
+                CrownBreadth = Radius
             },
             _ => throw new NotSupportedException()
         };

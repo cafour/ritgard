@@ -33,6 +33,8 @@ public class ActiveRepository
 
     public TimeSpan AvgIssueLength { get; private set; }
 
+    public Rect2 BBox { get; private set; }
+
     public int StepCount { get; private set; }
 
     public static async Task<ActiveRepository> Load(
@@ -87,6 +89,20 @@ public class ActiveRepository
         repo.AvgIssueLength =
             TimeSpan.FromSeconds(repo.Items.Average(i => i.Value.Conversation.GetDuration().TotalSeconds));
         repo.StepCount = Mathf.CeilToInt((repo.MaxDate - repo.MinDate) / repo.Step);
+
+        bbox = new Rect2(
+            repo.Items.Values.Min(p => p.Position.X),
+            repo.Items.Values.Min(p => p.Position.Y),
+            Vector2.Zero
+        );
+        foreach (var item in repo.Items.Values)
+        {
+            bbox = bbox.Expand(item.Position);
+        }
+
+        bbox.Size += new Vector2(2 * ItemStructure.Radius + 2, 2 * ItemStructure.Radius + 2);
+        bbox.Position -= new Vector2(ItemStructure.Radius + 1, ItemStructure.Radius + 1);
+        repo.BBox = bbox;
 
         var kdTree = new KdTree<ActiveItem>();
         foreach (var item in repo.Items.Values)

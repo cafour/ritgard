@@ -53,6 +53,21 @@ public partial class Overlord : Node
     [Export]
     public SpinBox CurrentStepSpinBox { get; set; }
 
+    [Export]
+    public MeshInstance3D Ocean { get; set; }
+
+    [Export]
+    public MeshInstance3D TopBorder { get; set; }
+
+    [Export]
+    public MeshInstance3D RightBorder { get; set; }
+
+    [Export]
+    public MeshInstance3D BottomBorder { get; set; }
+
+    [Export]
+    public MeshInstance3D LeftBorder { get; set; }
+
     public int CurrentDataset { get; set; } = -1;
 
     public int CurrentStep { get; private set; }
@@ -74,6 +89,7 @@ public partial class Overlord : Node
     public const int HeightmapSize = 1024;
     public const string DefaultHint = "Hover over a structure to see its description...";
     public const byte MaxTerrainHeight = 75;
+    public const float BorderWidth = 5f;
 
     public override void _EnterTree()
     {
@@ -122,6 +138,17 @@ public partial class Overlord : Node
         var dataset = Datasets[index];
         Repo = await ActiveRepository.Load(dataset);
         CurrentStepSpinBox.MaxValue = Repo.StepCount - 1;
+
+        var oceanPlane = (PlaneMesh)Ocean.Mesh;
+        oceanPlane.Size = Repo.BBox.Size;
+        ((PlaneMesh)TopBorder.Mesh).Size = new Vector2(Repo.BBox.Size.X + BorderWidth * 2, BorderWidth);
+        TopBorder.Position = TopBorder.Position with { Z = -Repo.BBox.Size.Y / 2 };
+        ((PlaneMesh)RightBorder.Mesh).Size = new Vector2(BorderWidth, Repo.BBox.Size.Y + BorderWidth * 2);
+        RightBorder.Position = RightBorder.Position with { X = Repo.BBox.Size.X / 2 };
+        ((PlaneMesh)BottomBorder.Mesh).Size = new Vector2(Repo.BBox.Size.X + BorderWidth * 2, BorderWidth);
+        BottomBorder.Position = BottomBorder.Position with { Z = Repo.BBox.Size.Y / 2 };
+        ((PlaneMesh)LeftBorder.Mesh).Size = new Vector2(BorderWidth, Repo.BBox.Size.Y + BorderWidth * 2);
+        LeftBorder.Position = LeftBorder.Position with { X = -Repo.BBox.Size.X / 2 };
 
         foreach (var (topicId, topic) in Repo.TopicModelling.Topics)
         {

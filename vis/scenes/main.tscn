@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=25 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/item_structure.tscn" id="2_85g3d"]
@@ -9,6 +9,14 @@
 [ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="6_85g3d"]
 [ext_resource type="FontFile" uid="uid://dmxjwe62r0f6c" path="res://fonts/IBMPlexMono-SemiBold.otf" id="6_tefeu"]
 [ext_resource type="Environment" uid="uid://diyg1ubs8jljh" path="res://environment.tres" id="6_tipki"]
+[ext_resource type="Shader" uid="uid://caooh2kyyo3ye" path="res://shaders/checkerboard.gdshader" id="10_choun"]
+
+[sub_resource type="Resource" id="Resource_eb6dy"]
+script = ExtResource("5_85g3d")
+Name = "JetUML"
+DataFilePath = "res://sample/jetuml.json"
+TopicFilePath = "res://sample/jetuml-topics.json"
+metadata/_custom_type_script = "uid://bq3k6c84mk42x"
 
 [sub_resource type="Resource" id="Resource_choun"]
 script = ExtResource("5_85g3d")
@@ -51,15 +59,8 @@ content_margin_bottom = 10.0
 bg_color = Color(0.374139, 0.374139, 0.374139, 1)
 corner_detail = 1
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_85g3d"]
-albedo_color = Color(0.67451, 0.0862745, 0.172549, 1)
-
-[sub_resource type="PrismMesh" id="PrismMesh_choun"]
-material = SubResource("StandardMaterial3D_85g3d")
-size = Vector3(10, 10, 10)
-
 [sub_resource type="PlaneMesh" id="PlaneMesh_choun"]
-size = Vector2(4096, 4096)
+size = Vector2(100, 100)
 subdivide_width = 1
 subdivide_depth = 1
 
@@ -67,7 +68,38 @@ subdivide_depth = 1
 transparency = 1
 albedo_color = Color(0, 0.35686275, 0.67058825, 0.78431374)
 
-[node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player", "ControlsContainer", "DatasetDropdown", "CurrentTimeLabel", "CurrentStepSpinBox")]
+[sub_resource type="PlaneMesh" id="PlaneMesh_ya4ey"]
+size = Vector2(110, 5)
+subdivide_width = 1
+subdivide_depth = 1
+center_offset = Vector3(0, 0, 2.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_eb6dy"]
+render_priority = 0
+shader = ExtResource("10_choun")
+shader_parameter/size = 25.0
+shader_parameter/color1 = Color(0.9843137, 0.89411765, 0.7137255, 1)
+shader_parameter/color2 = Color(0.4862745, 0.30980393, 0.14509805, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_trceg"]
+size = Vector2(110, 5)
+subdivide_width = 1
+subdivide_depth = 1
+center_offset = Vector3(0, 0, -2.5)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_a8y0u"]
+size = Vector2(5, 110)
+subdivide_width = 1
+subdivide_depth = 1
+center_offset = Vector3(-2.5, 0, 0)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_jkv2x"]
+size = Vector2(5, 110)
+subdivide_width = 1
+subdivide_depth = 1
+center_offset = Vector3(2.5, 0, 0)
+
+[node name="Main" type="Node" node_paths=PackedStringArray("ItemDescriptionLabel", "Player", "ControlsContainer", "DatasetDropdown", "CurrentTimeLabel", "CurrentStepSpinBox", "Ocean", "TopBorder", "RightBorder", "BottomBorder", "LeftBorder")]
 script = ExtResource("1_o5qli")
 ItemStructureScene = ExtResource("2_85g3d")
 TopicIslandScene = ExtResource("3_tipki")
@@ -75,11 +107,16 @@ OutlierRockScene = ExtResource("4_tipki")
 ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
 Player = NodePath("Player")
 ControlsContainer = NodePath("UI/Controls/ControlsContainer")
-Datasets = Array[Resource]([SubResource("Resource_choun"), SubResource("Resource_85g3d"), SubResource("Resource_ya4ey")])
+Datasets = Array[Resource]([SubResource("Resource_eb6dy"), SubResource("Resource_choun"), SubResource("Resource_85g3d"), SubResource("Resource_ya4ey")])
 DatasetDropdown = NodePath("UI/Controls/ControlsContainer/OptionButton")
 Library = ExtResource("6_85g3d")
 CurrentTimeLabel = NodePath("UI/Controls/ControlsContainer/CurrentTime")
 CurrentStepSpinBox = NodePath("UI/Controls/ControlsContainer/CurrentStep")
+Ocean = NodePath("Ocean")
+TopBorder = NodePath("Borders/TopBorder")
+RightBorder = NodePath("Borders/RightBorder")
+BottomBorder = NodePath("Borders/BottomBorder")
+LeftBorder = NodePath("Borders/LeftBorder")
 
 [node name="Player" type="Node3D" parent="." node_paths=PackedStringArray("Crosshair")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
@@ -158,13 +195,34 @@ layout_mode = 2
 layout_mode = 2
 text = "20XX-XX-XX"
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0)
-visible = false
-mesh = SubResource("PrismMesh_choun")
-
 [node name="GeneratedNodesContainer" type="Node" parent="."]
 
 [node name="Ocean" type="MeshInstance3D" parent="."]
 mesh = SubResource("PlaneMesh_choun")
 surface_material_override/0 = SubResource("StandardMaterial3D_ya4ey")
+
+[node name="Borders" type="Node" parent="."]
+
+[node name="BottomBorder" type="MeshInstance3D" parent="Borders"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 50)
+mesh = SubResource("PlaneMesh_ya4ey")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("ShaderMaterial_eb6dy")
+
+[node name="TopBorder" type="MeshInstance3D" parent="Borders"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -50)
+mesh = SubResource("PlaneMesh_trceg")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("ShaderMaterial_eb6dy")
+
+[node name="LeftBorder" type="MeshInstance3D" parent="Borders"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0, 0)
+mesh = SubResource("PlaneMesh_a8y0u")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("ShaderMaterial_eb6dy")
+
+[node name="RightBorder" type="MeshInstance3D" parent="Borders"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, 0)
+mesh = SubResource("PlaneMesh_jkv2x")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("ShaderMaterial_eb6dy")

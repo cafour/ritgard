@@ -164,7 +164,9 @@ public partial class TopicIsland : Node3D
 
         if (hullTris.Count == 0)
         {
-            GD.PushWarning("Removed too many triangles that contained a point from another topic.");
+            throw new InvalidOperationException(
+                "Removed too many triangles that contained a point from another topic."
+            );
         }
 
         var hullPolygon = hull.GetHull(hullTris);
@@ -419,8 +421,8 @@ public partial class TopicIsland : Node3D
         var bytes = MemoryMarshal.AsBytes(vertices.AsSpan());
         arrayMesh.SurfaceUpdateVertexRegion(0, 0, bytes);
 
-        var shape = new ConvexPolygonShape3D();
-        shape.Points = vertices;
+        var shape = new ConcavePolygonShape3D();
+        shape.SetFaces(arrayMesh.GetFaces());
         _.Body.Collider.Shape = shape;
     }
 
