@@ -105,6 +105,32 @@ internal class Commands
         }
     }
 
+    [Command("git-loc")]
+    public async Task GitLoc(
+        [Argument] string repoUrl,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var gitLocInfo = await Utils.GetGitLoc(repoUrl, Log, cancellationToken);
+        if (gitLocInfo is not null)
+        {
+            Log.LogInformation(
+                "Repository has {AddedLineCount} total added line and {DeletedLineCount} total deleted lines.",
+                gitLocInfo.AddedLineCount,
+                gitLocInfo.DeletedLineCount
+            );
+            foreach (var entry in gitLocInfo.Entries.OrderByDescending(e => e.Value.AddedLineCount + e.Value.DeletedLineCount))
+            {
+                Log.LogInformation(
+                    "{FileType}: {AddedLineCount} added, {DeletedLineCount} deleted",
+                    entry.Key,
+                    entry.Value.AddedLineCount,
+                    entry.Value.DeletedLineCount
+                );
+            }
+        }
+    }
+
     // [Command("wtf")]
     // public void Wtf()
     // {

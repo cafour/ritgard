@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Medallion.Shell;
@@ -17,6 +19,11 @@ namespace Ritgard.Mining;
 public static partial class Utils
 {
     public const int GitCleanupAttemptCount = 5;
+
+    [GeneratedRegex(
+        @"^(\d+|-)\s+(\d+|-)\s(.+)$"
+    )]
+    public static partial Regex GetGitLocRegex();
 
     public static (GitHubGraphQLClient client, IAsyncDisposable clientDisposable) CreateGitHubGraphQLClient(
         string authToken
@@ -126,6 +133,97 @@ public static partial class Utils
                 return clocInfo;
             },
             cloneArgs: ["--filter=blob:none", "--depth=1"],
+            logger: logger,
+            cancellationToken: cancellationToken
+        );
+    }
+
+    public static Task<GitLocInfo?> GetGitLoc(
+        string cloneUrl,
+        ILogger? logger = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        logger ??= NullLogger.Instance;
+
+        return DoInRepo<GitLocInfo?>(
+            cloneUrl: cloneUrl,
+            action: async (repoDir, ct) =>
+            {
+                logger.LogInformation("Counting total line changes of '{CloneUrl}'.", cloneUrl);
+                var regex = GetGitLocRegex();
+                var changes = Command.Run(
+                    "git",
+                    ["log", "--numstat", "--pretty=tformat:", "--no-renames"],
+                    o => o.WorkingDirectory(repoDir).CancellationToken(ct)
+                );
+                var entries = await Task.Run(() =>
+                    {
+                        var i = 0;
+                        var builder = ImmutableDictionary.CreateBuilder<string, GitLocEntry>();
+                        while (changes.StandardOutput.ReadLine() is { } line)
+                        {
+                            i++;
+                            if (i % 10 == 0)
+                            {
+                                logger.LogInformation("Reading {Index}", i);
+                            }
+
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                return null;
+                            }
+
+                            var match = regex.Match(line);
+                            if (!match.Success)
+                            {
+                                logger.LogError("Failed to match line '{Line}' for expected git output.", line);
+                                return null;
+                            }
+
+                            if (match.Groups[1].ValueSpan is "-" || match.Groups[2].ValueSpan is "-")
+                            {
+                                // binary blobs, ignore
+                                continue;
+                            }
+
+                            var addedLineCount = long.Parse(match.Groups[1].ValueSpan);
+                            var deletedLineCount = long.Parse(match.Groups[2].ValueSpan);
+                            var extension = Path.GetExtension(match.Groups[3].ValueSpan).ToString();
+
+                            if (!builder.ContainsKey(extension))
+                            {
+                                builder[extension] = new GitLocEntry();
+                            }
+
+                            builder[extension].AddedLineCount += addedLineCount;
+                            builder[extension].DeletedLineCount += deletedLineCount;
+                        }
+
+                        return builder.ToImmutable();
+                    },
+                    ct
+                );
+
+                if (entries is null)
+                {
+                    return null;
+                }
+
+                var changesResult = await changes.Task;
+                if (!changesResult.Success)
+                {
+                    logger.LogError("Git log failed with an error: {GitError}", changesResult.StandardError);
+                    return null;
+                }
+
+                return new GitLocInfo(
+                    Entries: entries,
+                    AddedLineCount: entries.Values.Sum(v => v.AddedLineCount),
+                    DeletedLineCount: entries.Values.Sum(v => v.DeletedLineCount)
+                );
+            },
+            cloneArgs: ["--filter=blob:none", "--no-checkout"],
             logger: logger,
             cancellationToken: cancellationToken
         );
