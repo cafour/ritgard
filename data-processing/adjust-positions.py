@@ -36,8 +36,14 @@ def get_nearest_neighbor_distances(
     return distances[0:, 1], indices[0:, 1]
 
 
-def adjust_positions(points, radii,
-                     max_iterations=500, step_size=0.1, tolerance=1e-3):
+def adjust_positions(
+        points,
+        radii,
+        bbox=None,
+        max_iterations=500,
+        step_size=0.1,
+        tolerance=1e-3
+):
     points = points.copy().astype(float)
     point_count = len(points)
     max_r = np.max(radii)
@@ -76,11 +82,33 @@ def adjust_positions(points, radii,
                     displacements[point_index] -= move
                     displacements[neighbor_index] += move
 
+            if bbox is not None:
+                r = radii[point_index]
+                if pi[0] - r < bbox[0, 0]:
+                    # x too small
+                    overstep = bbox[0, 0] - (pi[0] - r)
+                    displacements[point_index, 0] += min(r, overstep)
+                if pi[0] + r> bbox[1, 0]:
+                    # x too large
+                    overstep = (pi[0] + r) - bbox[1, 0]
+                    displacements[point_index, 0] -= min(r, overstep)
+                if pi[1] - r< bbox[0, 1]:
+                    # y too small
+                    overstep = bbox[0, 1] - (pi[1] - r)
+                    displacements[point_index, 1] += min(r, overstep)
+                if pi[1] + r> bbox[1, 1]:
+                    # y too large
+                    overstep = (pi[1] + r) - bbox[1, 1]
+                    displacements[point_index, 1] -= min(r, overstep)
+
         points += step_size * displacements
 
         if max_overlap < tolerance:
             log.info(f"Overlap adjustments done in {it} iterations; max_overlap {max_overlap:.6f}")
             break
+        # for point_index in range(point_count):
+        #     pi = points[point_index]
+
     else:
         log.info(
             f"Overlap adjustments reached {max_iterations} iterations, the maximum; final overlap {max_overlap:.6f}")
@@ -93,7 +121,7 @@ def plot_nearest_neighbor_distances(distances):
     plt.show()
 
 
-def plot_adjusted_positions(scaled, adjusted, radius):
+def plot_adjusted_positions(scaled, adjusted, radius, bbox):
     fig, ax = plt.subplots()
     fig.set_size_inches(12, 12)
     ax.set_aspect('equal')
@@ -101,6 +129,9 @@ def plot_adjusted_positions(scaled, adjusted, radius):
     for p in adjusted:
         circle = plt.Circle(p, radius, color='blue', fill=False, alpha=0.7)
         ax.add_patch(circle)
+    plt.plot([bbox[0, 0], bbox[1, 0], bbox[1, 0], bbox[0, 0], bbox[0, 0]],
+             [bbox[0, 1], bbox[0, 1], bbox[1, 1], bbox[1, 1], bbox[0, 1]],
+             color="blue", linewidth=2)
     plt.legend()
     plt.show()
 
@@ -148,7 +179,7 @@ def get_minimum_obb(positions: npt.NDArray[np.float32], padding: float = 0):
     return best_angle, min_area, best_box
 
 
-def visualize_obb(positions: npt.NDArray[np.float32], box: npt.NDArray[np.float32]):
+def plot_obb(positions: npt.NDArray[np.float32], box: npt.NDArray[np.float32]):
     plt.figure(figsize=(6, 6))
     plt.scatter(positions[:, 0], positions[:, 1], color='lightblue', label='Positions', alpha=0.7)
 
@@ -174,6 +205,12 @@ def get_bbox(positions: npt.NDArray[np.float32], padding: float = 0):
     return np.array([[min_x - padding, min_y - padding], [max_x + padding, max_y + padding]])
 
 
+def print_bbox(bbox, name):
+    bbox_w = bbox[1, 0] - bbox[0, 0]
+    bbox_h = bbox[1, 1] - bbox[0, 1]
+    log.info(f"{name}: w={bbox_w}, h={bbox_h}, area={bbox_w * bbox_h}")
+
+
 def get_area(positions: npt.NDArray[np.float32]):
     bbox = get_bbox(positions)
     return (bbox[1, 0] - bbox[0, 0]) * (bbox[1, 1] - bbox[0, 1])
@@ -184,6 +221,7 @@ def center_positions(positions: npt.NDArray[np.float32]):
     center = (bbox[0] + bbox[1]) / 2
     return positions - center
 
+
 def minimize_world_bbox(positions: npt.NDArray[np.float32]):
     angle, area, _ = get_minimum_obb(positions)
     rotation_matrix = get_rotation_matrix(-angle)
@@ -191,7 +229,13 @@ def minimize_world_bbox(positions: npt.NDArray[np.float32]):
     rotated_positions = center_positions(rotated_positions)
     return rotated_positions
 
-def get_area_world_scale(positions: npt.NDArray[np.float32], cell_radius: float, target_area: float):
+
+def get_area_world_scale(
+        positions: npt.NDArray[np.float32],
+        cell_radius: float,
+        target_area: float,
+        padding_cells: int = 1
+):
     bbox = get_bbox(positions)
     w = bbox[1, 0] - bbox[0, 0]
     h = bbox[1, 1] - bbox[0, 1]
@@ -199,11 +243,11 @@ def get_area_world_scale(positions: npt.NDArray[np.float32], cell_radius: float,
     log.info(f"Original box: w={w}, h={h}, area={area}")
     target = target_area * (2 * cell_radius * 2 * cell_radius)
     log.info(f"Target box area: {target}")
-    padding = 2 * cell_radius
+    padding = 2 * cell_radius * padding_cells
     factor_1 = (padding * (
-                (-w - h) + np.sqrt((w - h) * (w - h) + (4 * area * target) / (padding * padding))) / (2 * area))
+            (-w - h) + np.sqrt((w - h) * (w - h) + (4 * area * target) / (padding * padding))) / (2 * area))
     factor_2 = (padding * (
-                (-w - h) - np.sqrt((w - h) * (w - h) + (4 * area * target) / (padding * padding))) / (2 * area))
+            (-w - h) - np.sqrt((w - h) * (w - h) + (4 * area * target) / (padding * padding))) / (2 * area))
     scale = max(factor_1, factor_2)
     return scale
 
@@ -232,7 +276,8 @@ def main():
     args_parser.add_argument("--cell-radius", default=3.5, type=float)
     args_parser.add_argument("--max-iterations", default=-1, type=int)
     args_parser.add_argument("--world-sizing", default=WorldSizing.AUTO, type=WorldSizing, choices=list(WorldSizing))
-    args_parser.add_argument("--world-sizing-ratio", default=1, type=float)
+    args_parser.add_argument("--world-sizing-ratio", default=0.5, type=float)
+    args_parser.add_argument("--world-padding", default=2, type=int)
     args_parser.add_argument("--world-sizing-auto-quantile", default=0.5, type=float)
     args_parser.add_argument("--data-path", default=None)
     args_parser.add_argument("--output", default=None)
@@ -256,6 +301,7 @@ def main():
     positions = minimize_world_bbox(positions)
     world_size_ratio = args.world_sizing_ratio
     world_scale: float = 1.0
+    padding_cells: int = args.world_padding
     match args.world_sizing:
         case WorldSizing.AUTO:
             log.info("Setting world scale automatically to, on average, prevent collisions.")
@@ -263,25 +309,27 @@ def main():
         case WorldSizing.REPO_SIZE:
             log.info(f"Setting world scale based on repository size ({data.repository.size} KB).")
             log.info(f"Ratio of repository size to number of artifacts: {world_size_ratio}")
-            world_scale = get_area_world_scale(positions, args.cell_radius, data.repository.size / world_size_ratio)
+            world_scale = get_area_world_scale(positions, args.cell_radius,
+                                               target_area=data.repository.size / world_size_ratio,
+                                               padding_cells=padding_cells)
         case WorldSizing.FILE_COUNT:
             file_count = data.repository.cloc.get_file_count()
             log.info(f"Setting world scale based on number of code files ({file_count} files).")
             log.info(f"Ratio of code file count to number of artifacts: {world_size_ratio}")
-            world_scale = get_area_world_scale(positions, args.cell_radius, file_count / world_size_ratio)
+            world_scale = get_area_world_scale(positions, args.cell_radius, target_area=file_count / world_size_ratio,
+                                               padding_cells=padding_cells)
         case WorldSizing.LINE_COUNT:
             line_count = data.repository.git_loc.get_line_count([]) / 1000.0
             log.info(f"Setting world scale based on number of thousands of lines of code ({line_count} kLoC).")
             log.info(f"Cloc reported {data.repository.cloc.get_code_lines() / 1000.0} kLoC.")
             log.info(f"Ratio of LoC to number of artifacts: {world_size_ratio}")
-            world_scale = get_area_world_scale(positions, args.cell_radius, line_count / world_size_ratio)
+            world_scale = get_area_world_scale(positions, args.cell_radius, target_area=line_count / world_size_ratio,
+                                               padding_cells=padding_cells)
 
     log.info(f"World scale: {world_scale}")
     scaled_positions = positions * world_scale
-    scaled_bbox = get_bbox(scaled_positions, padding=args.cell_radius)
-    scaled_bbox_w = scaled_bbox[1, 0] - scaled_bbox[0, 0]
-    scaled_bbox_h = scaled_bbox[1, 1] - scaled_bbox[0, 1]
-    log.info(f"Scaled box: w={scaled_bbox_w}, h={scaled_bbox_h}, area={scaled_bbox_w * scaled_bbox_h}")
+    padded_bbox = get_bbox(scaled_positions, padding=padding_cells * args.cell_radius)
+    print_bbox(padded_bbox, "Scaled & padded box")
 
     max_iterations: int = args.max_iterations
     if max_iterations == -1:
@@ -289,12 +337,13 @@ def main():
         log.info(f"Automatically set max iterations to {max_iterations}")
     adjusted_positions = adjust_positions(
         scaled_positions,
-        np.repeat(args.cell_radius, scaled_positions.size),
-        step_size=args.cell_radius / 10,
-        max_iterations=max_iterations
+        radii=np.repeat(args.cell_radius, scaled_positions.size),
+        bbox=(None if args.world_sizing == WorldSizing.AUTO else padded_bbox),
+        max_iterations=max_iterations,
+        step_size=args.cell_radius / 10
     )
     # plot_nearest_neighbor_distances(nn_distances)
-    plot_adjusted_positions(scaled_positions, adjusted_positions, args.cell_radius)
+    plot_adjusted_positions(scaled_positions, adjusted_positions, args.cell_radius, padded_bbox)
 
     for new_pos, item in zip(adjusted_positions, items):
         item.x = new_pos[0]
