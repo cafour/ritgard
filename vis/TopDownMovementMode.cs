@@ -35,6 +35,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
             Pitch = DefaultPitch;
             Yaw = DefaultYaw;
             RotateCamera();
+            Player.Position = new Vector3(0, BaseHeight, 0);
         }
 
         var step = Player.ZoomStep;
