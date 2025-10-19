@@ -29,18 +29,19 @@ class DocumentItem(BaseModel):
 class ClocHeader(BaseModel):
     model_config = ConfigDict(validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
-    file_count: int = Field(alias="n_files")
-    line_count: int = Field(alias="n_lines")
+    file_count: int = Field(alias="n_files", default=0)
+    line_count: int = Field(alias="n_lines", default=0)
 
 
 class ClocEntry(BaseModel):
     model_config = ConfigDict(validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
-    file_count: int = Field(alias="nFiles")
-    code_count: int = Field(alias="code")
+    file_count: int = Field(alias="nFiles", default=0)
+    code_count: int = Field(alias="code", default=0)
 
 
-DEFAULT_EXCLUDED_FILE_TYPES = ["Markdown", "CSV", "Text", "TOML", "JSON", "YAML", "INIT"]
+DEFAULT_EXCLUDED_FILE_TYPES = ["Markdown", "CSV", "Text", "TOML", "JSON", "YAML", "INI"]
+DEFAULT_EXCLUDED_EXTENSIONS = [".json", ".csv", ".yaml", ".yml", ".toml", ".ini", ".txt", ".md", ".xml", ".lock"]
 
 
 class ClocInfo(BaseModel):
@@ -78,6 +79,31 @@ class ClocInfo(BaseModel):
         return total
 
 
+class GitLocEntry(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
+    added_line_count: int = 0
+    deleted_line_count: int = 0
+
+
+class GitLocInfo(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
+    added_line_count: int = 0
+    deleted_line_count: int = 0
+    entries: dict[str, GitLocEntry]
+
+    def get_line_count(self, excluded_extensions: list[str] = None):
+        if excluded_extensions is None:
+            excluded_extensions = DEFAULT_EXCLUDED_EXTENSIONS
+        total = 0
+        for file_type, entry in self.entries.items():
+            if file_type in excluded_extensions:
+                continue
+            total = total + entry.added_line_count + entry.deleted_line_count
+        return total
+
+
 class Repository(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
@@ -87,6 +113,7 @@ class Repository(BaseModel):
     name: str
     topics: list[str]
     cloc: ClocInfo | None
+    git_loc: GitLocInfo | None
     size: int
 
 

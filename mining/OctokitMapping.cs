@@ -287,6 +287,7 @@ public static class OctokitMapping
             SubscribersCount: value.SubscribersCount,
             Size: value.Size,
             Cloc: null,
+            GitLoc: null,
             Topics: [.. value.Topics],
             Visibility: MapRepositoryVisibility(value.Visibility)
         );

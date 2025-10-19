@@ -31,6 +31,7 @@ public record Repository(
     int SubscribersCount,
     long Size,
     ClocInfo? Cloc,
+    GitLocInfo? GitLoc,
     ImmutableArray<string> Topics,
     RepositoryVisibility? Visibility
 );

@@ -15,7 +15,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="adjust-positions.py" />
-    <option name="PARAMETERS" value=".\out\topics_lume_2025-10-18_18-10-59.json --data-path .\datasets\lume.json --world-sizing auto --world-sizing-ratio 0.5" />
+    <option name="PARAMETERS" value=".\out\topics_lume_2025-10-18_18-10-59.json --data-path .\datasets\lume.json --world-sizing line-count --world-sizing-ratio 0.5" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

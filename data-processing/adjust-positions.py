@@ -270,8 +270,9 @@ def main():
             log.info(f"Ratio of code file count to number of artifacts: {world_size_ratio}")
             world_scale = get_area_world_scale(positions, args.cell_radius, file_count / world_size_ratio)
         case WorldSizing.LINE_COUNT:
-            line_count = data.repository.cloc.get_code_lines() / 1000.0
+            line_count = data.repository.git_loc.get_line_count([]) / 1000.0
             log.info(f"Setting world scale based on number of thousands of lines of code ({line_count} kLoC).")
+            log.info(f"Cloc reported {data.repository.cloc.get_code_lines() / 1000.0} kLoC.")
             log.info(f"Ratio of LoC to number of artifacts: {world_size_ratio}")
             world_scale = get_area_world_scale(positions, args.cell_radius, line_count / world_size_ratio)
 

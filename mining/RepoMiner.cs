@@ -63,7 +63,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             return null;
         }
 
-        var tasks = new List<Task>(5);
+        var tasks = new List<Task>(6);
 
         ClocInfo? cloc = null;
         tasks.Add(
@@ -86,6 +86,37 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                             RepoOwner,
                             RepoName,
                             cloc.Header.FileCount
+                        );
+                    }
+                },
+                cancellationToken
+            )
+        );
+
+        GitLocInfo? gitLoc = null;
+        tasks.Add(
+            Task.Run(
+                async () =>
+                {
+                    gitLoc = await Utils.GetGitLoc(octoRepo.CloneUrl, logger, cancellationToken);
+                    if (gitLoc is null)
+                    {
+                        logger.LogError(
+                            "Failed to count LoC '{RepoOwner}/{RepoName}' across its history. "
+                            + "No file and line count data will be available.",
+                            RepoOwner,
+                            RepoName
+                        );
+                    }
+                    else
+                    {
+                        logger.LogInformation(
+                            "Repository '{RepoOwner}/{RepoName}' has {AddedLineCount} added lines "
+                            + "and {DeletedLineCount} deleted lines.",
+                            RepoOwner,
+                            RepoName,
+                            gitLoc.AddedLineCount,
+                            gitLoc.DeletedLineCount
                         );
                     }
                 },
@@ -127,7 +158,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return new MiningResult(
             MiningStartedAt: startedAt,
             MiningCompletedAt: completedAt,
-            Repository: OctokitMapping.MapRepository(octoRepo) with { Cloc = cloc },
+            Repository: OctokitMapping.MapRepository(octoRepo) with { Cloc = cloc, GitLoc = gitLoc},
             Issues: issues.ToImmutableDictionary(),
             PullRequests: pullRequests.ToImmutableDictionary(),
             Discussions: discussions.ToImmutableDictionary(),

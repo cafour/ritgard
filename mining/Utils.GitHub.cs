@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using LibGit2Sharp;
 using Medallion.Shell;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -19,11 +20,6 @@ namespace Ritgard.Mining;
 public static partial class Utils
 {
     public const int GitCleanupAttemptCount = 5;
-
-    [GeneratedRegex(
-        @"^(\d+|-)\s+(\d+|-)\s(.+)$"
-    )]
-    public static partial Regex GetGitLocRegex();
 
     public static (GitHubGraphQLClient client, IAsyncDisposable clientDisposable) CreateGitHubGraphQLClient(
         string authToken
@@ -151,79 +147,60 @@ public static partial class Utils
             action: async (repoDir, ct) =>
             {
                 logger.LogInformation("Counting total line changes of '{CloneUrl}'.", cloneUrl);
-                var regex = GetGitLocRegex();
-                var changes = Command.Run(
-                    "git",
-                    ["log", "--numstat", "--pretty=tformat:", "--no-renames"],
-                    o => o.WorkingDirectory(repoDir).CancellationToken(ct)
-                );
-                var entries = await Task.Run(() =>
+                var builder = ImmutableDictionary.CreateBuilder<string, GitLocEntry>();
+                using var repository = new LibGit2Sharp.Repository(repoDir);
+                var commitIndex = 0;
+                foreach (var commit in repository.Commits)
+                {
+                    commitIndex++;
+                    if (commitIndex % 100 == 0)
                     {
-                        var i = 0;
-                        var builder = ImmutableDictionary.CreateBuilder<string, GitLocEntry>();
-                        while (changes.StandardOutput.ReadLine() is { } line)
+                        logger.LogInformation("Walked through {CommitIndex} commits.", commitIndex);
+                    }
+
+                    if (!commit.Parents.Any())
+                    {
+                        continue;
+                    }
+
+                    var parent = commit.Parents.First();
+
+                    var compareOptions = new CompareOptions
+                    {
+                        Similarity = new SimilarityOptions
                         {
-                            i++;
-                            if (i % 10 == 0)
-                            {
-                                logger.LogInformation("Reading {Index}", i);
-                            }
+                            RenameDetectionMode = RenameDetectionMode.None
+                        }
+                    };
 
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                return null;
-                            }
+                    var patch = repository.Diff.Compare<Patch>(parent.Tree, commit.Tree, compareOptions);
 
-                            var match = regex.Match(line);
-                            if (!match.Success)
-                            {
-                                logger.LogError("Failed to match line '{Line}' for expected git output.", line);
-                                return null;
-                            }
-
-                            if (match.Groups[1].ValueSpan is "-" || match.Groups[2].ValueSpan is "-")
-                            {
-                                // binary blobs, ignore
-                                continue;
-                            }
-
-                            var addedLineCount = long.Parse(match.Groups[1].ValueSpan);
-                            var deletedLineCount = long.Parse(match.Groups[2].ValueSpan);
-                            var extension = Path.GetExtension(match.Groups[3].ValueSpan).ToString();
-
-                            if (!builder.ContainsKey(extension))
-                            {
-                                builder[extension] = new GitLocEntry();
-                            }
-
-                            builder[extension].AddedLineCount += addedLineCount;
-                            builder[extension].DeletedLineCount += deletedLineCount;
+                    foreach (var entry in patch)
+                    {
+                        if (entry.IsBinaryComparison)
+                        {
+                            continue;
                         }
 
-                        return builder.ToImmutable();
-                    },
-                    ct
-                );
+                        var extension = Path.GetExtension(entry.Path);
+                        if (!builder.ContainsKey(extension))
+                        {
+                            builder[extension] = new GitLocEntry();
+                        }
 
-                if (entries is null)
-                {
-                    return null;
+                        builder[extension].AddedLineCount += entry.LinesAdded;
+                        builder[extension].DeletedLineCount += entry.LinesDeleted;
+                    }
                 }
 
-                var changesResult = await changes.Task;
-                if (!changesResult.Success)
-                {
-                    logger.LogError("Git log failed with an error: {GitError}", changesResult.StandardError);
-                    return null;
-                }
-
+                var entries = builder.ToImmutable();
                 return new GitLocInfo(
                     Entries: entries,
                     AddedLineCount: entries.Values.Sum(v => v.AddedLineCount),
                     DeletedLineCount: entries.Values.Sum(v => v.DeletedLineCount)
                 );
             },
-            cloneArgs: ["--filter=blob:none", "--no-checkout"],
+            cloneArgs: [],
             logger: logger,
             cancellationToken: cancellationToken
         );
@@ -244,15 +221,18 @@ public static partial class Utils
         var tempDirName = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
         var tempDir = Path.Combine(tempParent, tempDirName);
         Directory.CreateDirectory(tempDir);
+        Command? cloneCmd = null;
         try
         {
             logger.LogInformation("Cloning '{CloneUrl}'.", cloneUrl);
-            var cloneResult = await Command.Run(
+            cloneCmd = Command.Run(
                 "git",
                 ["clone", ..cloneArgs, cloneUrl, tempDirName],
                 o => o.WorkingDirectory(tempParent)
                     .CancellationToken(cancellationToken)
-            ).Task;
+                    .DisposeOnExit(false)
+            );
+            var cloneResult = await cloneCmd.Task;
 
             if (!cloneResult.Success)
             {
@@ -261,27 +241,49 @@ public static partial class Utils
                 return default;
             }
 
+            foreach (var process in cloneCmd.Processes)
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                    process.Dispose();
+                }
+            }
+
+            foreach (var file in Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories))
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+            }
+
             return await action(tempDir, cancellationToken);
         }
         finally
         {
+            if (cloneCmd is not null)
+            {
+                foreach (var process in cloneCmd.Processes)
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill();
+                        process.Dispose();
+                    }
+                }
+            }
+
             for (int i = 0; i < GitCleanupAttemptCount; ++i)
             {
                 try
                 {
-                    foreach (var file in Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories))
-                    {
-                        File.SetAttributes(file, FileAttributes.Normal);
-                    }
-
                     Directory.Delete(tempDir, recursive: true);
                     break;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     if (i == GitCleanupAttemptCount - 1)
                     {
                         logger.LogError(
+                            ex,
                             "Failed to clean '{GitRepo}' after {AttemptCount} attempts. "
                             + "Please remove '{TempDir}' manually.",
                             cloneUrl,
