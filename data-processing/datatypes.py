@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_pascal
 
 import logging
@@ -26,6 +26,58 @@ class DocumentItem(BaseModel):
     comments: list[DocumentItemComment] | None = None
 
 
+class ClocHeader(BaseModel):
+    model_config = ConfigDict(validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
+    file_count: int = Field(alias="n_files")
+    line_count: int = Field(alias="n_lines")
+
+
+class ClocEntry(BaseModel):
+    model_config = ConfigDict(validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
+    file_count: int = Field(alias="nFiles")
+    code_count: int = Field(alias="code")
+
+
+DEFAULT_EXCLUDED_FILE_TYPES = ["Markdown", "CSV", "Text", "TOML", "JSON", "YAML", "INIT"]
+
+
+class ClocInfo(BaseModel):
+    model_config = ConfigDict(validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True, extra='allow')
+    header: ClocHeader = Field(alias="header")
+    entries: dict[str, ClocEntry] | None = None
+
+    @model_validator(mode='after')
+    def parse_extras(self):
+        if self.model_extra is not None:
+            self.entries = {}
+            for file_type, entry in self.model_extra.items():
+                self.entries[file_type] = ClocEntry(**entry)
+        return self
+
+    def get_file_count(self, excluded_file_types: list[str] = None):
+        if excluded_file_types is None:
+            excluded_file_types = DEFAULT_EXCLUDED_FILE_TYPES
+        total = 0
+        for file_type, entry in self.entries.items():
+            if file_type == "SUM" or file_type in excluded_file_types:
+                continue
+            total = total + entry.file_count
+        return total
+
+    def get_code_lines(self, excluded_file_types: list[str] = None):
+        if excluded_file_types is None:
+            excluded_file_types = DEFAULT_EXCLUDED_FILE_TYPES
+        total = 0
+        for file_type, entry in self.entries.items():
+            if file_type == "SUM" or file_type in excluded_file_types:
+                continue
+            total = total + entry.code_count
+        return total
+
+
 class Repository(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
@@ -34,6 +86,8 @@ class Repository(BaseModel):
     owner: str
     name: str
     topics: list[str]
+    cloc: ClocInfo | None
+    size: int
 
 
 class MiningResult(BaseModel):

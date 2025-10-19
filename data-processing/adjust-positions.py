@@ -1,10 +1,17 @@
 from sklearn.neighbors import NearestNeighbors, KDTree
 import numpy as np
+import numpy.typing as npt
 import argparse
 import logging
 from pathlib import Path
+from scipy.spatial import ConvexHull
+import math
+
+from sympy.strategies.core import switch
+
 import datatypes as dt
 import matplotlib.pyplot as plt
+from enum import Enum
 from datetime import datetime, UTC
 
 from utils import get_now_string
@@ -12,6 +19,13 @@ from utils import get_now_string
 PROGRAM_NAME = "ritgard." + Path(__file__).stem
 
 log = logging.getLogger(PROGRAM_NAME)
+
+
+class WorldSizing(Enum):
+    AUTO = "auto"
+    REPO_SIZE = "repo-size"
+    FILE_COUNT = "file-count"
+    LINE_COUNT = "line-count"
 
 
 def get_nearest_neighbor_distances(
@@ -91,41 +105,195 @@ def plot_adjusted_positions(scaled, adjusted, radius):
     plt.show()
 
 
+def get_rotation_matrix(theta: float):
+    return np.array([
+        [np.cos(theta), -np.sin(theta)],
+        [np.sin(theta), np.cos(theta)]
+    ])
+
+
+def get_minimum_obb(positions: npt.NDArray[np.float32], padding: float = 0):
+    hull = ConvexHull(positions)
+    hull_points = positions[hull.vertices]
+    min_area = np.inf
+    best_angle = 0
+    best_box = None
+
+    for i in range(len(hull_points)):
+        p1 = hull_points[i]
+        p2 = hull_points[(i + 1) % len(hull_points)]
+
+        edge_angle = np.arctan2(p2[1] - p1[1], p2[0] - p1[0])
+
+        rotation_matrix = get_rotation_matrix(-edge_angle)
+        rotated = hull_points @ rotation_matrix
+
+        min_x, max_x = rotated[:, 0].min() - padding, rotated[:, 0].max() + padding
+        min_y, max_y = rotated[:, 1].min() - padding, rotated[:, 1].max() + padding
+        area = (max_x - min_x) * (max_y - min_y)
+
+        if area < min_area:
+            min_area = area
+            best_angle = edge_angle
+
+            box_rot = np.array([
+                [min_x, min_y],
+                [max_x, min_y],
+                [max_x, max_y],
+                [min_x, max_y]
+            ])
+
+            best_box = box_rot @ rotation_matrix.T
+
+    return best_angle, min_area, best_box
+
+
+def visualize_obb(positions: npt.NDArray[np.float32], box: npt.NDArray[np.float32]):
+    plt.figure(figsize=(6, 6))
+    plt.scatter(positions[:, 0], positions[:, 1], color='lightblue', label='Positions', alpha=0.7)
+
+    box_closed = np.vstack([box, box[0]])  # close polygon
+    plt.plot(box_closed[:, 0], box_closed[:, 1], 'r-', lw=2, label='Min Bounding Box')
+
+    plt.axis('equal')
+    plt.title(f"Minimal Bounding Box")
+    plt.legend()
+    plt.show()
+
+
+def get_auto_world_scale(positions: npt.ArrayLike, cell_radius: float, quantile: float):
+    nn_distances, nn_indices = get_nearest_neighbor_distances(positions)
+    base_distance = np.quantile(nn_distances, quantile)
+    return cell_radius / base_distance
+
+
+def get_bbox(positions: npt.NDArray[np.float32], padding: float = 0):
+    min_x, max_x, min_y, max_y = np.min(positions[:, 0]), np.max(positions[:, 0]), np.min(
+        positions[:, 1]), np.max(
+        positions[:, 1])
+    return np.array([[min_x - padding, min_y - padding], [max_x + padding, max_y + padding]])
+
+
+def get_area(positions: npt.NDArray[np.float32]):
+    bbox = get_bbox(positions)
+    return (bbox[1, 0] - bbox[0, 0]) * (bbox[1, 1] - bbox[0, 1])
+
+
+def center_positions(positions: npt.NDArray[np.float32]):
+    bbox = get_bbox(positions)
+    center = (bbox[0] + bbox[1]) / 2
+    return positions - center
+
+def minimize_world_bbox(positions: npt.NDArray[np.float32]):
+    angle, area, _ = get_minimum_obb(positions)
+    rotation_matrix = get_rotation_matrix(-angle)
+    rotated_positions = positions @ rotation_matrix
+    rotated_positions = center_positions(rotated_positions)
+    return rotated_positions
+
+def get_area_world_scale(positions: npt.NDArray[np.float32], cell_radius: float, target_area: float):
+    bbox = get_bbox(positions)
+    w = bbox[1, 0] - bbox[0, 0]
+    h = bbox[1, 1] - bbox[0, 1]
+    area = w * h
+    log.info(f"Original box: w={w}, h={h}, area={area}")
+    target = target_area * (2 * cell_radius * 2 * cell_radius)
+    log.info(f"Target box area: {target}")
+    padding = 2 * cell_radius
+    factor_1 = (padding * (
+                (-w - h) + np.sqrt((w - h) * (w - h) + (4 * area * target) / (padding * padding))) / (2 * area))
+    factor_2 = (padding * (
+                (-w - h) - np.sqrt((w - h) * (w - h) + (4 * area * target) / (padding * padding))) / (2 * area))
+    scale = max(factor_1, factor_2)
+    return scale
+
+    # scaled_positions = rotated_positions * scale
+    #
+    # plt.subplots(figsize=(6, 6))
+    # plt.scatter(scaled_positions[:, 0], scaled_positions[:, 1], color='lightblue', label='Positions', alpha=0.7)
+    # new_bbox = get_bbox(scaled_positions)
+    # new_bbox_w = new_bbox[1, 0] - new_bbox[0, 0]
+    # new_bbox_h = new_bbox[1, 1] - new_bbox[0, 1]
+    # log.info(f"New box without padding: w={new_bbox_w}, h={new_bbox_h}, area={new_bbox_w * new_bbox_h}")
+    # pad_bbox = np.array([new_bbox[0, :] - cell_radius, new_bbox[1, :] + cell_radius])
+    # plt.plot([new_bbox[0, 0], new_bbox[1, 0], new_bbox[1, 0], new_bbox[0, 0], new_bbox[0, 0]],
+    #          [new_bbox[0, 1], new_bbox[0, 1], new_bbox[1, 1], new_bbox[1, 1], new_bbox[0, 1]],
+    #          color="red", linewidth=2)
+    # plt.plot([pad_bbox[0, 0], pad_bbox[1, 0], pad_bbox[1, 0], pad_bbox[0, 0], pad_bbox[0, 0]],
+    #          [pad_bbox[0, 1], pad_bbox[0, 1], pad_bbox[1, 1], pad_bbox[1, 1], pad_bbox[0, 1]],
+    #          color="blue", linewidth=2)
+    # plt.show()
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     args_parser = argparse.ArgumentParser(PROGRAM_NAME)
     args_parser.add_argument("input_path")
-    args_parser.add_argument("--quantile", default=0.5, type=float)
-    args_parser.add_argument("--radius", default=5, type=float)
+    args_parser.add_argument("--cell-radius", default=3.5, type=float)
     args_parser.add_argument("--max-iterations", default=-1, type=int)
+    args_parser.add_argument("--world-sizing", default=WorldSizing.AUTO, type=WorldSizing, choices=list(WorldSizing))
+    args_parser.add_argument("--world-sizing-ratio", default=1, type=float)
+    args_parser.add_argument("--world-sizing-auto-quantile", default=0.5, type=float)
+    args_parser.add_argument("--data-path", default=None)
     args_parser.add_argument("--output", default=None)
     args = args_parser.parse_args()
+
+    if args.world_sizing != WorldSizing.AUTO and args.data_path is None:
+        raise RuntimeError("If --world-sizing is not auto, --data-path is required.")
+
     input_path = Path(args.input_path)
     if not input_path.exists():
         raise RuntimeError(f"Input file '{args.input_path}' does not exist")
 
     log.info(f"Reading input file '{input_path.name}'")
     model = dt.TopicModellingResult.model_validate_json(input_path.read_bytes())
+    data: dt.MiningResult | None = None
+    if args.data_path is not None:
+        data = dt.MiningResult.model_validate_json(Path(args.data_path).read_bytes())
     items = sorted(model.items.values(), key=lambda i: i.id)
     positions = np.array([[item.x, item.y] for item in items])
-    nn_distances, nn_indices = get_nearest_neighbor_distances(positions)
-    base_distance = np.quantile(nn_distances, args.quantile)
-    scale = args.radius / base_distance
-    log.info(f"Base distance: {base_distance}")
-    log.info(f"Scale: {scale}")
-    scaled_positions = positions * scale
+    positions = center_positions(positions)
+    positions = minimize_world_bbox(positions)
+    world_size_ratio = args.world_sizing_ratio
+    world_scale: float = 1.0
+    match args.world_sizing:
+        case WorldSizing.AUTO:
+            log.info("Setting world scale automatically to, on average, prevent collisions.")
+            world_scale = get_auto_world_scale(positions, args.cell_radius, args.world_sizing_auto_quantile)
+        case WorldSizing.REPO_SIZE:
+            log.info(f"Setting world scale based on repository size ({data.repository.size} KB).")
+            log.info(f"Ratio of repository size to number of artifacts: {world_size_ratio}")
+            world_scale = get_area_world_scale(positions, args.cell_radius, data.repository.size / world_size_ratio)
+        case WorldSizing.FILE_COUNT:
+            file_count = data.repository.cloc.get_file_count()
+            log.info(f"Setting world scale based on number of code files ({file_count} files).")
+            log.info(f"Ratio of code file count to number of artifacts: {world_size_ratio}")
+            world_scale = get_area_world_scale(positions, args.cell_radius, file_count / world_size_ratio)
+        case WorldSizing.LINE_COUNT:
+            line_count = data.repository.cloc.get_code_lines() / 1000.0
+            log.info(f"Setting world scale based on number of thousands of lines of code ({line_count} kLoC).")
+            log.info(f"Ratio of LoC to number of artifacts: {world_size_ratio}")
+            world_scale = get_area_world_scale(positions, args.cell_radius, line_count / world_size_ratio)
+
+    log.info(f"World scale: {world_scale}")
+    scaled_positions = positions * world_scale
+    scaled_bbox = get_bbox(scaled_positions, padding=args.cell_radius)
+    scaled_bbox_w = scaled_bbox[1, 0] - scaled_bbox[0, 0]
+    scaled_bbox_h = scaled_bbox[1, 1] - scaled_bbox[0, 1]
+    log.info(f"Scaled box: w={scaled_bbox_w}, h={scaled_bbox_h}, area={scaled_bbox_w * scaled_bbox_h}")
+
     max_iterations: int = args.max_iterations
     if max_iterations == -1:
         max_iterations = len(model.items)
         log.info(f"Automatically set max iterations to {max_iterations}")
     adjusted_positions = adjust_positions(
         scaled_positions,
-        np.repeat(args.radius, scaled_positions.size),
-        step_size=args.radius / 10,
+        np.repeat(args.cell_radius, scaled_positions.size),
+        step_size=args.cell_radius / 10,
         max_iterations=max_iterations
     )
     # plot_nearest_neighbor_distances(nn_distances)
-    # plot_adjusted_positions(scaled_positions, adjusted_positions, args.radius)
+    plot_adjusted_positions(scaled_positions, adjusted_positions, args.cell_radius)
 
     for new_pos, item in zip(adjusted_positions, items):
         item.x = new_pos[0]
