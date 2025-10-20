@@ -151,7 +151,8 @@ class TopicItem(BaseModel):
 class TopicModellingResult(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
-
+    name: str
+    owner: str
     topics: dict[int, Topic]
     items: dict[str, TopicItem]
 

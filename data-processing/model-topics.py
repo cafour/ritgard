@@ -228,7 +228,7 @@ def write_topics(
         positions: np.ndarray[tuple[int, int], np.dtype[np.float32]],
         topic_model: BERTopic,
         topics: list[int],
-        project_name: str,
+        repository: dt.Repository,
         output_path: str = None
 ):
     topic_models = {}
@@ -246,13 +246,15 @@ def write_topics(
                                            probabilities=doc_probs)
 
     result = dt.TopicModellingResult(
+        name=repository.name,
+        owner=repository.owner,
         topics=topic_models,
         items=topic_items
     )
     json = result.model_dump_json()
 
     if output_path is None:
-        output_path = f"./out/topics_{project_name}_{get_now_string()}.json"
+        output_path = f"./out/topics_{repository.name}_{get_now_string()}.json"
         log.info(f"Automatically set output path to '{output_path}'")
     output = Path(output_path)
     if output.parent is not None:
@@ -314,7 +316,14 @@ def main():
         llm_model_name=args.llm_model,
         embed_model_name=args.embed_model
     )
-    write_topics(ids, positions, topic_model, topics, project_name, output_path=args.output)
+    write_topics(
+        ids=ids,
+        positions=positions,
+        topic_model=topic_model,
+        topics=topics,
+        repository=data.repository,
+        output_path=args.output
+    )
 
 
 if __name__ == "__main__":
