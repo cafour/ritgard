@@ -163,8 +163,16 @@ public partial class TopicIsland : Node3D
             }
         }
 
-        var hullPolygon = hull.GetHull(hullTris);
-        hullPolygon = hullPolygon.Buffer(Mathf.Min(1, Mathf.RoundToInt(StructureRadius / 2f)));
+        Geometry? hullPolygon = null;
+        try
+        {
+            hullPolygon = hull.GetHull(hullTris);
+            hullPolygon = hullPolygon.Buffer(Mathf.Min(1, Mathf.RoundToInt(StructureRadius / 2f)));
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"Failed to get a hull polygon for '{Topic.Id}': {ex}");
+        }
 
         var kdTree = new KdTree<ActiveItem>();
         foreach (var item in relevantItems)
@@ -181,7 +189,7 @@ public partial class TopicIsland : Node3D
 
                 var coord = new Coordinate(px, py);
 
-                if (hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
+                if (hullPolygon is not null && hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
                 {
                     Heightmap[z, x] = 1;
                 }
@@ -230,7 +238,8 @@ public partial class TopicIsland : Node3D
                         Heightmap[z, x] = ToByteHeight(nearestPointHeight);
                     }
 
-                    if (!hullPolygon.Contains(GeometryFactory.Default.CreatePoint(nearestPoint.Coordinate))
+                    if (hullPolygon is not null
+                        && !hullPolygon.Contains(GeometryFactory.Default.CreatePoint(nearestPoint.Coordinate))
                         && distance < StructureRadius * 1.5f)
                     {
                         Heightmap[z, x] = 1;
