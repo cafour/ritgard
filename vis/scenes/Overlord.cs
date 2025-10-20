@@ -30,28 +30,16 @@ public partial class Overlord : Node
     public PackedScene OutlierRockScene { get; set; }
 
     [Export]
-    public Label ItemDescriptionLabel { get; set; }
-
-    [Export]
     public Player Player { get; set; }
-
-    [Export]
-    public Control ControlsContainer { get; set; }
 
     [Export]
     public Godot.Collections.Array<DatasetInfo> Datasets { get; set; }
 
     [Export]
-    public OptionButton DatasetDropdown { get; set; }
+    public UIWrapper UI { get; set; }
 
     [Export]
     public VoxelBlockyLibrary Library { get; set; }
-
-    [Export]
-    public Label CurrentTimeLabel { get; set; }
-
-    [Export]
-    public SpinBox CurrentStepSpinBox { get; set; }
 
     [Export]
     public MeshInstance3D Ocean { get; set; }
@@ -72,7 +60,10 @@ public partial class Overlord : Node
 
     public int CurrentStep { get; private set; }
 
+    public VisualizationScope CurrentScope { get; private set; } = VisualizationScope.All;
+
     public ActiveRepository Repo { get; private set; }
+
     public Dictionary<string, float> Heights { get; private set; } = [];
 
     private readonly Dictionary<int, TopicIsland> topicIslands = [];
@@ -107,16 +98,23 @@ public partial class Overlord : Node
 
     public override async void _Ready()
     {
-        ItemDescriptionLabel.Text = DefaultHint;
+        UI.ItemDescriptionLabel.Text = DefaultHint;
         for (int i = 0; i < Datasets.Count; ++i)
         {
-            DatasetDropdown.AddItem(Datasets[i].Name, i);
+            UI.DatasetDropdown.AddItem(Datasets[i].Name, i);
         }
 
-        DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
+        UI.IssuesCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Issues);
+        UI.IssuesCheck.Pressed += () => OnScopeCheck(UI.IssuesCheck, VisualizationScope.Issues);
+        UI.PRsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.PullRequests);
+        UI.PRsCheck.Pressed += () => OnScopeCheck(UI.PRsCheck, VisualizationScope.PullRequests);
+        UI.DiscussionsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Discussions);
+        UI.DiscussionsCheck.Pressed += () => OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
+
+        UI.DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
         await ShowDataset(0);
 
-        CurrentStepSpinBox.ValueChanged += value => ShowStep(Mathf.FloorToInt(value));
+        UI.CurrentStepSpinBox.ValueChanged += value => ShowStep(Mathf.FloorToInt(value));
     }
 
     private async Task ShowDataset(int index)
@@ -137,7 +135,7 @@ public partial class Overlord : Node
 
         var dataset = Datasets[index];
         Repo = await ActiveRepository.Load(dataset);
-        CurrentStepSpinBox.MaxValue = Repo.StepCount - 1;
+        UI.CurrentStepSpinBox.MaxValue = Repo.StepCount - 1;
 
         var oceanPlane = (PlaneMesh)Ocean.Mesh;
         oceanPlane.Size = Repo.BBox.Size;
@@ -220,16 +218,25 @@ public partial class Overlord : Node
         }
 
         var now = Repo.MinDate + Repo.Step * step;
-        foreach (var issue in Repo.Items.Values)
+        foreach (var item in Repo.Items.Values)
         {
-            var slidingEvents = Repo.Items[issue.Id].Events.GetRange(now - Repo.SlidingWindow, now, true);
-            Heights[issue.Id] = slidingEvents.Count();
-            itemStructures.GetValueOrDefault(issue.Id)?.OnShowStep(step);
-            outlierRocks.GetValueOrDefault(issue.Id)?.OnShowStep(step);
+            if (!item.Conversation.IsInScope(CurrentScope))
+            {
+                Heights[item.Id] = 0;
+            }
+            else
+            {
+                var slidingEvents = Repo.Items[item.Id].Events.GetRange(now - Repo.SlidingWindow, now, true);
+                Heights[item.Id] = slidingEvents.Count();
+            }
+
+            itemStructures.GetValueOrDefault(item.Id)?.OnShowStep(step);
+            outlierRocks.GetValueOrDefault(item.Id)?.OnShowStep(step);
         }
 
         foreach (var topicIsland in topicIslands.Values)
         {
+            topicIsland.Scope = CurrentScope;
             topicIsland.OnShowStep(0);
         }
 
@@ -251,9 +258,17 @@ public partial class Overlord : Node
         {
             ShowStep(CurrentStep + 1);
         }
+        else if (@event.IsAction(InputActions.LargeStepNext) && @event.IsPressed())
+        {
+            ShowStep(CurrentStep + Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
+        }
         else if (@event.IsAction(InputActions.StepPrev) && @event.IsPressed())
         {
             ShowStep(CurrentStep - 1);
+        }
+        else if (@event.IsAction(InputActions.LargeStepPrev) && @event.IsPressed())
+        {
+            ShowStep(CurrentStep - Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
         }
     }
 
@@ -363,7 +378,7 @@ public partial class Overlord : Node
                     structure.ToggleHighlight(true);
                     currentStructure = structure;
 
-                    ItemDescriptionLabel.Text = item.ToString();
+                    UI.ItemDescriptionLabel.Text = $"{item} (h={Heights[item.Id]})";
 
                     Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
                 }
@@ -378,7 +393,7 @@ public partial class Overlord : Node
                 island.ToggleHighlight(true);
                 currentIsland = island;
 
-                ItemDescriptionLabel.Text = $"The '{island.Topic.GetPreferredTitle()}' topic island";
+                UI.ItemDescriptionLabel.Text = $"Topic #{island.Topic.Id}: {island.Topic.GetPreferredTitle()}";
                 break;
 
             case null:
@@ -389,7 +404,28 @@ public partial class Overlord : Node
                 currentIsland = null;
 
                 Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
-                ItemDescriptionLabel.Text = DefaultHint;
+                var issueCount = 0;
+                var prCount = 0;
+                var discussionCount = 0;
+                foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key]))
+                {
+                    switch (visibleItem.Conversation)
+                    {
+                        case Issue:
+                            issueCount++;
+                            break;
+                        case PullRequest:
+                            prCount++;
+                            break;
+                        case Discussion:
+                            discussionCount++;
+                            break;
+                    }
+                }
+
+                var now = Repo.MinDate + CurrentStep * Repo.Step;
+                UI.ItemDescriptionLabel.Text =
+                    $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
                 break;
         }
     }
@@ -456,8 +492,8 @@ public partial class Overlord : Node
     {
         var now = Repo.MinDate + Repo.Step * step;
         CurrentStep = step;
-        CurrentStepSpinBox.SetValueNoSignal(step);
-        CurrentTimeLabel.Text = now.ToString("yyyy-MM-dd HH:mm:ss");
+        UI.CurrentStepSpinBox.SetValueNoSignal(step);
+        UI.CurrentTimeLabel.Text = now.ToString("yyyy-MM-dd HH:mm:ss");
     }
 
     // private byte GetHeightForIssue(long id)
@@ -493,4 +529,18 @@ public partial class Overlord : Node
     //         return 10;
     //     }
     // }
+
+    private void OnScopeCheck(CheckButton button, VisualizationScope scope)
+    {
+        if (button.ButtonPressed)
+        {
+            CurrentScope |= scope;
+        }
+        else
+        {
+            CurrentScope &= ~scope;
+        }
+
+        ShowStep(CurrentStep);
+    }
 }
