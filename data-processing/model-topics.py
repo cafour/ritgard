@@ -147,9 +147,9 @@ def use_bertopic(
     keybert_model = KeyBERTInspired()
 
     representation_model = {
-        "KeyBERT": keybert_model,
-        "POS": PartOfSpeech("en_core_web_sm"),
-        "MMS": MaximalMarginalRelevance(diversity=0.5)
+        # "KeyBERT": keybert_model,
+        # "POS": PartOfSpeech("en_core_web_sm"),
+        # "MMS": MaximalMarginalRelevance(diversity=0.5)
     }
     if use_llm:
         api_key = os.getenv("LLM_API_KEY")
