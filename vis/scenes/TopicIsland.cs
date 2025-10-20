@@ -62,6 +62,7 @@ public partial class TopicIsland : Node3D
 
     public byte[,] Heightmap { get; set; }
 
+    public VisualizationScope Scope { get; set; } = VisualizationScope.All;
 
     public override void _EnterTree()
     {
@@ -113,10 +114,16 @@ public partial class TopicIsland : Node3D
 
     private void ComputeHeightmap()
     {
-        var windowStart = Overlord.Instance.Repo.MinDate + Overlord.Instance.CurrentStep * Overlord.Instance.Repo.Step
-                          - Overlord.Instance.Repo.SlidingWindow;
+        ClearHeightmap();
+
+        var windowStart = Overlord.Instance.Repo.MinDate
+            + Overlord.Instance.CurrentStep * Overlord.Instance.Repo.Step
+            - Overlord.Instance.Repo.SlidingWindow;
         var relevantItems = Overlord.Instance.Repo.Items.Values
-            .Where(i => i.TopicId == Topic.Id && i.Conversation.UpdatedAt > windowStart)
+            .Where(i => i.TopicId == Topic.Id
+                && i.Conversation.UpdatedAt > windowStart
+                && i.Conversation.IsInScope(Scope)
+            )
             .ToImmutableArray();
 
         var coords = relevantItems.Select(i => new Coordinate(i.Position.X, i.Position.Y)).ToArray();
@@ -135,7 +142,7 @@ public partial class TopicIsland : Node3D
                 var tri = hullTris[i];
                 var triPolygon = tri.ToPolygon(GeometryFactory.Default);
                 var intrudingPoints = Overlord.Instance.Repo.ItemTree.Query(triPolygon.EnvelopeInternal)
-                    .Where(n => Overlord.Instance.Repo.TopicModelling.Items[n.Data.Id].TopicId != Topic.Id)
+                    .Where(n => n.Data.TopicId != Topic.Id && n.Data.Conversation.IsInScope(Scope))
                     .Where(n => triPolygon.Contains(
                             GeometryFactory.Default.CreatePoint(
                                 new Coordinate(n.Data.Position.X, n.Data.Position.Y)
@@ -206,8 +213,8 @@ public partial class TopicIsland : Node3D
                         var v2Height = Overlord.Instance.Heights[v2Item.Data.Id];
 
                         var height = v0Height * Mathf.SmoothStep(0, 1, alpha)
-                                     + v1Height * Mathf.SmoothStep(0, 1, beta)
-                                     + v2Height * Mathf.SmoothStep(0, 1, gamma);
+                            + v1Height * Mathf.SmoothStep(0, 1, beta)
+                            + v2Height * Mathf.SmoothStep(0, 1, gamma);
                         Heightmap[z, x] = ToByteHeight(height);
                     }
                 }

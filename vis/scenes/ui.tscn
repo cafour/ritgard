@@ -1,0 +1,90 @@
+[gd_scene load_steps=6 format=3 uid="uid://beqkhelea7e68"]
+
+[ext_resource type="FontFile" uid="uid://dmxjwe62r0f6c" path="res://fonts/IBMPlexMono-SemiBold.otf" id="1_nt7q6"]
+[ext_resource type="Script" uid="uid://bxgp35x25054d" path="res://scenes/UIWrapper.cs" id="1_x4jx1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kigm6"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.12549, 0.12549, 0.12549, 1)
+corner_detail = 1
+
+[sub_resource type="LabelSettings" id="LabelSettings_a7em7"]
+font = ExtResource("1_nt7q6")
+font_size = 24
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i2pvy"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.374139, 0.374139, 0.374139, 1)
+corner_detail = 1
+
+[node name="UI" type="Node"]
+script = ExtResource("1_x4jx1")
+
+[node name="HoverBar" type="PanelContainer" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 23.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_kigm6")
+
+[node name="ItemDescriptionLabel" type="Label" parent="HoverBar"]
+layout_mode = 2
+text = "`Some link` from `Some text file` at `https:\\\\some.url`"
+label_settings = SubResource("LabelSettings_a7em7")
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="CrosshairContainer" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Crosshair" type="ColorRect" parent="CrosshairContainer"]
+custom_minimum_size = Vector2(4, 4)
+layout_mode = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Controls" type="PanelContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 70.0
+offset_bottom = 40.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_i2pvy")
+
+[node name="Container" type="VBoxContainer" parent="Controls"]
+layout_mode = 2
+
+[node name="DatasetDropdown" type="OptionButton" parent="Controls/Container"]
+layout_mode = 2
+
+[node name="CurrentStep" type="SpinBox" parent="Controls/Container"]
+layout_mode = 2
+
+[node name="CurrentTime" type="Label" parent="Controls/Container"]
+layout_mode = 2
+text = "20XX-XX-XX"
+
+[node name="IssuesCheck" type="CheckButton" parent="Controls/Container"]
+layout_mode = 2
+text = "Issues"
+
+[node name="PRsCheck" type="CheckButton" parent="Controls/Container"]
+layout_mode = 2
+text = "PRs"
+
+[node name="DiscussionsCheck" type="CheckButton" parent="Controls/Container"]
+layout_mode = 2
+text = "Discussions"

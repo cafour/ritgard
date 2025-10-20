@@ -28,8 +28,7 @@ public partial class Player : Node3D
     [Export]
     public ControlMode ControlMode { get; set; }
 
-    [Export]
-    public ColorRect Crosshair { get; set; }
+    public ColorRect Crosshair => Overlord.Instance.UI.Crosshair;
 
     [Signal]
     public delegate void HoverChangedEventHandler(CollisionObject3D hoveree);

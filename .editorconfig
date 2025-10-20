@@ -22,3 +22,5 @@ csharp_wrap_after_declaration_lpar = true
 csharp_wrap_after_invocation_lpar = true
 csharp_wrap_arguments_style = chop_if_long
 csharp_braces_for_ifelse = required
+csharp_align_multiline_binary_patterns = false
+csharp_align_multiline_binary_expressions_chain = false
