@@ -24,6 +24,7 @@ class DocumentItem(BaseModel):
     body: str | None = None
     plain_text: str | None = None
     comments: list[DocumentItemComment] | None = None
+    created_at: str
 
 
 class ClocHeader(BaseModel):
@@ -115,6 +116,7 @@ class Repository(BaseModel):
     cloc: ClocInfo | None
     git_loc: GitLocInfo | None
     size: int
+    created_at: str | None
 
 
 class MiningResult(BaseModel):
