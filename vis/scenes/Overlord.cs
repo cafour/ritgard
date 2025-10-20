@@ -18,6 +18,8 @@ namespace Ritgard;
 
 public partial class Overlord : Node
 {
+    public const string DateTimeFormat = "yyyy-MM-dd HH:mm";
+
     public static Overlord Instance { get; private set; }
 
     [Export]
@@ -115,6 +117,27 @@ public partial class Overlord : Node
         await ShowDataset(0);
 
         UI.CurrentStepSpinBox.ValueChanged += value => ShowStep(Mathf.FloorToInt(value));
+
+        UI.CurrentDateTime.TextSubmitted += text =>
+        {
+            if (DateTimeOffset.TryParseExact(
+                    text,
+                    [DateTimeFormat, "yyyy-MM-dd"],
+                    formatProvider: null,
+                    styles: DateTimeStyles.AssumeUniversal,
+                    result: out var dateTime
+                ))
+            {
+                var step = dateTime < Repo.MinDate ? 0
+                    : dateTime >= Repo.MaxDate ? Repo.StepCount - 1
+                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / Repo.Step);
+                ShowStep(step);
+            }
+            else
+            {
+                RefreshCurrentStepControls(CurrentStep);
+            }
+        };
     }
 
     private async Task ShowDataset(int index)
@@ -207,7 +230,7 @@ public partial class Overlord : Node
     {
         if (step < 0)
         {
-            GD.PushWarning($"There is nothig to show before '{Repo.MinDate}'.");
+            GD.PushWarning($"There is nothing to show before '{Repo.MinDate}'.");
             return;
         }
 
@@ -254,21 +277,21 @@ public partial class Overlord : Node
             }
         }
 
-        if (@event.IsAction(InputActions.StepNext) && @event.IsPressed())
-        {
-            ShowStep(CurrentStep + 1);
-        }
-        else if (@event.IsAction(InputActions.LargeStepNext) && @event.IsPressed())
+        if (@event.IsAction(InputActions.LargeStepNext) && @event.IsPressed())
         {
             ShowStep(CurrentStep + Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
-        }
-        else if (@event.IsAction(InputActions.StepPrev) && @event.IsPressed())
-        {
-            ShowStep(CurrentStep - 1);
         }
         else if (@event.IsAction(InputActions.LargeStepPrev) && @event.IsPressed())
         {
             ShowStep(CurrentStep - Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
+        }
+        else if (@event.IsAction(InputActions.StepNext) && @event.IsPressed())
+        {
+            ShowStep(CurrentStep + 1);
+        }
+        else if (@event.IsAction(InputActions.StepPrev) && @event.IsPressed())
+        {
+            ShowStep(CurrentStep - 1);
         }
     }
 
@@ -493,7 +516,7 @@ public partial class Overlord : Node
         var now = Repo.MinDate + Repo.Step * step;
         CurrentStep = step;
         UI.CurrentStepSpinBox.SetValueNoSignal(step);
-        UI.CurrentTimeLabel.Text = now.ToString("yyyy-MM-dd HH:mm:ss");
+        UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
     }
 
     // private byte GetHeightForIssue(long id)

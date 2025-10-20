@@ -11,7 +11,7 @@ public partial class UIWrapper : Node
 
     public SpinBox CurrentStepSpinBox => _.Controls.Container.CurrentStep;
 
-    public Label CurrentTimeLabel => _.Controls.Container.CurrentTime;
+    public LineEdit CurrentDateTime => _.Controls.Container.CurrentDateTime;
 
     public CheckButton IssuesCheck => _.Controls.Container.IssuesCheck;
 

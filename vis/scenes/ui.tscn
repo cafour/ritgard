@@ -73,9 +73,11 @@ layout_mode = 2
 [node name="CurrentStep" type="SpinBox" parent="Controls/Container"]
 layout_mode = 2
 
-[node name="CurrentTime" type="Label" parent="Controls/Container"]
+[node name="CurrentDateTime" type="LineEdit" parent="Controls/Container"]
+custom_minimum_size = Vector2(175, 0)
 layout_mode = 2
-text = "20XX-XX-XX"
+placeholder_text = "yyyy-MM-dd HH:mm"
+emoji_menu_enabled = false
 
 [node name="IssuesCheck" type="CheckButton" parent="Controls/Container"]
 layout_mode = 2
