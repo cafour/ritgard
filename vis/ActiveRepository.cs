@@ -68,11 +68,12 @@ public class ActiveRepository
                 .ToImmutableDictionary(
                     i => i.Id,
                     i => ActiveItem.FromConversation(
-                        i,
-                        new Vector2(
+                        conversation: i,
+                        position: new Vector2(
                             x: (float)topicModelling.Items[i.Id].X - center.X,
                             y: (float)topicModelling.Items[i.Id].Y - center.Y
-                        )
+                        ),
+                        topicId: topicModelling.Items.GetValueOrDefault(i.Id)?.TopicId ?? -1
                     )
                 )
         };

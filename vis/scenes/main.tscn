@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=26 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/item_structure.tscn" id="2_85g3d"]
@@ -37,6 +37,13 @@ script = ExtResource("5_85g3d")
 Name = "Godot Proposals"
 DataFilePath = "res://sample/godot-proposals.json"
 TopicFilePath = "res://sample/godot-proposals-topics.json"
+metadata/_custom_type_script = "uid://bq3k6c84mk42x"
+
+[sub_resource type="Resource" id="Resource_trceg"]
+script = ExtResource("5_85g3d")
+Name = "Rustlings"
+DataFilePath = "res://sample/rustlings.json"
+TopicFilePath = "res://sample/rustlings-topics.json"
 metadata/_custom_type_script = "uid://bq3k6c84mk42x"
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o6xl0"]
@@ -107,7 +114,7 @@ OutlierRockScene = ExtResource("4_tipki")
 ItemDescriptionLabel = NodePath("UI/Container/ItemDescriptionLabel")
 Player = NodePath("Player")
 ControlsContainer = NodePath("UI/Controls/ControlsContainer")
-Datasets = Array[Resource]([SubResource("Resource_eb6dy"), SubResource("Resource_choun"), SubResource("Resource_85g3d"), SubResource("Resource_ya4ey")])
+Datasets = Array[Resource]([SubResource("Resource_eb6dy"), SubResource("Resource_choun"), SubResource("Resource_85g3d"), SubResource("Resource_ya4ey"), SubResource("Resource_trceg")])
 DatasetDropdown = NodePath("UI/Controls/ControlsContainer/OptionButton")
 Library = ExtResource("6_85g3d")
 CurrentTimeLabel = NodePath("UI/Controls/ControlsContainer/CurrentTime")

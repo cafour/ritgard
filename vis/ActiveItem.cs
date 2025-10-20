@@ -10,10 +10,11 @@ public record ActiveItem(
     string Id,
     IConversation Conversation,
     BPlusTree<DateTimeOffset, ActiveItemEvent> Events,
-    Vector2 Position
+    Vector2 Position,
+    int TopicId
 )
 {
-    public static ActiveItem FromConversation(IConversation conversation, Vector2 position)
+    public static ActiveItem FromConversation(IConversation conversation, Vector2 position, int topicId)
     {
         var events = new BPlusTree<DateTimeOffset, ActiveItemEvent>();
         events.InsertOrUpdate(conversation.CreatedAt, new ActiveItemEvent(conversation.CreatedAt, null));
@@ -30,7 +31,8 @@ public record ActiveItem(
             Id: conversation.Id,
             Conversation: conversation,
             Events: events,
-            Position: position
+            Position: position,
+            TopicId: topicId
         );
     }
 
