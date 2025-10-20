@@ -6,3 +6,7 @@ __pycache__/
 *.json
 out/
 .env
+
+# PBS
+ritgard.e*
+ritgard.o*

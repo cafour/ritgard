@@ -275,8 +275,8 @@ def main():
     args_parser.add_argument("--flash-attention", action="store_true")
     args_parser.add_argument("--llm-model", default="gpt-oss-120b")
     args_parser.add_argument("--embed-model", default="Qwen/Qwen3-Embedding-0.6B")
-    args_parser.add_argument("--min-cluster-size", default=5, type=float)
-    args_parser.add_argument("--min-samples", default=3, type=float)
+    args_parser.add_argument("--min-cluster-size", default=5, type=int)
+    args_parser.add_argument("--min-samples", default=3, type=int)
     args_parser.add_argument("--output", default=None)
     args = args_parser.parse_args()
 
