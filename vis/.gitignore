@@ -4,3 +4,4 @@
 nuget/
 *.binlog
 builds/
+sample/
