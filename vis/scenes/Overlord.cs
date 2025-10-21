@@ -64,9 +64,11 @@ public partial class Overlord : Node
 
     public VisualizationScope CurrentScope { get; private set; } = VisualizationScope.All;
 
+    public bool ShowOnlyPopulatedIslands { get; private set; } = false;
+
     public ActiveRepository Repo { get; private set; }
 
-    public Dictionary<string, float> Heights { get; private set; } = [];
+    public Dictionary<string, float> Heights { get; } = [];
 
     private readonly Dictionary<int, TopicIsland> topicIslands = [];
     private readonly Dictionary<string, ItemStructure> itemStructures = [];
@@ -107,18 +109,24 @@ public partial class Overlord : Node
         }
 
         UI.IssuesCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Issues);
-        UI.IssuesCheck.Pressed += () => OnScopeCheck(UI.IssuesCheck, VisualizationScope.Issues);
+        UI.IssuesCheck.Pressed += async () => await OnScopeCheck(UI.IssuesCheck, VisualizationScope.Issues);
         UI.PRsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.PullRequests);
-        UI.PRsCheck.Pressed += () => OnScopeCheck(UI.PRsCheck, VisualizationScope.PullRequests);
+        UI.PRsCheck.Pressed += async () => await OnScopeCheck(UI.PRsCheck, VisualizationScope.PullRequests);
         UI.DiscussionsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Discussions);
-        UI.DiscussionsCheck.Pressed += () => OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
+        UI.DiscussionsCheck.Pressed += async () => await OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
+        UI.OnlyPopulatedIslandsCheck.ButtonPressed = ShowOnlyPopulatedIslands;
+        UI.OnlyPopulatedIslandsCheck.Pressed += async () =>
+        {
+            ShowOnlyPopulatedIslands = UI.OnlyPopulatedIslandsCheck.IsPressed();
+            await ShowStep(CurrentStep);
+        };
 
         UI.DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
         await ShowDataset(0);
 
-        UI.CurrentStepSpinBox.ValueChanged += value => ShowStep(Mathf.FloorToInt(value));
+        UI.CurrentStepSpinBox.ValueChanged += async value => await ShowStep(Mathf.FloorToInt(value));
 
-        UI.CurrentDateTime.TextSubmitted += text =>
+        UI.CurrentDateTime.TextSubmitted += async text =>
         {
             if (DateTimeOffset.TryParseExact(
                     text,
@@ -131,7 +139,7 @@ public partial class Overlord : Node
                 var step = dateTime < Repo.MinDate ? 0
                     : dateTime >= Repo.MaxDate ? Repo.StepCount - 1
                     : Mathf.FloorToInt((dateTime - Repo.MinDate) / Repo.Step);
-                ShowStep(step);
+                await ShowStep(step);
             }
             else
             {
@@ -223,10 +231,10 @@ public partial class Overlord : Node
 
         Player.HoverChanged += OnHoverChanged;
 
-        ShowStep(0);
+        await ShowStep(0);
     }
 
-    private void ShowStep(int step)
+    private async Task ShowStep(int step)
     {
         if (step < 0)
         {
@@ -260,13 +268,20 @@ public partial class Overlord : Node
         foreach (var topicIsland in topicIslands.Values)
         {
             topicIsland.Scope = CurrentScope;
-            topicIsland.OnShowStep(0);
+            topicIsland.ShowOnlyWhenPopulated = ShowOnlyPopulatedIslands;
+        }
+
+        await Task.WhenAll(topicIslands.Values.Select(i => Task.Run(i.ComputeHeightmap)));
+
+        foreach (var topicIsland in topicIslands.Values)
+        {
+            topicIsland.UpdatePlane();
         }
 
         RefreshCurrentStepControls(step);
     }
 
-    public override void _Input(InputEvent @event)
+    public override async void _Input(InputEvent @event)
     {
         if (@event.IsAction("interact") && @event.IsPressed() && currentStructure is not null)
         {
@@ -279,19 +294,19 @@ public partial class Overlord : Node
 
         if (@event.IsAction(InputActions.LargeStepNext) && @event.IsPressed())
         {
-            ShowStep(CurrentStep + Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
+            await ShowStep(CurrentStep + Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
         }
         else if (@event.IsAction(InputActions.LargeStepPrev) && @event.IsPressed())
         {
-            ShowStep(CurrentStep - Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
+            await ShowStep(CurrentStep - Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
         }
         else if (@event.IsAction(InputActions.StepNext) && @event.IsPressed())
         {
-            ShowStep(CurrentStep + 1);
+            await ShowStep(CurrentStep + 1);
         }
         else if (@event.IsAction(InputActions.StepPrev) && @event.IsPressed())
         {
-            ShowStep(CurrentStep - 1);
+            await ShowStep(CurrentStep - 1);
         }
     }
 
@@ -553,7 +568,7 @@ public partial class Overlord : Node
     //     }
     // }
 
-    private void OnScopeCheck(CheckButton button, VisualizationScope scope)
+    private async Task OnScopeCheck(CheckButton button, VisualizationScope scope)
     {
         if (button.ButtonPressed)
         {
@@ -564,6 +579,6 @@ public partial class Overlord : Node
             CurrentScope &= ~scope;
         }
 
-        ShowStep(CurrentStep);
+        await ShowStep(CurrentStep);
     }
 }

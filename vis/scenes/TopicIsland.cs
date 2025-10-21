@@ -64,6 +64,10 @@ public partial class TopicIsland : Node3D
 
     public VisualizationScope Scope { get; set; } = VisualizationScope.All;
 
+    public bool ShowOnlyWhenPopulated { get; set; } = false;
+
+    public bool IsCompletelySubmerged { get; private set; }
+
     public override void _EnterTree()
     {
         if (Topic is null)
@@ -112,19 +116,26 @@ public partial class TopicIsland : Node3D
         }
     }
 
-    private void ComputeHeightmap()
+    public void ComputeHeightmap()
     {
         ClearHeightmap();
 
-        var windowStart = Overlord.Instance.Repo.MinDate
-            + Overlord.Instance.CurrentStep * Overlord.Instance.Repo.Step
-            - Overlord.Instance.Repo.SlidingWindow;
         var relevantItems = Overlord.Instance.Repo.Items.Values
-            .Where(i => i.TopicId == Topic.Id
-                && i.Conversation.UpdatedAt > windowStart
-                && i.Conversation.IsInScope(Scope)
-            )
+            .Where(i => i.TopicId == Topic.Id && i.Conversation.IsInScope(Scope))
             .ToImmutableArray();
+        // var windowStart = Overlord.Instance.Repo.MinDate
+        //     + Overlord.Instance.CurrentStep * Overlord.Instance.Repo.Step
+        //     - Overlord.Instance.Repo.SlidingWindow;
+        // var relevantItems = scopedItems
+        //     .Where(i => i.Conversation.UpdatedAt > windowStart)
+        //     .ToImmutableArray();
+        var windowItems = relevantItems.Where(i => Overlord.Instance.Heights[i.Id] != 0).ToImmutableArray();
+        IsCompletelySubmerged = windowItems.Length == 0;
+        if (ShowOnlyWhenPopulated && windowItems.Length == 0)
+        {
+            // nothing will be rendered, not even the beach
+            return;
+        }
 
         var coords = relevantItems.Select(i => new Coordinate(i.Position.X, i.Position.Y)).ToArray();
         var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
@@ -294,6 +305,7 @@ public partial class TopicIsland : Node3D
             for (int x = 0; x < width; ++x)
             {
                 Heightmap[y, x] = 0;
+                blurTemp[y, x] = 0;
             }
         }
     }
@@ -378,7 +390,7 @@ public partial class TopicIsland : Node3D
         _.Label.Position = _.Mesh.Position + new Vector3(halfSize.X, 2, halfSize.Y);
     }
 
-    private void UpdatePlane()
+    public void UpdatePlane()
     {
         var hh = Heightmap.GetLength(0);
         var hw = Heightmap.GetLength(1);
@@ -393,6 +405,14 @@ public partial class TopicIsland : Node3D
 
         var bytes = MemoryMarshal.AsBytes(vertices.AsSpan());
         arrayMesh.SurfaceUpdateVertexRegion(0, 0, bytes);
+
+        if (ShowOnlyWhenPopulated && IsCompletelySubmerged)
+        {
+            _.Body.Get().Visible = false;
+            return;
+        }
+
+        _.Body.Get().Visible = true;
 
         if (_.Body.Collider is not null)
         {

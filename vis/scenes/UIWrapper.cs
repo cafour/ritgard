@@ -19,5 +19,7 @@ public partial class UIWrapper : Node
 
     public CheckButton DiscussionsCheck => _.Controls.Container.DiscussionsCheck;
 
+    public CheckButton OnlyPopulatedIslandsCheck => _.Controls.Container.OnlyPopulatedIslandsCheck;
+
     public ColorRect Crosshair => _.CrosshairContainer.Crosshair;
 }

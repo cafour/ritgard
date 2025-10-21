@@ -90,3 +90,8 @@ text = "PRs"
 [node name="DiscussionsCheck" type="CheckButton" parent="Controls/Container"]
 layout_mode = 2
 text = "Discussions"
+
+[node name="OnlyPopulatedIslandsCheck" type="CheckButton" parent="Controls/Container"]
+layout_mode = 2
+text = "OnlyPopulatedIslands
+"
