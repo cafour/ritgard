@@ -3,7 +3,7 @@ using Godot;
 namespace Ritgard;
 
 [SceneTree("ui.tscn")]
-public partial class UIWrapper : Node
+public partial class UIWrapper : Control
 {
     public Label ItemDescriptionLabel => _.HoverBar.ItemDescriptionLabel;
 

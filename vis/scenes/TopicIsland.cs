@@ -59,6 +59,9 @@ public partial class TopicIsland : Node3D
     [Export]
     public Material HighlightMaterial { get; set; }
 
+    [Export]
+    public float LabelVerticalOffset { get; set; } = 6f;
+
     public bool IsHighlighted { get; set; }
 
     public byte[,] Heightmap { get; set; }
@@ -68,6 +71,8 @@ public partial class TopicIsland : Node3D
     public bool ShowOnlyWhenPopulated { get; set; } = false;
 
     public bool IsCompletelySubmerged { get; private set; }
+
+    private float maxHeight = 0f;
 
     public override void _EnterTree()
     {
@@ -124,14 +129,10 @@ public partial class TopicIsland : Node3D
         var relevantItems = Overlord.Instance.Repo.Items.Values
             .Where(i => i.TopicId == Topic.Id && i.Conversation.IsInScope(Scope))
             .ToImmutableArray();
-        // var windowStart = Overlord.Instance.Repo.MinDate
-        //     + Overlord.Instance.CurrentStep * Overlord.Instance.Repo.Step
-        //     - Overlord.Instance.Repo.SlidingWindow;
-        // var relevantItems = scopedItems
-        //     .Where(i => i.Conversation.UpdatedAt > windowStart)
-        //     .ToImmutableArray();
         var windowItems = relevantItems.Where(i => Overlord.Instance.Heights[i.Id] != 0).ToImmutableArray();
+        maxHeight = windowItems.Length == 0 ? 0 : windowItems.Max(i => Overlord.Instance.Heights[i.Id]);
         IsCompletelySubmerged = windowItems.Length == 0;
+
         if (ShowOnlyWhenPopulated && windowItems.Length == 0)
         {
             // nothing will be rendered, not even the beach
@@ -400,7 +401,7 @@ public partial class TopicIsland : Node3D
         _.Body.Get().Position = _.Mesh.Position;
         _.Label.Text = Topic.GetPreferredTitle();
         var halfSize = (Vector2)heightmapBox.Size * 0.5f;
-        _.Label.Position = _.Mesh.Position + new Vector3(halfSize.X, 2, halfSize.Y);
+        _.Label.Position = _.Mesh.Position + new Vector3(halfSize.X, LabelVerticalOffset, halfSize.Y);
     }
 
     public void UpdatePlane()
@@ -433,6 +434,8 @@ public partial class TopicIsland : Node3D
             shape.SetFaces(arrayMesh.GetFaces());
             _.Body.Collider.Shape = shape;
         }
+
+        _.Label.Position = _.Label.Position with { Y = (IsCompletelySubmerged ? 0 : LabelVerticalOffset) + maxHeight };
     }
 
     private void ComputeBlockyMesh(IEnumerable<string> itemIds)

@@ -49,6 +49,12 @@ public partial class Overlord : Node
     [Export]
     public MeshInstance3D Ocean { get; set; }
 
+    /// <summary>
+    /// Exists to prevent the ocean from being semi-transparent on clean screenshots.
+    /// </summary>
+    [Export]
+    public MeshInstance3D DeepOcean { get; set; }
+
     [Export]
     public MeshInstance3D TopBorder { get; set; }
 
@@ -60,6 +66,9 @@ public partial class Overlord : Node
 
     [Export]
     public MeshInstance3D LeftBorder { get; set; }
+
+    [Export]
+    public WorldEnvironment Environment { get; set; }
 
     public int CurrentDataset { get; set; } = -1;
 
@@ -224,8 +233,8 @@ public partial class Overlord : Node
         SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);
         UI.CurrentStepSpinBox.MaxValue = StepCount - 1;
 
-        var oceanPlane = (PlaneMesh)Ocean.Mesh;
-        oceanPlane.Size = Repo.BBox.Size;
+        ((PlaneMesh)Ocean.Mesh).Size = Repo.BBox.Size;
+        ((PlaneMesh)DeepOcean.Mesh).Size = Repo.BBox.Size + new Vector2(BorderWidth, BorderWidth);
         ((PlaneMesh)TopBorder.Mesh).Size = new Vector2(Repo.BBox.Size.X + BorderWidth * 2, BorderWidth);
         TopBorder.Position = TopBorder.Position with { Z = -Repo.BBox.Size.Y / 2 };
         ((PlaneMesh)RightBorder.Mesh).Size = new Vector2(BorderWidth, Repo.BBox.Size.Y + BorderWidth * 2);

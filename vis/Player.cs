@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Godot;
 
 namespace Ritgard;
@@ -67,7 +69,7 @@ public partial class Player : Node3D
         MovementMode.OnPhysicsProcess(delta);
     }
 
-    public override void _Input(InputEvent @event)
+    public override async void _Input(InputEvent @event)
     {
         if (@event.IsAction(InputActions.ToggleMode) && @event.IsPressed())
         {
@@ -75,8 +77,48 @@ public partial class Player : Node3D
             MovementMode = movementModes[(int)ControlMode];
             MovementMode.Activate();
         }
+        else if ((@event.IsAction(InputActions.Screenshot) || @event.IsAction(InputActions.CleanScreenshot))
+                 && @event.IsPressed())
+        {
+            await TakeScreenshot(@event.IsAction(InputActions.CleanScreenshot));
+        }
 
         MovementMode.OnInput(@event);
+    }
+
+    public async Task TakeScreenshot(bool clean)
+    {
+        var viewport = GetViewport();
+
+        Sky? originalSky = null;
+        if (clean)
+        {
+            viewport.TransparentBg = true;
+            originalSky = Overlord.Instance.Environment.Environment.Sky;
+            // Overlord.Instance.Environment.Environment.Sky = null;
+            Overlord.Instance.UI.Visible = false;
+        }
+
+
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+        var image = viewport.GetTexture().GetImage();
+        var filename =
+            $"screenshot_{Overlord.Instance.Repo.Mining.Repository.Name}_{DateTimeOffset.UtcNow:yyyy-MM-dd_HH-mm-ss}.png";
+        GD.Print($"Saving screenshot '{filename}'");
+        var error = image.SavePng(filename);
+        if (error != Error.Ok)
+        {
+            GD.PrintErr($"Could not take a screenshot. Godot returned: {error}");
+        }
+
+        if (originalSky is not null)
+        {
+            viewport.TransparentBg = false;
+            Overlord.Instance.Environment.Environment.Sky = originalSky;
+            Overlord.Instance.UI.Visible = true;
+        }
     }
 
     public void Hover(Vector2? viewportPos)

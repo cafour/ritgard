@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=23 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/item_structure.tscn" id="2_85g3d"]
@@ -41,6 +41,14 @@ subdivide_depth = 1
 transparency = 1
 albedo_color = Color(0, 0.35686275, 0.67058825, 0.78431374)
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_eb6dy"]
+size = Vector2(100, 100)
+subdivide_width = 1
+subdivide_depth = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_choun"]
+albedo_color = Color(0, 0, 0, 1)
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_ya4ey"]
 size = Vector2(110, 5)
 subdivide_width = 1
@@ -72,7 +80,7 @@ subdivide_width = 1
 subdivide_depth = 1
 center_offset = Vector3(2.5, 0, 0)
 
-[node name="Main" type="Node" node_paths=PackedStringArray("Player", "UI", "Ocean", "TopBorder", "RightBorder", "BottomBorder", "LeftBorder")]
+[node name="Main" type="Node" node_paths=PackedStringArray("Player", "UI", "Ocean", "DeepOcean", "TopBorder", "RightBorder", "BottomBorder", "LeftBorder", "Environment")]
 script = ExtResource("1_o5qli")
 ItemStructureScene = ExtResource("2_85g3d")
 TopicIslandScene = ExtResource("3_tipki")
@@ -82,10 +90,12 @@ Datasets = Array[Resource]([SubResource("Resource_eb6dy"), SubResource("Resource
 UI = NodePath("UI")
 Library = ExtResource("6_85g3d")
 Ocean = NodePath("Ocean")
+DeepOcean = NodePath("DeepOcean")
 TopBorder = NodePath("Borders/TopBorder")
 RightBorder = NodePath("Borders/RightBorder")
 BottomBorder = NodePath("Borders/BottomBorder")
 LeftBorder = NodePath("Borders/LeftBorder")
+Environment = NodePath("Environment")
 
 [node name="Player" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
@@ -118,6 +128,11 @@ directional_shadow_max_distance = 512.0
 [node name="Ocean" type="MeshInstance3D" parent="."]
 mesh = SubResource("PlaneMesh_choun")
 surface_material_override/0 = SubResource("StandardMaterial3D_ya4ey")
+
+[node name="DeepOcean" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 0)
+mesh = SubResource("PlaneMesh_eb6dy")
+surface_material_override/0 = SubResource("StandardMaterial3D_choun")
 
 [node name="Borders" type="Node" parent="."]
 

@@ -34,6 +34,7 @@ collision_mask = 0
 
 [node name="Label" type="Label3D" parent="."]
 pixel_size = 0.001
+offset = Vector2(0, 30)
 billboard = 1
 double_sided = false
 fixed_size = true
