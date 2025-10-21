@@ -51,4 +51,9 @@ public class FlyingMovementMode(Player player) : IMovementMode
     {
         Player.Hover(null);
     }
+
+    public void ResetCamera()
+    {
+        // nop
+    }
 }

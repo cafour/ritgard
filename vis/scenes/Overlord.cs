@@ -19,6 +19,7 @@ namespace Ritgard;
 public partial class Overlord : Node
 {
     public const string DateTimeFormat = "yyyy-MM-dd HH:mm";
+    public const float DefaultMaxNormalizedHeight = 42f;
 
     public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
 
@@ -76,7 +77,13 @@ public partial class Overlord : Node
 
     public bool ShowOnlyPopulatedIslands { get; private set; } = false;
 
+    public bool ShouldNormalizeHeights { get; private set; } = false;
+
+    public float MaxNormalizedHeight { get; private set; } = DefaultMaxNormalizedHeight;
+
     public ActiveRepository Repo { get; private set; }
+
+    public float CameraDistance { get; private set; } = 100f;
 
     public Dictionary<string, float> Heights { get; } = [];
 
@@ -172,6 +179,22 @@ public partial class Overlord : Node
                 RefreshCurrentStepControls(CurrentStep);
             }
         };
+
+        UI.MaxNormalizedHeightSpinBox.ValueChanged += async mnh =>
+        {
+            MaxNormalizedHeight = (float)mnh;
+            if (ShouldNormalizeHeights)
+            {
+                await ShowStep(CurrentStep);
+            }
+        };
+        UI.MaxNormalizedHeightSpinBox.Value = MaxNormalizedHeight;
+        UI.NormalizeHeightsCheck.Pressed += async () =>
+        {
+            ShouldNormalizeHeights = UI.NormalizeHeightsCheck.IsPressed();
+            await ShowStep(CurrentStep);
+        };
+        UI.NormalizeHeightsCheck.ButtonPressed = ShouldNormalizeHeights;
     }
 
     private async Task ShowDataset(int index)
@@ -192,7 +215,10 @@ public partial class Overlord : Node
 
         var dataset = Datasets[index];
         Repo = await ActiveRepository.Load(dataset);
+        CameraDistance = Mathf.Sqrt(Repo.BBox.Size.X * Repo.BBox.Size.X + Repo.BBox.Size.Y * Repo.BBox.Size.Y);
+        Player.MovementMode.ResetCamera();
         StepCount = Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / StepLength);
+
         // NB: if preset is All, we have to recompute it
         SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);
         UI.CurrentStepSpinBox.MaxValue = StepCount - 1;
@@ -268,6 +294,12 @@ public partial class Overlord : Node
         step = Math.Clamp(step, 0, StepCount - 1);
 
         var now = Repo.MinDate + StepLength * step;
+        var slidingEvents = Repo.Items.Values.ToImmutableDictionary(
+            v => v.Id,
+            v => v.Events.GetRange(now - SlidingWindowLength, now, true).Count()
+        );
+        var maxEventCount = slidingEvents.Values.Max();
+        var scale = ShouldNormalizeHeights && maxEventCount > 0 ? MaxNormalizedHeight / maxEventCount : 1f;
         foreach (var item in Repo.Items.Values)
         {
             if (!item.Conversation.IsInScope(CurrentScope))
@@ -276,8 +308,7 @@ public partial class Overlord : Node
             }
             else
             {
-                var slidingEvents = Repo.Items[item.Id].Events.GetRange(now - SlidingWindowLength, now, true);
-                Heights[item.Id] = slidingEvents.Count();
+                Heights[item.Id] = slidingEvents[item.Id] * scale;
             }
 
             itemStructures.GetValueOrDefault(item.Id)?.OnShowStep(step);
@@ -290,14 +321,14 @@ public partial class Overlord : Node
             topicIsland.ShowOnlyWhenPopulated = ShowOnlyPopulatedIslands;
         }
 
+        RefreshCurrentStepControls(step);
+
         await Task.WhenAll(topicIslands.Values.Select(i => Task.Run(i.ComputeHeightmap)));
 
         foreach (var topicIsland in topicIslands.Values)
         {
             topicIsland.UpdatePlane();
         }
-
-        RefreshCurrentStepControls(step);
     }
 
     public override async void _Input(InputEvent @event)

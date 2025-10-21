@@ -8,6 +8,8 @@ public partial class Player : Node3D
     public const float BaseHeight = 100f;
     public const float HoverReach = 4096;
 
+    public static Player Instance { get; private set; }
+
     private readonly IMovementMode[] movementModes = new IMovementMode[(int)ControlMode.Max + 1];
 
     [Export]
@@ -41,6 +43,13 @@ public partial class Player : Node3D
 
     public override void _EnterTree()
     {
+        if (Instance is not null)
+        {
+            Instance.QueueFree();
+        }
+
+        Instance = this;
+
         Camera = GetNode<Camera3D>("Camera");
         movementModes[(int)ControlMode.TopDown] = new TopDownMovementMode(this);
         movementModes[(int)ControlMode.Flying] = new FlyingMovementMode(this);

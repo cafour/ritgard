@@ -23,6 +23,7 @@ public partial class TopicIsland : Node3D
     public const int MaxHeight = 70;
     public const int SmoothRadius = 10;
     public const int StructureSafetyRange = 1;
+    public const double TriOutlierCutoff = 2.0;
 
     public static readonly ImmutableArray<Blocks> Palette =
     [
@@ -148,9 +149,21 @@ public partial class TopicIsland : Node3D
         var triTree = new KdTree<Tri>();
         if (hullTris.Count > 0)
         {
+            var triMaxSides = hullTris.Select(t => Math.Max(t.GetLength(0), Math.Max(t.GetLength(1), t.GetLength(2))))
+                .ToImmutableArray();
+            var avgTriMaxSide = triMaxSides.Average();
+            var stdDeviation = Math.Sqrt(triMaxSides.Average(l => (l - avgTriMaxSide) * (l - avgTriMaxSide)));
             for (int i = hullTris.Count - 1; i >= 0; --i)
             {
                 var tri = hullTris[i];
+                var maxSide = Math.Max(tri.GetLength(0), Math.Max(tri.GetLength(1), tri.GetLength(2)));
+                if (maxSide > avgTriMaxSide + TriOutlierCutoff * stdDeviation)
+                {
+                    tri.Remove();
+                    hullTris.RemoveAt(i);
+                    continue;
+                }
+
                 var triPolygon = tri.ToPolygon(GeometryFactory.Default);
                 var intrudingPoints = Overlord.Instance.Repo.ItemTree.Query(triPolygon.EnvelopeInternal)
                     .Where(n => n.Data.TopicId != Topic.Id && n.Data.Conversation.IsInScope(Scope))
@@ -260,6 +273,8 @@ public partial class TopicIsland : Node3D
         }
 
         GaussianBlur.Blur(Heightmap, BlurKernel, blurTemp);
+
+        // TODO: Make sure smoothing doesn't put landmass under water
 
         foreach (var item in relevantItems)
         {

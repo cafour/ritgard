@@ -8,5 +8,6 @@ public interface IMovementMode
     void OnInput(InputEvent @event);
     void Move(double delta);
     void OnPhysicsProcess(double delta);
+    void ResetCamera();
 
 }

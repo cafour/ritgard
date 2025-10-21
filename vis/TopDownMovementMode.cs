@@ -33,10 +33,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
     {
         if (@event.IsAction(InputActions.ResetCamera) && @event.IsPressed())
         {
-            Pitch = DefaultPitch;
-            Yaw = DefaultYaw;
-            RotateCamera();
-            Player.Position = new Vector3(0, BaseHeight, 0);
+            ResetCamera();
         }
 
         var step = Player.ZoomStep;
@@ -54,7 +51,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
             ZoomLevel += step;
         }
 
-        ZoomLevel = Mathf.Clamp(ZoomLevel, 0.1f, 10f);
+        ZoomLevel = Mathf.Clamp(ZoomLevel, 0.01f, 10f);
 
         if (Input.IsMouseButtonPressed(MouseButton.Left) && @event is InputEventMouseMotion pan)
         {
@@ -67,7 +64,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
         else if (Input.IsMouseButtonPressed(MouseButton.Right) && @event is InputEventMouseMotion rot)
         {
             Pitch -= rot.ScreenRelative.Y * 0.005f;
-            Pitch = Mathf.Clamp(Pitch, -Mathf.Pi / 2, -Mathf.Pi / 12);
+            Pitch = Mathf.Clamp(Pitch, -Mathf.Pi / 2, 0);
             Yaw -= rot.ScreenRelative.X * 0.005f;
             Yaw = Mathf.Wrap(Yaw, -Mathf.Pi, Mathf.Pi);
 
@@ -98,7 +95,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
             CameraBaseSize * ZoomLevel,
             Mathf.Min(1.0f, (float)delta * Player.ZoomSpeed)
         );
-        Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Player.Camera.Size);
+        // Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Overlord.Instance.CameraDistance);
     }
 
     public void OnPhysicsProcess(double delta)
@@ -106,11 +103,20 @@ public class TopDownMovementMode(Player player) : IMovementMode
         Player.Hover(Player.Camera.GetViewport().GetMousePosition());
     }
 
+    public void ResetCamera()
+    {
+        Pitch = DefaultPitch;
+        Yaw = DefaultYaw;
+        Player.Camera.Position = Vector3.Zero;
+        Player.Position = new Vector3(0, BaseHeight, 0);
+        RotateCamera();
+    }
+
     private void RotateCamera()
     {
         Player.Camera.Basis = Basis.Identity;
         Player.Camera.RotateObjectLocal(Vector3.Up, Yaw);
         Player.Camera.RotateObjectLocal(Vector3.Right, Pitch);
-        Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Player.Camera.Size);
+        Player.Camera.Position -= Player.Camera.Transform * (Vector3.Forward * Overlord.Instance.CameraDistance);
     }
 }

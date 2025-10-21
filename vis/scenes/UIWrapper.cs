@@ -23,5 +23,9 @@ public partial class UIWrapper : Node
 
     public CheckButton OnlyPopulatedIslandsCheck => _.Controls.Container.OnlyPopulatedIslandsCheck;
 
+    public CheckButton NormalizeHeightsCheck => _.Controls.Container.NormalizeHeightsCheck;
+
+    public SpinBox MaxNormalizedHeightSpinBox => _.Controls.Container.MaxNormalizedHeight;
+
     public ColorRect Crosshair => _.CrosshairContainer.Crosshair;
 }
