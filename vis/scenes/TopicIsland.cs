@@ -274,8 +274,6 @@ public partial class TopicIsland : Node3D
 
         GaussianBlur.Blur(Heightmap, BlurKernel, blurTemp);
 
-        // TODO: Make sure smoothing doesn't put landmass under water
-
         foreach (var item in relevantItems)
         {
             var height = ToByteHeight(Overlord.Instance.Heights[item.Id]);
@@ -501,13 +499,13 @@ public partial class TopicIsland : Node3D
         // _.Body.Collider.Shape = shape;
     }
 
-    private static byte ToByteHeight(float height)
+    public static byte ToByteHeight(float height)
     {
         // NB: height 0 and 1 have special meanings; 0 is invisible deep sea; 1 is shallow sea
-        return (byte)(height < 0f ? 0
-                : height == 0 ? 1
-                : Mathf.RoundToInt(height) + 2
-            );
+        var intHeight = height < 0f ? 0
+            : height == 0 ? 1
+            : Mathf.CeilToInt(height) + 2;
+        return (byte)Math.Clamp(intHeight, 0, 255);
     }
 
     private static float ToFloatHeight(byte height)

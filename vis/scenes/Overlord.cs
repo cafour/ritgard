@@ -218,6 +218,7 @@ public partial class Overlord : Node
         CameraDistance = Mathf.Sqrt(Repo.BBox.Size.X * Repo.BBox.Size.X + Repo.BBox.Size.Y * Repo.BBox.Size.Y);
         Player.MovementMode.ResetCamera();
         StepCount = Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / StepLength);
+        Heights.Clear();
 
         // NB: if preset is All, we have to recompute it
         SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);

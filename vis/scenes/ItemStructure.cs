@@ -103,8 +103,8 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         //     HasCap = Item.State == IssueState.Closed,
         //     MaxBreadth = (int)maxBreadthSlider.Value
         // };
-        var height = Mathf.RoundToInt(Overlord.Instance.Heights[Item.Id]);
-        if (height == 0)
+        var height = Overlord.Instance.Heights[Item.Id];
+        if (height <= 0)
         {
             _.Mesh.Visible = false;
             return;
@@ -144,7 +144,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         _.Mesh.Visible = true;
         Position = new Vector3(
             Position.X,
-            height,
+            Mathf.CeilToInt(height),
             Position.Z
         );
         // body.Position = new Vector3(0, Radius - 0.5f, 0);

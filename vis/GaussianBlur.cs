@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Godot;
+using Ritgard.Structures;
 
 namespace Ritgard;
 
@@ -58,8 +59,8 @@ public static class GaussianBlur
                         weightSum += w;
                     }
                 }
-
                 data[y, x] = (byte)Mathf.Clamp(Mathf.RoundToInt(sum / weightSum), 0, 255);
+                // data[y, x] = TopicIsland.ToByteHeight(sum / weightSum);
             }
         });
     }
