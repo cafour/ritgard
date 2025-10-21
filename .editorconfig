@@ -24,3 +24,13 @@ csharp_wrap_arguments_style = chop_if_long
 csharp_braces_for_ifelse = required
 csharp_align_multiline_binary_patterns = false
 csharp_align_multiline_binary_expressions_chain = false
+
+[*.py]
+ij_python_wrap_long_lines = true
+ij_python_call_parameters_wrap = on_every_item
+ij_python_method_parameters_wrap = on_every_item
+ij_python_call_parameters_right_paren_on_new_line = true
+ij_python_method_parameters_right_paren_on_new_line = true
+ij_python_align_multiline_parameters = false
+ij_python_call_parameters_new_line_after_left_paren = true
+ij_python_method_parameters_new_line_after_left_paren = true
