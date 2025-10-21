@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic.alias_generators import to_pascal
-
+from enum import Enum
 import logging
 
 log = logging.getLogger("ritgard.datatypes")
@@ -148,12 +148,54 @@ class TopicItem(BaseModel):
     topic_id: int
     probabilities: dict[int, float]
 
+class TopicModelingOptions(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
+    data_path: str
+    llm: bool
+    llm_model: str
+    embed_model: str
+    embed_labels: bool
+    embed_bodies: bool
+    embed_comments: bool
+    embed_batch_size: int
+    flash_attention: bool
+    min_cluster_size: int
+    min_samples: int
+    output: str | None
+
+class WorldSizing(Enum):
+    AUTO = "auto"
+    REPO_SIZE = "repo-size"
+    FILE_COUNT = "file-count"
+    LINE_COUNT = "line-count"
+
+class PositionAdjustmentOptions(BaseModel):
+    model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
+                              serialize_by_alias=True)
+    input_path: str
+    cell_radius: float
+    max_iterations: int
+    world_sizing: WorldSizing
+    world_sizing_ratio: float
+    world_padding: int
+    world_sizing_auto_quantile: float
+    data_path: str
+    no_adjustment: bool
+    plot_result: bool
+    output: str | None
+
+    world_scale: float | None = None
 
 class TopicModellingResult(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
                               serialize_by_alias=True)
     name: str
     owner: str
+
+    topic_modelling_options: TopicModelingOptions | None = None
+    position_adjustment_options: PositionAdjustmentOptions | None = None
+
     topics: dict[int, Topic]
     items: dict[str, TopicItem]
 

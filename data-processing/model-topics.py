@@ -106,13 +106,7 @@ def reduce_mds(embeddings):
 def use_bertopic(
         docs: list[str],
         repository: dt.Repository,
-        batch_size: int = 16,
-        use_llm: bool = False,
-        use_flash_attention: bool = False,
-        min_cluster_size: int = 5,
-        min_samples: int = 3,
-        llm_model_name: str = "gpt-oss-120b",
-        embed_model_name: str = "Qwen/Qwen3-Embedding-0.6B"
+        options: dt.TopicModelingOptions
 ):
     from sentence_transformers import SentenceTransformer
     import umap.umap_ as umap
@@ -120,22 +114,22 @@ def use_bertopic(
     embedding_model_kwargs = {
         "device_map": "auto"
     }
-    if use_flash_attention:
+    if options.flash_attention:
         log.info("Using Flash Attention 2")
         embedding_model_kwargs["dtype"] = torch.bfloat16
         embedding_model_kwargs["attn_implementation"] = "flash_attention_2"
     embedding_model = SentenceTransformer(
-        embed_model_name,
+        options.embed_model,
         model_kwargs=embedding_model_kwargs,
         tokenizer_kwargs={"padding_side": "left"},
     )
-    embeddings = embedding_model.encode(docs, show_progress_bar=True, batch_size=batch_size)
+    embeddings = embedding_model.encode(docs, show_progress_bar=True, batch_size=options.embed_batch_size)
     umap_model = umap.UMAP(
         n_neighbors=15, n_components=5, min_dist=0.0, metric="cosine", random_state=42
     )
     hdbscan_model = HDBSCAN(
-        min_cluster_size=min_cluster_size,
-        min_samples=min_samples,
+        min_cluster_size=options.min_cluster_size,
+        min_samples=options.min_samples,
         metric="euclidean",
         cluster_selection_method="eom",
         prediction_data=True,
@@ -151,7 +145,7 @@ def use_bertopic(
         # "POS": PartOfSpeech("en_core_web_sm"),
         # "MMS": MaximalMarginalRelevance(diversity=0.5)
     }
-    if use_llm:
+    if options.llm:
         api_key = os.getenv("LLM_API_KEY")
         base_url = os.getenv("LLM_BASE_URL")
         if api_key is None:
@@ -162,7 +156,7 @@ def use_bertopic(
         #     I'm not sure why I can't use `null or an empty string...
         representation_model["LLM"] = OpenAI(
             client=llm_client,
-            model=llm_model_name,
+            model=options.llm_model,
             system_prompt="You are an assistant that extracts high-level topics from software engineering conversations.",
             prompt=get_prompt(repository.topics),
             generator_kwargs={"stop": "tetřev hlušec"},
@@ -229,7 +223,7 @@ def write_topics(
         topic_model: BERTopic,
         topics: list[int],
         repository: dt.Repository,
-        output_path: str = None
+        options: dt.TopicModelingOptions
 ):
     topic_models = {}
     for topic_id in topic_model.topic_representations_.keys():
@@ -251,12 +245,14 @@ def write_topics(
         topics=topic_models,
         items=topic_items
     )
+
+    if options.output is None:
+        options.output = f"./out/topics_{repository.name}_{get_now_string()}.json"
+        log.info(f"Automatically set output path to '{options.output}'")
+    output = Path(options.output)
+    result.topic_modelling_options = options
     json = result.model_dump_json()
 
-    if output_path is None:
-        output_path = f"./out/topics_{repository.name}_{get_now_string()}.json"
-        log.info(f"Automatically set output path to '{output_path}'")
-    output = Path(output_path)
     if output.parent is not None:
         output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf8") as json_file:
@@ -280,13 +276,12 @@ def main():
     args_parser.add_argument("--min-cluster-size", default=5, type=int)
     args_parser.add_argument("--min-samples", default=3, type=int)
     args_parser.add_argument("--output", default=None)
-    args = args_parser.parse_args()
+    options = dt.TopicModelingOptions(**vars(args_parser.parse_args()))
 
     Path("./out").mkdir(exist_ok=True)
 
-    data = dt.read_mining_result(args.data_path)
-    project_name = data.repository.name
-    ids, docs = get_documents(data, args.embed_labels, args.embed_bodies, args.embed_comments)
+    data = dt.read_mining_result(options.data_path)
+    ids, docs = get_documents(data, options.embed_labels, options.embed_bodies, options.embed_comments)
 
     current_gpu = -1
     current_gpu_free_memory = 0
@@ -309,12 +304,7 @@ def main():
     topic_model, topics, positions = use_bertopic(
         docs=docs,
         repository=data.repository,
-        use_llm=args.llm,
-        use_flash_attention=args.flash_attention,
-        min_cluster_size=args.min_cluster_size,
-        min_samples=args.min_samples,
-        llm_model_name=args.llm_model,
-        embed_model_name=args.embed_model
+        options=options
     )
     write_topics(
         ids=ids,
@@ -322,7 +312,7 @@ def main():
         topic_model=topic_model,
         topics=topics,
         repository=data.repository,
-        output_path=args.output
+        options=options
     )
 
 

@@ -23,6 +23,7 @@ dependencies = [
     "beautifulsoup4>=4.14.2",
     "regex>=2025.9.18",
     "flash-attn>=2.8.3 ; sys_platform == 'linux'",
+    "pydantic-argparse>=0.10.0",
 ]
 
 [dependency-groups]
