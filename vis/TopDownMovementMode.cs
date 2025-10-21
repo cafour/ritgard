@@ -22,11 +22,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
         Input.MouseMode = Input.MouseModeEnum.Visible;
         Player.Crosshair.Visible = false;
 
-        Player.Camera.Size = CameraBaseSize * ZoomLevel;
-        Player.Camera.Projection = Camera3D.ProjectionType.Orthogonal;
-        RotateCamera();
-
-        Player.Position = Player.Position with { Y = BaseHeight };
+        ResetCamera();
     }
 
     public void OnInput(InputEvent @event)
@@ -107,6 +103,8 @@ public class TopDownMovementMode(Player player) : IMovementMode
     {
         Pitch = DefaultPitch;
         Yaw = DefaultYaw;
+        ZoomLevel = 1f;
+        Player.Camera.Size = CameraBaseSize * ZoomLevel;
         Player.Camera.Position = Vector3.Zero;
         Player.Position = new Vector3(0, BaseHeight, 0);
         RotateCamera();

@@ -42,7 +42,7 @@ public static class ConversationExtensions
         {
             Issue i => i.State == IssueState.Closed,
             PullRequest pr => pr.State == IssueState.Closed,
-            Discussion d => d.State == IssueState.Closed,
+            Discussion d => d.State == IssueState.Closed || d.AnswerChosenAt is not null,
             _ => throw new NotImplementedException()
         };
     }

@@ -9,5 +9,8 @@ public enum SlidingWindowPreset
     Month,
     Quarter,
     HalfYear,
-    Year
+    Year,
+    YearAndHalf,
+    TwentyMonths,
+    TwoYears,
 }

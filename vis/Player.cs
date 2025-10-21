@@ -24,7 +24,7 @@ public partial class Player : Node3D
     public float PanSpeed { get; set; } = 1f;
 
     [Export]
-    public float ZoomStep { get; set; } = 0.05f;
+    public float ZoomStep { get; set; } = 0.025f;
 
     [Export]
     public float ZoomSpeed { get; set; } = 10f;
