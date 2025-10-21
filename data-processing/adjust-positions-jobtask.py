@@ -5,9 +5,11 @@ import argparse
 import logging
 from pathlib import Path
 from scipy.spatial import ConvexHull
+from joblib import Parallel, delayed
 import datatypes as dt
 import matplotlib.pyplot as plt
 from enum import Enum
+
 from utils import get_now_string
 
 PROGRAM_NAME = "ritgard." + Path(__file__).stem
@@ -36,7 +38,8 @@ def adjust_positions(
         bbox=None,
         max_iterations=500,
         step_size=0.1,
-        tolerance=1e-3
+        tolerance=1e-3,
+        n_jobs=-1  # use all CPUs by default
 ):
     points = points.copy().astype(float)
     point_count = len(points)
@@ -52,14 +55,14 @@ def adjust_positions(
         displacements = np.zeros_like(points)
         max_overlap = 0.0
 
-        for point_index in range(point_count):
+        def compute_displacement(point_index):
             pi = points[point_index]
             ri = radii[point_index]
             search_r = ri + max_r
+            local_disp = np.zeros_like(pi)
+            local_max_overlap = 0.0
 
-            # Query neighbors within search_r
             neighbor_indices = tree.query_radius(np.reshape(pi, (1, -1)), r=search_r)
-
             for neighbor_index in neighbor_indices[0]:
                 if neighbor_index <= point_index:
                     continue
@@ -71,44 +74,55 @@ def adjust_positions(
 
                 if min_dist > dist > 1e-8:
                     overlap = min_dist - dist
-                    max_overlap = max(max_overlap, overlap)
+                    local_max_overlap = max(local_max_overlap, overlap)
 
                     direction = delta / dist
-
                     move = 0.5 * overlap * direction
-                    displacements[point_index] -= move
-                    displacements[neighbor_index] += move
+                    local_disp -= move
+                    # Return the reverse move to be added to neighbor later
+                    yield neighbor_index, move, local_disp, local_max_overlap
 
+            # Boundary box handling
             if bbox is not None:
-                r = radii[point_index]
+                r = ri
                 if pi[0] - r < bbox[0, 0]:
-                    # x too small
                     overstep = bbox[0, 0] - (pi[0] - r)
-                    displacements[point_index, 0] += min(r, overstep)
-                if pi[0] + r> bbox[1, 0]:
-                    # x too large
+                    local_disp[0] += min(r, overstep)
+                if pi[0] + r > bbox[1, 0]:
                     overstep = (pi[0] + r) - bbox[1, 0]
-                    displacements[point_index, 0] -= min(r, overstep)
-                if pi[1] - r< bbox[0, 1]:
-                    # y too small
+                    local_disp[0] -= min(r, overstep)
+                if pi[1] - r < bbox[0, 1]:
                     overstep = bbox[0, 1] - (pi[1] - r)
-                    displacements[point_index, 1] += min(r, overstep)
-                if pi[1] + r> bbox[1, 1]:
-                    # y too large
+                    local_disp[1] += min(r, overstep)
+                if pi[1] + r > bbox[1, 1]:
                     overstep = (pi[1] + r) - bbox[1, 1]
-                    displacements[point_index, 1] -= min(r, overstep)
+                    local_disp[1] -= min(r, overstep)
+
+            yield point_index, np.zeros_like(pi), local_disp, local_max_overlap
+
+        # Run all computations in parallel
+        results = Parallel(n_jobs=n_jobs, prefer="threads")(
+            delayed(list)(compute_displacement(i)) for i in range(point_count)
+        )
+
+        # Aggregate results
+        for res_list in results:
+            for neighbor_index, neighbor_move, self_move, overlap_val in res_list:
+                if np.any(neighbor_move):
+                    displacements[neighbor_index] += neighbor_move
+                displacements[neighbor_index] += self_move
+                max_overlap = max(max_overlap, overlap_val)
 
         points += step_size * displacements
 
         if max_overlap < tolerance:
             log.info(f"Overlap adjustments done in {it} iterations; max_overlap {max_overlap:.6f}")
             break
-        # for point_index in range(point_count):
-        #     pi = points[point_index]
 
     else:
         log.info(
-            f"Overlap adjustments reached {max_iterations} iterations, the maximum; final overlap {max_overlap:.6f}")
+            f"Overlap adjustments reached {max_iterations} iterations; final overlap {max_overlap:.6f}"
+        )
 
     return points
 

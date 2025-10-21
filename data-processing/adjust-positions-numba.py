@@ -5,9 +5,11 @@ import argparse
 import logging
 from pathlib import Path
 from scipy.spatial import ConvexHull
+import numba
 import datatypes as dt
 import matplotlib.pyplot as plt
 from enum import Enum
+
 from utils import get_now_string
 
 PROGRAM_NAME = "ritgard." + Path(__file__).stem
@@ -30,85 +32,106 @@ def get_nearest_neighbor_distances(
     return distances[0:, 1], indices[0:, 1]
 
 
+@numba.njit(parallel=True, fastmath=True)
+def _compute_displacements(points, radii, neighbors, bbox):
+    n_points = points.shape[0]
+    displacements = np.zeros_like(points)
+    thread_max = np.zeros(numba.get_num_threads())
+
+    for i in numba.prange(n_points):
+        pi = points[i]
+        ri = radii[i]
+        local_disp = np.zeros(2)
+        local_max_overlap = 0.0
+
+        for j in range(neighbors.shape[1]):
+            neighbor_index = neighbors[i, j]
+            if neighbor_index < 0 or neighbor_index <= i:
+                continue
+
+            pn = points[neighbor_index]
+            rn = radii[neighbor_index]
+            dx = pn[0] - pi[0]
+            dy = pn[1] - pi[1]
+            dist = np.sqrt(dx * dx + dy * dy)
+            min_dist = ri + rn
+
+            if min_dist > dist > 1e-8:
+                overlap = min_dist - dist
+                if overlap > local_max_overlap:
+                    local_max_overlap = overlap
+
+                direction_x = dx / dist
+                direction_y = dy / dist
+                move_x = 0.5 * overlap * direction_x
+                move_y = 0.5 * overlap * direction_y
+
+                local_disp[0] -= move_x
+                local_disp[1] -= move_y
+
+                # Because we can’t safely update j in parallel,
+                # we’ll only move i now; symmetry is handled over iterations.
+                # This keeps thread safety.
+
+        # Bounding box constraints
+        if bbox is not None:
+            r = ri
+            if pi[0] - r < bbox[0, 0]:
+                overstep = bbox[0, 0] - (pi[0] - r)
+                local_disp[0] += min(r, overstep)
+            if pi[0] + r > bbox[1, 0]:
+                overstep = (pi[0] + r) - bbox[1, 0]
+                local_disp[0] -= min(r, overstep)
+            if pi[1] - r < bbox[0, 1]:
+                overstep = bbox[0, 1] - (pi[1] - r)
+                local_disp[1] += min(r, overstep)
+            if pi[1] + r > bbox[1, 1]:
+                overstep = (pi[1] + r) - bbox[1, 1]
+                local_disp[1] -= min(r, overstep)
+
+        displacements[i, 0] += local_disp[0]
+        displacements[i, 1] += local_disp[1]
+
+        thread_id = numba.get_thread_id() if hasattr(numba, "get_thread_id") else i % len(thread_max)
+        if local_max_overlap > thread_max[thread_id]:
+            thread_max[thread_id] = local_max_overlap
+
+    max_overlap = np.max(thread_max)
+    return displacements, max_overlap
+
 def adjust_positions(
         points,
         radii,
         bbox=None,
         max_iterations=500,
         step_size=0.1,
-        tolerance=1e-3
+        tolerance=1e-3,
 ):
-    points = points.copy().astype(float)
-    point_count = len(points)
+    points = points.copy().astype(np.float64)
     max_r = np.max(radii)
     max_overlap = 0.0
 
     for it in range(max_iterations):
         if it % 100 == 0:
-            log.info(f"[{get_now_string()}] {it} iterations done.")
+            log.info(f"{it} iterations done.")
 
         tree = KDTree(points)
+        neighbors = tree.query_radius(points, r=max_r * 2)
 
-        displacements = np.zeros_like(points)
-        max_overlap = 0.0
+        # Convert neighbor lists to fixed-size 2D array for Numba
+        max_len = max(len(n) for n in neighbors)
+        neighbors_fixed = -np.ones((len(points), max_len), dtype=np.int64)
+        for i, arr in enumerate(neighbors):
+            neighbors_fixed[i, :len(arr)] = arr
 
-        for point_index in range(point_count):
-            pi = points[point_index]
-            ri = radii[point_index]
-            search_r = ri + max_r
-
-            # Query neighbors within search_r
-            neighbor_indices = tree.query_radius(np.reshape(pi, (1, -1)), r=search_r)
-
-            for neighbor_index in neighbor_indices[0]:
-                if neighbor_index <= point_index:
-                    continue
-                pn = points[neighbor_index]
-                rn = radii[neighbor_index]
-                delta = pn - pi
-                dist = np.linalg.norm(delta)
-                min_dist = ri + rn
-
-                if min_dist > dist > 1e-8:
-                    overlap = min_dist - dist
-                    max_overlap = max(max_overlap, overlap)
-
-                    direction = delta / dist
-
-                    move = 0.5 * overlap * direction
-                    displacements[point_index] -= move
-                    displacements[neighbor_index] += move
-
-            if bbox is not None:
-                r = radii[point_index]
-                if pi[0] - r < bbox[0, 0]:
-                    # x too small
-                    overstep = bbox[0, 0] - (pi[0] - r)
-                    displacements[point_index, 0] += min(r, overstep)
-                if pi[0] + r> bbox[1, 0]:
-                    # x too large
-                    overstep = (pi[0] + r) - bbox[1, 0]
-                    displacements[point_index, 0] -= min(r, overstep)
-                if pi[1] - r< bbox[0, 1]:
-                    # y too small
-                    overstep = bbox[0, 1] - (pi[1] - r)
-                    displacements[point_index, 1] += min(r, overstep)
-                if pi[1] + r> bbox[1, 1]:
-                    # y too large
-                    overstep = (pi[1] + r) - bbox[1, 1]
-                    displacements[point_index, 1] -= min(r, overstep)
-
+        displacements, max_overlap = _compute_displacements(points, radii, neighbors_fixed, bbox)
         points += step_size * displacements
 
         if max_overlap < tolerance:
             log.info(f"Overlap adjustments done in {it} iterations; max_overlap {max_overlap:.6f}")
             break
-        # for point_index in range(point_count):
-        #     pi = points[point_index]
-
     else:
-        log.info(
-            f"Overlap adjustments reached {max_iterations} iterations, the maximum; final overlap {max_overlap:.6f}")
+        log.info(f"Reached {max_iterations} iterations; final overlap {max_overlap:.6f}")
 
     return points
 

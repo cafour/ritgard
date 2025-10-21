@@ -12,6 +12,7 @@ class DocumentItemComment(BaseModel):
 
     body: str | None = None
     plain_text: str | None = None
+    created_at: str | None = None
 
 
 class DocumentItem(BaseModel):
