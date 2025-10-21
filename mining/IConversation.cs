@@ -35,4 +35,15 @@ public static class ConversationExtensions
 
         return self.Comments.Max(i => i.UpdatedAt);
     }
+
+    public static bool IsClosed(this IConversation self)
+    {
+        return self switch
+        {
+            Issue i => i.State == IssueState.Closed,
+            PullRequest pr => pr.State == IssueState.Closed,
+            Discussion d => d.State == IssueState.Closed,
+            _ => throw new NotImplementedException()
+        };
+    }
 }

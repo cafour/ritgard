@@ -20,6 +20,7 @@ public partial class UIWrapper : Control
     public CheckButton PRsCheck => _.Controls.Container.PRsCheck;
 
     public CheckButton DiscussionsCheck => _.Controls.Container.DiscussionsCheck;
+    public CheckButton StubsCheck => _.Controls.Container.StubsCheck;
 
     public CheckButton OnlyPopulatedIslandsCheck => _.Controls.Container.OnlyPopulatedIslandsCheck;
 

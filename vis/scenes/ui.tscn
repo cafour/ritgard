@@ -115,6 +115,10 @@ text = "PRs"
 layout_mode = 2
 text = "Discussions"
 
+[node name="StubsCheck" type="CheckButton" parent="Controls/Container"]
+layout_mode = 2
+text = "Stubs"
+
 [node name="OnlyPopulatedIslandsCheck" type="CheckButton" parent="Controls/Container"]
 layout_mode = 2
 text = "OnlyPopulatedIslands

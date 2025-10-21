@@ -20,6 +20,8 @@ public partial class Overlord : Node
 {
     public const string DateTimeFormat = "yyyy-MM-dd HH:mm";
     public const float DefaultMaxNormalizedHeight = 42f;
+    public const string DefaultHint = "Hover over a structure to see its description...";
+    public const float BorderWidth = 5f;
 
     public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
 
@@ -84,6 +86,8 @@ public partial class Overlord : Node
 
     public int StepCount { get; private set; }
 
+    public bool ShowClosedAsStubs { get; private set; } = true;
+
     public bool ShowOnlyPopulatedIslands { get; private set; } = false;
 
     public bool ShouldNormalizeHeights { get; private set; } = false;
@@ -105,13 +109,6 @@ public partial class Overlord : Node
     private Texture2D topicIdTexture;
     private Texture2D itemIdTexture;
 
-    public const float ItemRadius = 256.0f;
-    public const float StructureRadius = 10f;
-    public const int HeightmapSize = 1024;
-    public const string DefaultHint = "Hover over a structure to see its description...";
-    public const byte MaxTerrainHeight = 75;
-    public const float BorderWidth = 5f;
-
     public override void _EnterTree()
     {
         if (Instance is not null)
@@ -128,82 +125,9 @@ public partial class Overlord : Node
 
     public override async void _Ready()
     {
-        UI.ItemDescriptionLabel.Text = DefaultHint;
-        for (int i = 0; i < Datasets.Count; ++i)
-        {
-            UI.DatasetDropdown.AddItem(Datasets[i].Name, i);
-        }
+        BindUserInterface();
 
-        foreach (var name in Enum.GetNames<SlidingWindowPreset>())
-        {
-            UI.SlidingWindowDropdown.AddItem(name, (int)Enum.Parse<SlidingWindowPreset>(name));
-        }
-
-        UI.SlidingWindowDropdown.ItemSelected += async i =>
-        {
-            var name = UI.SlidingWindowDropdown.GetItemText((int)i);
-            var preset = Enum.Parse<SlidingWindowPreset>(name);
-            SlidingWindowLength = GetSlidingWindowLength(preset);
-
-            await ShowStep(CurrentStep);
-        };
-        UI.SlidingWindowDropdown.Selected = UI.SlidingWindowDropdown.GetItemIndex((int)SlidingWindowPreset);
-
-        UI.IssuesCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Issues);
-        UI.IssuesCheck.Pressed += async () => await OnScopeCheck(UI.IssuesCheck, VisualizationScope.Issues);
-        UI.PRsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.PullRequests);
-        UI.PRsCheck.Pressed += async () => await OnScopeCheck(UI.PRsCheck, VisualizationScope.PullRequests);
-        UI.DiscussionsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Discussions);
-        UI.DiscussionsCheck.Pressed +=
-            async () => await OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
-        UI.OnlyPopulatedIslandsCheck.ButtonPressed = ShowOnlyPopulatedIslands;
-        UI.OnlyPopulatedIslandsCheck.Pressed += async () =>
-        {
-            ShowOnlyPopulatedIslands = UI.OnlyPopulatedIslandsCheck.IsPressed();
-            await ShowStep(CurrentStep);
-        };
-
-        UI.DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
         await ShowDataset(0);
-
-        UI.CurrentStepSpinBox.ValueChanged += async value => await ShowStep(Mathf.FloorToInt(value));
-
-        UI.CurrentDateTime.TextSubmitted += async text =>
-        {
-            if (DateTimeOffset.TryParseExact(
-                    text,
-                    [DateTimeFormat, "yyyy-MM-dd"],
-                    formatProvider: null,
-                    styles: DateTimeStyles.AssumeUniversal,
-                    result: out var dateTime
-                ))
-            {
-                var step = dateTime < Repo.MinDate ? 0
-                    : dateTime >= Repo.MaxDate ? StepCount - 1
-                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / StepLength);
-                await ShowStep(step);
-            }
-            else
-            {
-                RefreshCurrentStepControls(CurrentStep);
-            }
-        };
-
-        UI.MaxNormalizedHeightSpinBox.ValueChanged += async mnh =>
-        {
-            MaxNormalizedHeight = (float)mnh;
-            if (ShouldNormalizeHeights)
-            {
-                await ShowStep(CurrentStep);
-            }
-        };
-        UI.MaxNormalizedHeightSpinBox.Value = MaxNormalizedHeight;
-        UI.NormalizeHeightsCheck.Pressed += async () =>
-        {
-            ShouldNormalizeHeights = UI.NormalizeHeightsCheck.IsPressed();
-            await ShowStep(CurrentStep);
-        };
-        UI.NormalizeHeightsCheck.ButtonPressed = ShouldNormalizeHeights;
     }
 
     private async Task ShowDataset(int index)
@@ -653,6 +577,92 @@ public partial class Overlord : Node
             SlidingWindowPreset.HalfYear => TimeSpan.FromDays(180),
             SlidingWindowPreset.Year => TimeSpan.FromDays(365),
             _ => throw new NotImplementedException()
+        };
+    }
+
+    private void BindUserInterface()
+    {
+        UI.ItemDescriptionLabel.Text = DefaultHint;
+        for (int i = 0; i < Datasets.Count; ++i)
+        {
+            UI.DatasetDropdown.AddItem(Datasets[i].Name, i);
+        }
+
+        foreach (var name in Enum.GetNames<SlidingWindowPreset>())
+        {
+            UI.SlidingWindowDropdown.AddItem(name, (int)Enum.Parse<SlidingWindowPreset>(name));
+        }
+
+        UI.SlidingWindowDropdown.ItemSelected += async i =>
+        {
+            var name = UI.SlidingWindowDropdown.GetItemText((int)i);
+            var preset = Enum.Parse<SlidingWindowPreset>(name);
+            SlidingWindowLength = GetSlidingWindowLength(preset);
+
+            await ShowStep(CurrentStep);
+        };
+        UI.SlidingWindowDropdown.Selected = UI.SlidingWindowDropdown.GetItemIndex((int)SlidingWindowPreset);
+
+        UI.IssuesCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Issues);
+        UI.IssuesCheck.Pressed += async () => await OnScopeCheck(UI.IssuesCheck, VisualizationScope.Issues);
+        UI.PRsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.PullRequests);
+        UI.PRsCheck.Pressed += async () => await OnScopeCheck(UI.PRsCheck, VisualizationScope.PullRequests);
+        UI.DiscussionsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Discussions);
+        UI.DiscussionsCheck.Pressed +=
+            async () => await OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
+        UI.OnlyPopulatedIslandsCheck.ButtonPressed = ShowOnlyPopulatedIslands;
+        UI.OnlyPopulatedIslandsCheck.Pressed += async () =>
+        {
+            ShowOnlyPopulatedIslands = UI.OnlyPopulatedIslandsCheck.IsPressed();
+            await ShowStep(CurrentStep);
+        };
+
+        UI.DatasetDropdown.ItemSelected += async i => await ShowDataset((int)i);
+
+        UI.CurrentStepSpinBox.ValueChanged += async value => await ShowStep(Mathf.FloorToInt(value));
+
+        UI.CurrentDateTime.TextSubmitted += async text =>
+        {
+            if (DateTimeOffset.TryParseExact(
+                    text,
+                    [DateTimeFormat, "yyyy-MM-dd"],
+                    formatProvider: null,
+                    styles: DateTimeStyles.AssumeUniversal,
+                    result: out var dateTime
+                ))
+            {
+                var step = dateTime < Repo.MinDate ? 0
+                    : dateTime >= Repo.MaxDate ? StepCount - 1
+                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / StepLength);
+                await ShowStep(step);
+            }
+            else
+            {
+                RefreshCurrentStepControls(CurrentStep);
+            }
+        };
+
+        UI.MaxNormalizedHeightSpinBox.ValueChanged += async mnh =>
+        {
+            MaxNormalizedHeight = (float)mnh;
+            if (ShouldNormalizeHeights)
+            {
+                await ShowStep(CurrentStep);
+            }
+        };
+        UI.MaxNormalizedHeightSpinBox.Value = MaxNormalizedHeight;
+        UI.NormalizeHeightsCheck.Pressed += async () =>
+        {
+            ShouldNormalizeHeights = UI.NormalizeHeightsCheck.IsPressed();
+            await ShowStep(CurrentStep);
+        };
+        UI.NormalizeHeightsCheck.ButtonPressed = ShouldNormalizeHeights;
+
+        UI.StubsCheck.ButtonPressed = ShowClosedAsStubs;
+        UI.StubsCheck.Pressed += async () =>
+        {
+            ShowClosedAsStubs = UI.StubsCheck.ButtonPressed;
+            await ShowStep(CurrentStep);
         };
     }
 }

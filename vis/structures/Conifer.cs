@@ -28,7 +28,7 @@ public sealed class Conifer : IStructure
             Vector3I.Up * (TrunkHeight - 1),
             coneHeight,
             CrownBreadth,
-            Blocks.ConiferLeaves
+            Blocks.Leaves01
         );
     }
 

@@ -20,5 +20,8 @@ public enum Blocks : ulong
     Vis05 = 15,
     Vis06 = 16,
     Vis07 = 17,
-    Vis08 = 18
+    Vis08 = 18,
+    Leaves01 = 19,
+    Leaves02 = 20,
+    Leaves03 = 21
 }

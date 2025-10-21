@@ -17,6 +17,7 @@ public record Discussion(
     DateTimeOffset? PublishedAt,
     DateTimeOffset? LastEditedAt,
     DateTimeOffset? AnswerChosenAt,
+    IssueState State,
     ImmutableArray<string> Labels,
     int CommentCount,
     ImmutableArray<Comment> Comments

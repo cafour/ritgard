@@ -31,6 +31,7 @@ query DiscussionQuery (
                     lastEditedAt
                     updatedAt
                     url
+                    closed
                     answerChosenAt
                     category {
                         name

@@ -110,25 +110,27 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
             return;
         }
 
-        IStructure structure = Item.Conversation switch
-        {
-            Issue => new Conifer
+        IStructure structure = Overlord.Instance.ShowClosedAsStubs && Item.Conversation.IsClosed()
+            ? new Stub { TrunkHeight = TrunkHeight }
+            : Item.Conversation switch
             {
-                TrunkHeight = TrunkHeight,
-                CrownBreadth = Radius
-            },
-            PullRequest => new Broadleaf
-            {
-                TrunkHeight = TrunkHeight,
-                CrownBreadth = Radius
-            },
-            Discussion => new Acacia
-            {
-                TrunkHeight = TrunkHeight,
-                CrownBreadth = Radius
-            },
-            _ => throw new NotSupportedException()
-        };
+                Issue => new Conifer
+                {
+                    TrunkHeight = TrunkHeight,
+                    CrownBreadth = Radius
+                },
+                PullRequest => new Broadleaf
+                {
+                    TrunkHeight = TrunkHeight,
+                    CrownBreadth = Radius
+                },
+                Discussion => new CubeTree()
+                {
+                    TrunkHeight = TrunkHeight,
+                    CrownBreadth = Radius
+                },
+                _ => throw new NotSupportedException()
+            };
 
 
         var (min, max) = structure.Measure();

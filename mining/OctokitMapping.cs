@@ -371,6 +371,7 @@ public static class OctokitMapping
             PublishedAt: value.PublishedAt,
             LastEditedAt: value.LastEditedAt,
             AnswerChosenAt: value.AnswerChosenAt,
+            State: value.Closed ? IssueState.Closed : IssueState.Open,
             Labels:
             [
                 ..value.Labels?.Edges?
