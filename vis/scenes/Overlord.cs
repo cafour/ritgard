@@ -20,6 +20,8 @@ public partial class Overlord : Node
 {
     public const string DateTimeFormat = "yyyy-MM-dd HH:mm";
 
+    public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
+
     public static Overlord Instance { get; private set; }
 
     [Export]
@@ -63,6 +65,14 @@ public partial class Overlord : Node
     public int CurrentStep { get; private set; }
 
     public VisualizationScope CurrentScope { get; private set; } = VisualizationScope.All;
+
+    public SlidingWindowPreset SlidingWindowPreset { get; private set; } = SlidingWindowPreset.Month;
+
+    public TimeSpan SlidingWindowLength { get; private set; }
+
+    public TimeSpan StepLength { get; private set; } = DefaultStep;
+
+    public int StepCount { get; private set; }
 
     public bool ShowOnlyPopulatedIslands { get; private set; } = false;
 
@@ -108,12 +118,28 @@ public partial class Overlord : Node
             UI.DatasetDropdown.AddItem(Datasets[i].Name, i);
         }
 
+        foreach (var name in Enum.GetNames<SlidingWindowPreset>())
+        {
+            UI.SlidingWindowDropdown.AddItem(name, (int)Enum.Parse<SlidingWindowPreset>(name));
+        }
+
+        UI.SlidingWindowDropdown.ItemSelected += async i =>
+        {
+            var name = UI.SlidingWindowDropdown.GetItemText((int)i);
+            var preset = Enum.Parse<SlidingWindowPreset>(name);
+            SlidingWindowLength = GetSlidingWindowLength(preset);
+
+            await ShowStep(CurrentStep);
+        };
+        UI.SlidingWindowDropdown.Selected = UI.SlidingWindowDropdown.GetItemIndex((int)SlidingWindowPreset);
+
         UI.IssuesCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Issues);
         UI.IssuesCheck.Pressed += async () => await OnScopeCheck(UI.IssuesCheck, VisualizationScope.Issues);
         UI.PRsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.PullRequests);
         UI.PRsCheck.Pressed += async () => await OnScopeCheck(UI.PRsCheck, VisualizationScope.PullRequests);
         UI.DiscussionsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Discussions);
-        UI.DiscussionsCheck.Pressed += async () => await OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
+        UI.DiscussionsCheck.Pressed +=
+            async () => await OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
         UI.OnlyPopulatedIslandsCheck.ButtonPressed = ShowOnlyPopulatedIslands;
         UI.OnlyPopulatedIslandsCheck.Pressed += async () =>
         {
@@ -137,8 +163,8 @@ public partial class Overlord : Node
                 ))
             {
                 var step = dateTime < Repo.MinDate ? 0
-                    : dateTime >= Repo.MaxDate ? Repo.StepCount - 1
-                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / Repo.Step);
+                    : dateTime >= Repo.MaxDate ? StepCount - 1
+                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / StepLength);
                 await ShowStep(step);
             }
             else
@@ -166,7 +192,10 @@ public partial class Overlord : Node
 
         var dataset = Datasets[index];
         Repo = await ActiveRepository.Load(dataset);
-        UI.CurrentStepSpinBox.MaxValue = Repo.StepCount - 1;
+        StepCount = Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / StepLength);
+        // NB: if preset is All, we have to recompute it
+        SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);
+        UI.CurrentStepSpinBox.MaxValue = StepCount - 1;
 
         var oceanPlane = (PlaneMesh)Ocean.Mesh;
         oceanPlane.Size = Repo.BBox.Size;
@@ -236,19 +265,9 @@ public partial class Overlord : Node
 
     private async Task ShowStep(int step)
     {
-        if (step < 0)
-        {
-            GD.PushWarning($"There is nothing to show before '{Repo.MinDate}'.");
-            return;
-        }
+        step = Math.Clamp(step, 0, StepCount - 1);
 
-        if (step >= Repo.StepCount)
-        {
-            GD.PushWarning($"Cannot show step {step} because there are only {Repo.StepCount} steps.");
-            return;
-        }
-
-        var now = Repo.MinDate + Repo.Step * step;
+        var now = Repo.MinDate + StepLength * step;
         foreach (var item in Repo.Items.Values)
         {
             if (!item.Conversation.IsInScope(CurrentScope))
@@ -257,7 +276,7 @@ public partial class Overlord : Node
             }
             else
             {
-                var slidingEvents = Repo.Items[item.Id].Events.GetRange(now - Repo.SlidingWindow, now, true);
+                var slidingEvents = Repo.Items[item.Id].Events.GetRange(now - SlidingWindowLength, now, true);
                 Heights[item.Id] = slidingEvents.Count();
             }
 
@@ -294,11 +313,11 @@ public partial class Overlord : Node
 
         if (@event.IsAction(InputActions.LargeStepNext) && @event.IsPressed())
         {
-            await ShowStep(CurrentStep + Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
+            await ShowStep(CurrentStep + Mathf.RoundToInt(SlidingWindowLength / StepLength));
         }
         else if (@event.IsAction(InputActions.LargeStepPrev) && @event.IsPressed())
         {
-            await ShowStep(CurrentStep - Mathf.RoundToInt(Repo.SlidingWindow / Repo.Step));
+            await ShowStep(CurrentStep - Mathf.RoundToInt(SlidingWindowLength / StepLength));
         }
         else if (@event.IsAction(InputActions.StepNext) && @event.IsPressed())
         {
@@ -461,7 +480,7 @@ public partial class Overlord : Node
                     }
                 }
 
-                var now = Repo.MinDate + CurrentStep * Repo.Step;
+                var now = Repo.MinDate + CurrentStep * StepLength;
                 UI.ItemDescriptionLabel.Text =
                     $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
                 break;
@@ -528,7 +547,7 @@ public partial class Overlord : Node
 
     private void RefreshCurrentStepControls(int step)
     {
-        var now = Repo.MinDate + Repo.Step * step;
+        var now = Repo.MinDate + StepLength * step;
         CurrentStep = step;
         UI.CurrentStepSpinBox.SetValueNoSignal(step);
         UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
@@ -580,5 +599,19 @@ public partial class Overlord : Node
         }
 
         await ShowStep(CurrentStep);
+    }
+
+    private TimeSpan GetSlidingWindowLength(SlidingWindowPreset preset)
+    {
+        return preset switch
+        {
+            SlidingWindowPreset.All => StepCount * StepLength,
+            SlidingWindowPreset.Week => TimeSpan.FromDays(7),
+            SlidingWindowPreset.Month => TimeSpan.FromDays(30),
+            SlidingWindowPreset.Quarter => TimeSpan.FromDays(120),
+            SlidingWindowPreset.HalfYear => TimeSpan.FromDays(180),
+            SlidingWindowPreset.Year => TimeSpan.FromDays(365),
+            _ => throw new NotImplementedException()
+        };
     }
 }

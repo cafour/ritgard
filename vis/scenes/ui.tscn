@@ -67,8 +67,23 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_i2pvy")
 [node name="Container" type="VBoxContainer" parent="Controls"]
 layout_mode = 2
 
+[node name="DatasetLabel" type="Label" parent="Controls/Container"]
+layout_mode = 2
+text = "Dataset"
+
 [node name="DatasetDropdown" type="OptionButton" parent="Controls/Container"]
 layout_mode = 2
+
+[node name="SlidingWindowLabel" type="Label" parent="Controls/Container"]
+layout_mode = 2
+text = "SlidingWindow"
+
+[node name="SlidingWindowDropdown" type="OptionButton" parent="Controls/Container"]
+layout_mode = 2
+
+[node name="CurrentStepLabel" type="Label" parent="Controls/Container"]
+layout_mode = 2
+text = "CurrentStep"
 
 [node name="CurrentStep" type="SpinBox" parent="Controls/Container"]
 layout_mode = 2

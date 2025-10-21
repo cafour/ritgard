@@ -10,9 +10,6 @@ namespace Ritgard;
 
 public class ActiveRepository
 {
-    public static readonly TimeSpan DefaultSlidingWindow = TimeSpan.FromDays(30);
-    public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
-
     public DatasetInfo Dataset { get; private set; }
 
     public MiningResult Mining { get; private set; }
@@ -23,10 +20,6 @@ public class ActiveRepository
 
     public KdTree<ActiveItem> ItemTree { get; private set; }
 
-    public TimeSpan SlidingWindow { get; private set; } = DefaultSlidingWindow;
-
-    public TimeSpan Step { get; private set; } = DefaultStep;
-
     public DateTimeOffset MinDate { get; private set; }
 
     public DateTimeOffset MaxDate { get; private set; }
@@ -34,8 +27,6 @@ public class ActiveRepository
     public TimeSpan AvgIssueLength { get; private set; }
 
     public Rect2 BBox { get; private set; }
-
-    public int StepCount { get; private set; }
 
     public static async Task<ActiveRepository> Load(
         DatasetInfo dataset,
@@ -77,8 +68,6 @@ public class ActiveRepository
                     )
                 )
         };
-        repo.SlidingWindow = slidingWindow ?? repo.SlidingWindow;
-        repo.Step = step ?? repo.Step;
         repo.MaxDate = Ritgard.Mining.Utils.Max(
             mining.Repository.UpdatedAt ?? default,
             repo.Items.Values.Max(i => i.Conversation.UpdatedAt)
@@ -89,7 +78,6 @@ public class ActiveRepository
         );
         repo.AvgIssueLength =
             TimeSpan.FromSeconds(repo.Items.Average(i => i.Value.Conversation.GetDuration().TotalSeconds));
-        repo.StepCount = Mathf.CeilToInt((repo.MaxDate - repo.MinDate) / repo.Step);
 
         bbox = new Rect2(
             repo.Items.Values.Min(p => p.Position.X),

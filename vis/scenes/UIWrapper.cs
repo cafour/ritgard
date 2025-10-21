@@ -9,6 +9,8 @@ public partial class UIWrapper : Node
 
     public OptionButton DatasetDropdown => _.Controls.Container.DatasetDropdown;
 
+    public OptionButton SlidingWindowDropdown => _.Controls.Container.SlidingWindowDropdown;
+
     public SpinBox CurrentStepSpinBox => _.Controls.Container.CurrentStep;
 
     public LineEdit CurrentDateTime => _.Controls.Container.CurrentDateTime;
