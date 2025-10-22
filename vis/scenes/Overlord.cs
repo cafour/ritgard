@@ -150,7 +150,7 @@ public partial class Overlord : Node
         Repo = await ActiveRepository.Load(dataset);
         CameraDistance = Mathf.Sqrt(Repo.BBox.Size.X * Repo.BBox.Size.X + Repo.BBox.Size.Y * Repo.BBox.Size.Y);
         Player.MovementMode.ResetCamera();
-        StepCount = Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / StepLength);
+        StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / StepLength));
         Heights.Clear();
 
         // NB: if preset is All, we have to recompute it
@@ -176,6 +176,7 @@ public partial class Overlord : Node
             }
 
             var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
+            topicIsland.Name = $"Topic{topic.Id}";
             topicIsland.Topic = topic;
             generatedNodesContainer.AddChild(topicIsland);
             topicIslands[topicId] = topicIsland;
@@ -205,6 +206,7 @@ public partial class Overlord : Node
         foreach (var item in Repo.Items.Values)
         {
             var instance = ItemStructureScene.Instantiate<ItemStructure>();
+            instance.Name = $"Item_{item.Id}";
             instance.Item = item;
             generatedNodesContainer.AddChild(instance);
             itemStructures[item.Id] = instance;
@@ -212,6 +214,7 @@ public partial class Overlord : Node
             if (Repo.TopicModelling.Items[item.Id].TopicId == -1)
             {
                 var outlierRock = OutlierRockScene.Instantiate<OutlierRock>();
+                outlierRock.Name = $"OutlierRock_{item.Id}";
                 outlierRock.Item = item;
                 generatedNodesContainer.AddChild(outlierRock);
                 outlierRocks[item.Id] = outlierRock;

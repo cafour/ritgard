@@ -16,7 +16,7 @@ public sealed class Conifer : IStructure
     {
         return (
             new(-CrownBreadth, 0, -CrownBreadth),
-            new(CrownBreadth, TrunkHeight + Mathf.RoundToInt(CrownBreadth * 2f), CrownBreadth)
+            new(CrownBreadth, TrunkHeight + Mathf.RoundToInt(CrownBreadth * 2f) + 1, CrownBreadth)
         );
     }
 
@@ -25,7 +25,7 @@ public sealed class Conifer : IStructure
         var coneHeight = Mathf.RoundToInt(CrownBreadth * 2f);
         buffer.FillBresenhamLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, Blocks.Bark);
         buffer.FillCone(
-            Vector3I.Up * (TrunkHeight - 1),
+            Vector3I.Up * TrunkHeight,
             coneHeight,
             CrownBreadth,
             Blocks.Leaves01

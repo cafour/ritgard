@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://w0f8nai5q286"]
+[gd_scene load_steps=24 format=3 uid="uid://w0f8nai5q286"]
 
 [ext_resource type="Script" uid="uid://d31vaujgyf4gg" path="res://scenes/Overlord.cs" id="1_o5qli"]
 [ext_resource type="PackedScene" uid="uid://bx4226wl622ht" path="res://scenes/item_structure.tscn" id="2_85g3d"]
@@ -30,6 +30,13 @@ script = ExtResource("5_85g3d")
 Name = "git-for-windows"
 DataFilePath = "res://sample/git.json"
 TopicFilePath = "res://sample/git-topics.json"
+metadata/_custom_type_script = "uid://bq3k6c84mk42x"
+
+[sub_resource type="Resource" id="Resource_ya4ey"]
+script = ExtResource("5_85g3d")
+Name = "treetest"
+DataFilePath = "res://sample/treetest.json"
+TopicFilePath = "res://sample/treetest-topics.json"
 metadata/_custom_type_script = "uid://bq3k6c84mk42x"
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_choun"]
@@ -86,7 +93,7 @@ ItemStructureScene = ExtResource("2_85g3d")
 TopicIslandScene = ExtResource("3_tipki")
 OutlierRockScene = ExtResource("4_tipki")
 Player = NodePath("Player")
-Datasets = Array[Resource]([SubResource("Resource_eb6dy"), SubResource("Resource_choun"), SubResource("Resource_jkv2x")])
+Datasets = Array[Resource]([SubResource("Resource_eb6dy"), SubResource("Resource_choun"), SubResource("Resource_jkv2x"), SubResource("Resource_ya4ey")])
 UI = NodePath("UI")
 Library = ExtResource("6_85g3d")
 Ocean = NodePath("Ocean")
