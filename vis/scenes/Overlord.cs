@@ -22,6 +22,7 @@ public partial class Overlord : Node
     public const float DefaultMaxNormalizedHeight = 42f;
     public const string DefaultHint = "Hover over a structure to see its description...";
     public const float BorderWidth = 5f;
+    public const float SunRotationStep = Mathf.Pi / 6;
 
     public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
 
@@ -50,6 +51,9 @@ public partial class Overlord : Node
 
     [Export]
     public MeshInstance3D Ocean { get; set; }
+
+    [Export]
+    public DirectionalLight3D Sun { get; set; }
 
     /// <summary>
     /// Exists to prevent the ocean from being semi-transparent on clean screenshots.
@@ -294,6 +298,11 @@ public partial class Overlord : Node
         else if (@event.IsAction(InputActions.StepPrev) && @event.IsPressed())
         {
             await ShowStep(CurrentStep - 1);
+        }
+
+        if (@event.IsAction(InputActions.RotateSun) && @event.IsPressed())
+        {
+            Sun.RotateY(SunRotationStep);
         }
     }
 

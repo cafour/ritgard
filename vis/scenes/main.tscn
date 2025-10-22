@@ -87,7 +87,7 @@ subdivide_width = 1
 subdivide_depth = 1
 center_offset = Vector3(2.5, 0, 0)
 
-[node name="Main" type="Node" node_paths=PackedStringArray("Player", "UI", "Ocean", "DeepOcean", "TopBorder", "RightBorder", "BottomBorder", "LeftBorder", "Environment")]
+[node name="Main" type="Node" node_paths=PackedStringArray("Player", "UI", "Ocean", "Sun", "DeepOcean", "TopBorder", "RightBorder", "BottomBorder", "LeftBorder", "Environment")]
 script = ExtResource("1_o5qli")
 ItemStructureScene = ExtResource("2_85g3d")
 TopicIslandScene = ExtResource("3_tipki")
@@ -97,6 +97,7 @@ Datasets = Array[Resource]([SubResource("Resource_eb6dy"), SubResource("Resource
 UI = NodePath("UI")
 Library = ExtResource("6_85g3d")
 Ocean = NodePath("Ocean")
+Sun = NodePath("Sun")
 DeepOcean = NodePath("DeepOcean")
 TopBorder = NodePath("Borders/TopBorder")
 RightBorder = NodePath("Borders/RightBorder")
@@ -122,7 +123,7 @@ view_distance = 512
 [node name="Environment" type="WorldEnvironment" parent="."]
 environment = ExtResource("6_tipki")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.0794593, 0.375, -0.923613, -0.5, 0.786566, 0.362372, 0.862373, 0.4906, 0.125, 0, 100, 0)
 shadow_enabled = true
 directional_shadow_blend_splits = true
