@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Ritgard;
@@ -112,6 +113,8 @@ public partial class Overlord : Node
     private Node generatedNodesContainer;
     private Texture2D topicIdTexture;
     private Texture2D itemIdTexture;
+    private CancellationTokenSource? lastHeightmapCts = null;
+    private Task? lastHeightmapTask = null;
 
     public override void _EnterTree()
     {
@@ -264,7 +267,35 @@ public partial class Overlord : Node
 
         RefreshCurrentStepControls(step);
 
-        await Task.WhenAll(topicIslands.Values.Select(i => Task.Run(i.ComputeHeightmap)));
+        if (lastHeightmapTask is not null && !lastHeightmapTask.IsCompleted)
+        {
+            GD.Print("Cancelling previous heightmap task.");
+            if (lastHeightmapCts is not null)
+            {
+                await lastHeightmapCts.CancelAsync();
+                lastHeightmapCts.Dispose();
+            }
+
+            lastHeightmapCts = null;
+            lastHeightmapTask = null;
+        }
+
+        var currentHeightmapCts = new CancellationTokenSource();
+        var currentHeightmapTask = Task.WhenAll(
+            topicIslands.Values.Select(i => Task.Run(
+                    () => i.ComputeHeightmap(currentHeightmapCts.Token),
+                    currentHeightmapCts.Token
+                )
+            )
+        );
+        lastHeightmapTask = currentHeightmapTask;
+        lastHeightmapCts = currentHeightmapCts;
+        await currentHeightmapTask;
+
+        if (currentHeightmapCts.IsCancellationRequested)
+        {
+            return;
+        }
 
         foreach (var topicIsland in topicIslands.Values)
         {

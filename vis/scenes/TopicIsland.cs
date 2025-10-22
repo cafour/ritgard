@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Godot;
 using NetTopologySuite.Algorithm.Hull;
 using NetTopologySuite.Geometries;
@@ -122,7 +123,7 @@ public partial class TopicIsland : Node3D
         }
     }
 
-    public void ComputeHeightmap()
+    public void ComputeHeightmap(CancellationToken ct = default)
     {
         ClearHeightmap();
 
@@ -156,6 +157,11 @@ public partial class TopicIsland : Node3D
             var stdDeviation = Math.Sqrt(triMaxSides.Average(l => (l - avgTriMaxSide) * (l - avgTriMaxSide)));
             for (int i = hullTris.Count - 1; i >= 0; --i)
             {
+                if (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 var tri = hullTris[i];
                 var maxSide = Math.Max(tri.GetLength(0), Math.Max(tri.GetLength(1), tri.GetLength(2)));
                 if (maxSide > avgTriMaxSide + TriOutlierCutoff * stdDeviation)
@@ -209,6 +215,11 @@ public partial class TopicIsland : Node3D
         {
             for (int x = 0; x < Heightmap.GetLength(1); ++x)
             {
+                if (ct.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 var px = x + heightmapBox.Position.X;
                 var py = z + heightmapBox.Position.Y;
 
