@@ -28,9 +28,15 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
 
     public bool IsHighlighted { get; set; }
 
+    public bool ShouldBeVisible { get; set; } = true;
+
     public override void _Ready()
     {
         Position = new Vector3(Item.Position.X, -1000, Item.Position.Y);
+        VisibilityChanged += () =>
+        {
+            _.Body.Get().ProcessMode = Visible ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
+        };
     }
 
     public void OnShowStep(int step)
@@ -104,10 +110,9 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         //     MaxBreadth = (int)maxBreadthSlider.Value
         // };
         var height = Overlord.Instance.Heights[Item.Id];
-        if (height <= 0)
+        if (height <= 0 || !ShouldBeVisible)
         {
-            _.Mesh.Visible = false;
-            _.Body.Get().ProcessMode = ProcessModeEnum.Disabled;
+            Visible = false;
             return;
         }
 
@@ -144,8 +149,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         };
         _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
         _.Mesh.Position = new Vector3(-size.X / 2f + 0.5f, 0, -size.Z / 2f + 0.5f);
-        _.Mesh.Visible = true;
-        _.Body.Get().ProcessMode = ProcessModeEnum.Inherit;
+        Visible = true;
         Position = new Vector3(
             Position.X,
             Mathf.CeilToInt(height),

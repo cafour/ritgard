@@ -103,6 +103,11 @@ layout_mode = 2
 placeholder_text = "yyyy-MM-dd HH:mm"
 emoji_menu_enabled = false
 
+[node name="ShowTreesCheck" type="CheckButton" parent="Controls/Container"]
+layout_mode = 2
+text = "ShowTrees
+"
+
 [node name="IssuesCheck" type="CheckButton" parent="Controls/Container"]
 layout_mode = 2
 text = "Issues"

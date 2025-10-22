@@ -15,11 +15,14 @@ public partial class UIWrapper : Control
 
     public LineEdit CurrentDateTime => _.Controls.Container.CurrentDateTime;
 
+    public CheckButton ShowTreesCheck => _.Controls.Container.ShowTreesCheck;
+
     public CheckButton IssuesCheck => _.Controls.Container.IssuesCheck;
 
     public CheckButton PRsCheck => _.Controls.Container.PRsCheck;
 
     public CheckButton DiscussionsCheck => _.Controls.Container.DiscussionsCheck;
+
     public CheckButton StubsCheck => _.Controls.Container.StubsCheck;
 
     public CheckButton OnlyPopulatedIslandsCheck => _.Controls.Container.OnlyPopulatedIslandsCheck;

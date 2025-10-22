@@ -97,6 +97,8 @@ public partial class Overlord : Node
 
     public bool ShouldNormalizeHeights { get; private set; } = false;
 
+    public bool ShouldShowTrees { get; private set; } = true;
+
     public float MaxNormalizedHeight { get; private set; } = DefaultMaxNormalizedHeight;
 
     public ActiveRepository Repo { get; private set; }
@@ -189,27 +191,6 @@ public partial class Overlord : Node
             topicIslands[topicId] = topicIsland;
         }
 
-        // var firstTopic = Topics.Values.OrderBy(t => t.Title).First();
-        // var topicIsland = TopicIslandScene.Instantiate<TopicIsland>();
-        // topicIsland.Topic = firstTopic;
-        // AddChild(topicIsland);
-
-        // foreach (var (identifier, item) in data)
-        // {
-        //     var edgeCount = edgeCounts.GetValueOrDefault(Utils.Coalesce(item.AbsoluteLink, item.Url));
-        //     if (edgeCount == 0)
-        //     {
-        //         continue;
-        //     }
-        //     var position = itemPositions[identifier] + new Vector2I(256, 256);
-        //     generator.Heightmap.FillRect(
-        //         new Rect2I(position - new Vector2I(3, 3), new Vector2I(5, 5)),
-        //         new Color() { R8 = Math.Clamp(edgeCount, 0, 255) }
-        //     );
-        // }
-
-        // ComputeHeighmapCircles(Mathf.RoundToInt(StructureRadius));
-
         foreach (var item in Repo.Items.Values)
         {
             var instance = ItemStructureScene.Instantiate<ItemStructure>();
@@ -255,7 +236,13 @@ public partial class Overlord : Node
                 Heights[item.Id] = slidingEvents[item.Id] * scale;
             }
 
-            itemStructures.GetValueOrDefault(item.Id)?.OnShowStep(step);
+            var itemStructure = itemStructures.GetValueOrDefault(item.Id);
+            if (itemStructure is not null)
+            {
+                itemStructure.ShouldBeVisible = ShouldShowTrees;
+                itemStructure.OnShowStep(step);
+            }
+
             outlierRocks.GetValueOrDefault(item.Id)?.OnShowStep(step);
         }
 
@@ -337,97 +324,6 @@ public partial class Overlord : Node
         }
     }
 
-    // private void ComputeHeighmapTriangularization()
-    // {
-    //     var inversePositions = Positions.ToImmutableDictionary(
-    //         t => new Coordinate(t.Value.X, t.Value.Y),
-    //         t => t.Key
-    //     );
-    //     var triangulationBuilder = new DelaunayTriangulationBuilder();
-    //     triangulationBuilder.SetSites([.. inversePositions.Keys]);
-    //     var subdivision = triangulationBuilder.GetSubdivision();
-    //     var dateLength = MaxDate - MinDate;
-
-    //     double GetHeightAtPoint(double x, double y)
-    //     {
-    //         if (!inversePositions.TryGetValue(new Coordinate(x, y), out var id))
-    //         {
-    //             return 0.0;
-    //         }
-    //         var issue = Data[id];
-    //         var date = issue.UpdatedAt ?? issue.CreatedAt;
-    //         return (date - MinDate) / dateLength * 100.0;
-    //     }
-
-    //     for (int y = -HeightmapSize / 2; y < HeightmapSize / 2; ++y)
-    //     {
-    //         for (int x = -HeightmapSize / 2; x < HeightmapSize / 2; ++x)
-    //         {
-    //             var hx = x + HeightmapSize / 2;
-    //             var hy = y + HeightmapSize / 2;
-    //             QuadEdge? edge = null;
-    //             try
-    //             {
-    //                 edge = subdivision.Locate(new Coordinate(x, y));
-    //             }
-    //             catch (LocateFailureException)
-    //             {
-    //             }
-
-    //             if (edge is null)
-    //             {
-    //                 // generator.Heightmap.SetPixel(hx, hy, new Color() { R8 = 0 });
-    //                 // generator.Heightmap[hy, hx] = 0;
-    //                 continue;
-    //             }
-
-    //             var p1 = edge.Orig;
-    //             var p2 = edge.Dest;
-    //             var p3 = edge.ONext.Dest;
-    //             var height = InterpolateBarycentric(
-    //                 x, y,
-    //                 p1.X, p1.Y, GetHeightAtPoint(p1.X, p1.Y),
-    //                 p2.X, p2.Y, GetHeightAtPoint(p2.X, p2.Y),
-    //                 p3.X, p3.Y, GetHeightAtPoint(p3.X, p3.Y)
-    //             );
-    //             height = Mathf.Max(height, 0.0);
-    //             // generator.Heightmap.SetPixel(hx, hy, new Color { R8 = Mathf.RoundToInt(height) });
-    //             // generator.Heightmap[hy, hx] = (byte)Mathf.RoundToInt(height);
-    //         }
-    //     }
-    // }
-
-    // private void ComputeHeighmapCircles(int circleRadius)
-    // {
-    //     var maxDate = Data.Values.Max(i => i.UpdatedAt ?? i.CreatedAt);
-    //     var minDate = Data.Values.Min(i => i.UpdatedAt ?? i.CreatedAt);
-    //     var dateLength = maxDate - minDate;
-
-    //     var radiusSquared = circleRadius * circleRadius;
-    //     foreach (var (id, pos) in Positions)
-    //     {
-    //         // var height = GetHeightForIssue(id);
-    //         var height = (byte)(GetLevelForIssue(id) * 10);
-    //         for (int y = -circleRadius + 1; y < circleRadius; ++y)
-    //         {
-    //             for (int x = -circleRadius + 1; x < circleRadius; ++x)
-    //             {
-    //                 var hx = Mathf.RoundToInt(pos.X) + HeightmapSize / 2 + x;
-    //                 var hy = Mathf.RoundToInt(pos.Y) + HeightmapSize / 2 + y;
-
-    //                 if (x * x + y * y < radiusSquared + 1)
-    //                 {
-    //                     // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], height);
-    //                 }
-    //                 else
-    //                 {
-    //                     // generator.Heightmap[hy, hx] = Math.Max(generator.Heightmap[hy, hx], (byte)0);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
     private void OnHoverChanged(CollisionObject3D hoveree)
     {
         var parent = hoveree?.GetParent();
@@ -495,64 +391,6 @@ public partial class Overlord : Node
         }
     }
 
-    public void _OnMeshBlockEntered(Vector3I blockPos)
-    {
-        return;
-        // var origin = terrain.DataBlockToVoxel(blockPos);
-        // var structCount = rng.RandiRange(0, 2);
-        // if (structCount == 0)
-        // {
-        //     return;
-        // }
-
-        // var set = new HashSet<Node3D>();
-        // for (int i = 0; i < structCount; ++i)
-        // {
-        //     var position = new Vector3I(
-        //         rng.RandiRange(0, (int)terrain.MeshBlockSize - 1),
-        //         0,
-        //         rng.RandiRange(0, (int)terrain.MeshBlockSize - 1)
-        //     );
-        //     var height = generator.GetHeight(origin.X + position.X, origin.Z + position.Z);
-        //     if (height > origin.Y + (int)terrain.MeshBlockSize || height < origin.Y)
-        //     {
-        //         continue;
-        //     }
-
-        //     var instance = TestStructure.Instantiate<Node3D>();
-        //     instance.Position = new Vector3(origin.X + position.X, height, origin.Z + position.Z);
-        //     AddChild(instance);
-        //     set.Add(instance);
-        // }
-        // structures.AddOrUpdate(blockPos, _ => set, (_, e) =>
-        // {
-        //     foreach (var existing in e)
-        //     {
-        //         e.Remove(existing);
-        //         RemoveChild(existing);
-        //         existing.QueueFree();
-        //     }
-        //     return set;
-        // });
-    }
-
-    public void _OnMeshBlockExited(Vector3I blockPos)
-    {
-        return;
-        // var set = structures.GetValueOrDefault(blockPos);
-        // if (set is null || set.Count == 0)
-        // {
-        //     return;
-        // }
-
-        // foreach (var existing in set)
-        // {
-        //     set.Remove(existing);
-        //     RemoveChild(existing);
-        //     existing.QueueFree();
-        // }
-    }
-
     private void RefreshCurrentStepControls(int step)
     {
         var now = Repo.MinDate + StepLength * step;
@@ -560,40 +398,6 @@ public partial class Overlord : Node
         UI.CurrentStepSpinBox.SetValueNoSignal(step);
         UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
     }
-
-    // private byte GetHeightForIssue(long id)
-    // {
-    //     var issue = Data[id];
-    //     var date = issue.UpdatedAt ?? issue.CreatedAt;
-    //     var dateLength = MaxDate - MinDate;
-    //     return (byte)Mathf.RoundToInt(Math.Clamp((date - MinDate) / dateLength * MaxTerrainHeight, 0.0, 255.0));
-    // }
-
-    // private byte GetLevelForIssue(long id)
-    // {
-    //     var issue = Data[id];
-    //     var date = issue.UpdatedAt ?? issue.CreatedAt;
-    //     if (date.Date == MaxDate.Date)
-    //     {
-    //         return 50;
-    //     }
-    //     else if (date > MaxDate - TimeSpan.FromDays(7))
-    //     {
-    //         return 40;
-    //     }
-    //     else if (date > MaxDate - TimeSpan.FromDays(30))
-    //     {
-    //         return 30;
-    //     }
-    //     else if (date > MaxDate - TimeSpan.FromDays(365))
-    //     {
-    //         return 20;
-    //     }
-    //     else
-    //     {
-    //         return 10;
-    //     }
-    // }
 
     private async Task OnScopeCheck(CheckButton button, VisualizationScope scope)
     {
@@ -708,6 +512,13 @@ public partial class Overlord : Node
         UI.StubsCheck.Pressed += async () =>
         {
             ShowClosedAsStubs = UI.StubsCheck.ButtonPressed;
+            await ShowStep(CurrentStep);
+        };
+
+        UI.ShowTreesCheck.ButtonPressed = ShouldShowTrees;
+        UI.ShowTreesCheck.Pressed += async () =>
+        {
+            ShouldShowTrees = UI.ShowTreesCheck.ButtonPressed;
             await ShowStep(CurrentStep);
         };
     }
