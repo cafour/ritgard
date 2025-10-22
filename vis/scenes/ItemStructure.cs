@@ -107,6 +107,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         if (height <= 0)
         {
             _.Mesh.Visible = false;
+            _.Body.Get().ProcessMode = ProcessModeEnum.Disabled;
             return;
         }
 
@@ -144,6 +145,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
         _.Mesh.Position = new Vector3(-size.X / 2f + 0.5f, 0, -size.Z / 2f + 0.5f);
         _.Mesh.Visible = true;
+        _.Body.Get().ProcessMode = ProcessModeEnum.Inherit;
         Position = new Vector3(
             Position.X,
             Mathf.CeilToInt(height),
