@@ -155,6 +155,9 @@ public partial class Overlord : Node
             generatedNodesContainer.RemoveChild(old);
         }
 
+        topicIslands.Clear();
+        itemStructures.Clear();
+
         var dataset = Datasets[index];
         Repo = await ActiveRepository.Load(dataset);
         CameraDistance = Mathf.Sqrt(Repo.BBox.Size.X * Repo.BBox.Size.X + Repo.BBox.Size.Y * Repo.BBox.Size.Y);
@@ -294,12 +297,15 @@ public partial class Overlord : Node
 
     public override async void _Input(InputEvent @event)
     {
-        if (@event.IsAction("interact") && @event.IsPressed() && currentStructure is not null)
+        if (@event.IsAction("interact") && @event.IsPressed())
         {
-            var item = Repo.Items.GetValueOrDefault(currentStructure.Item.Id);
-            if (!string.IsNullOrEmpty(item.Conversation.Url))
+            if (currentStructure is not null)
             {
-                OS.ShellOpen(item.Conversation.Url);
+                var item = Repo.Items.GetValueOrDefault(currentStructure.Item.Id);
+                if (!string.IsNullOrEmpty(item.Conversation.Url))
+                {
+                    OS.ShellOpen(item.Conversation.Url);
+                }
             }
         }
 
@@ -323,6 +329,26 @@ public partial class Overlord : Node
         if (@event.IsAction(InputActions.RotateSun) && @event.IsPressed())
         {
             Sun.RotateY(SunRotationStep);
+        }
+
+        if (@event.IsAction(InputActions.PrintIslands) && @event.IsPressed())
+        {
+            var topicStats = Repo.Items.Values.Where(i => Heights[i.Id] > 0)
+                .GroupBy(i => i.TopicId)
+                .Select(g => (
+                        topicName: g.Key == -1
+                            ? "<outliers>"
+                            : Repo.TopicModelling.Topics.GetValueOrDefault(g.Key)?.GetPreferredTitle(),
+                        treeCount: g.Count()
+                    )
+                )
+                .Where(r => r.treeCount != 0)
+                .OrderBy(r => r.treeCount);
+            GD.Print("== TOPIC SUMMARY ==");
+            foreach (var topic in topicStats)
+            {
+                GD.Print($"\t{topic.topicName}: {topic.treeCount} trees");
+            }
         }
     }
 
@@ -349,6 +375,7 @@ public partial class Overlord : Node
                 break;
 
             case TopicIsland island:
+            {
                 currentStructure?.ToggleHighlight(false);
                 currentStructure = null;
 
@@ -356,10 +383,33 @@ public partial class Overlord : Node
                 island.ToggleHighlight(true);
                 currentIsland = island;
 
-                UI.ItemDescriptionLabel.Text = $"Topic #{island.Topic.Id}: {island.Topic.GetPreferredTitle()}";
+                var issueCount = 0;
+                var prCount = 0;
+                var discussionCount = 0;
+                foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key])
+                             .Where(i => i.TopicId == island.Topic.Id))
+                {
+                    switch (visibleItem.Conversation)
+                    {
+                        case Issue:
+                            issueCount++;
+                            break;
+                        case PullRequest:
+                            prCount++;
+                            break;
+                        case Discussion:
+                            discussionCount++;
+                            break;
+                    }
+                }
+
+                UI.ItemDescriptionLabel.Text =
+                    $"Topic #{island.Topic.Id}: {island.Topic.GetPreferredTitle()}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
                 break;
+            }
 
             case null:
+            {
                 currentStructure?.ToggleHighlight(false);
                 currentStructure = null;
 
@@ -390,6 +440,7 @@ public partial class Overlord : Node
                 UI.ItemDescriptionLabel.Text =
                     $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
                 break;
+            }
         }
     }
 
