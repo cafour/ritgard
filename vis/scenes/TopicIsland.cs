@@ -437,7 +437,10 @@ public partial class TopicIsland : Node3D
             return;
         }
 
-        _.Body.Get().Visible = true;
+        if (_.Body.Get() is not null)
+        {
+            _.Body.Get().Visible = true;
+        }
 
         if (_.Body.Collider is not null)
         {

@@ -277,16 +277,18 @@ public partial class Overlord : Node
         );
         lastHeightmapTask = currentHeightmapTask;
         lastHeightmapCts = currentHeightmapCts;
-        await currentHeightmapTask;
 
-        if (currentHeightmapCts.IsCancellationRequested)
+        try
         {
-            return;
+            await currentHeightmapTask;
+            foreach (var topicIsland in topicIslands.Values)
+            {
+                topicIsland.UpdatePlane();
+            }
         }
-
-        foreach (var topicIsland in topicIslands.Values)
+        catch (TaskCanceledException)
         {
-            topicIsland.UpdatePlane();
+            // nop
         }
     }
 
