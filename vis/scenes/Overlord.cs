@@ -448,8 +448,8 @@ public partial class Overlord : Node
         UI.SlidingWindowDropdown.ItemSelected += async i =>
         {
             var name = UI.SlidingWindowDropdown.GetItemText((int)i);
-            var preset = Enum.Parse<SlidingWindowPreset>(name);
-            SlidingWindowLength = GetSlidingWindowLength(preset);
+            SlidingWindowPreset = Enum.Parse<SlidingWindowPreset>(name);
+            SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);
 
             await ShowStep(CurrentStep);
         };
