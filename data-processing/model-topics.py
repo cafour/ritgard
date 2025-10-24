@@ -87,6 +87,8 @@ def get_documents(data: dt.MiningResult, embed_labels: bool, embed_bodies: bool,
         ids.extend(discussion_ids)
         docs.extend(discussion_docs)
 
+    log.info(f"Pre-processed {len(ids)} documents, with maximum length of {max([len(doc) for doc in docs])} characters.")
+
     return ids, docs
 
 
