@@ -13,7 +13,14 @@ config_version=5
 config/name="Ritgard"
 run/main_scene="uid://w0f8nai5q286"
 config/features=PackedStringArray("4.5", "C#", "Forward Plus")
-config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0.1254902, 0.1254902, 0.1254902, 1)
+boot_splash/image="uid://dtv04hysx522"
+config/icon="uid://hu15lbrx0g31"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
 
 [dotnet]
 
