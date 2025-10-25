@@ -35,7 +35,7 @@ public static partial class Utils
         var configBuilder = new ConfigurationBuilder();
         configBuilder
             .AddJsonFile("appsettings.json", optional: true)
-            .AddUserSecrets(Assembly.GetEntryAssembly()!, optional: true)
+            .AddUserSecrets(Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly(), optional: true)
             .AddEnvironmentVariables();
         return configBuilder.Build();
     }

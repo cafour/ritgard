@@ -43,7 +43,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_kigm6")
 
 [node name="ItemDescriptionLabel" type="Label" parent="HoverBar"]
 layout_mode = 2
-text = "`Some link` from `Some text file` at `https:\\\\some.url`"
+text = "No datasets found..."
 label_settings = SubResource("LabelSettings_a7em7")
 clip_text = true
 text_overrun_behavior = 3

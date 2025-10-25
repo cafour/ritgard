@@ -11,9 +11,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace Ritgard;
 
@@ -22,6 +24,7 @@ public partial class Overlord : Node
     public const string DateTimeFormat = "yyyy-MM-dd HH:mm";
     public const float DefaultMaxNormalizedHeight = 42f;
     public const string DefaultHint = "Hover over a structure to see its description...";
+    public const string DatasetErrorHint = "No datasets found. Check 'DataPath' in appsettings.json.";
     public const float BorderWidth = 5f;
     public const float SunRotationStep = Mathf.Pi / 6;
 
@@ -40,9 +43,6 @@ public partial class Overlord : Node
 
     [Export]
     public Player Player { get; set; }
-
-    [Export]
-    public Godot.Collections.Array<DatasetInfo> Datasets { get; set; }
 
     [Export]
     public UIWrapper UI { get; set; }
@@ -107,6 +107,9 @@ public partial class Overlord : Node
 
     public Dictionary<string, float> Heights { get; } = [];
 
+    private IConfiguration configuration;
+    private VisualizationOptions options;
+    private ImmutableArray<DatasetInfo> datasets;
     private readonly Dictionary<int, TopicIsland> topicIslands = [];
     private readonly Dictionary<string, ItemStructure> itemStructures = [];
     private readonly Dictionary<string, OutlierRock> outlierRocks = [];
@@ -130,6 +133,21 @@ public partial class Overlord : Node
         generatedNodesContainer = GetNode<Node>("GeneratedNodesContainer");
 
         Library.Bake();
+
+        configuration = Mining.Utils.BuildConfiguration();
+        options = new VisualizationOptions();
+        configuration.Bind(options);
+        if (string.IsNullOrWhiteSpace(options.DataPath) || !Directory.Exists(options.DataPath))
+        {
+            throw new ArgumentException(
+                $"Set a valid 'DataPath' in the tool's 'appsettings.json' file. "
+                + $"'{(options.DataPath is null ? "null" : new DirectoryInfo(options.DataPath).FullName)}' "
+                + $"is either null or does not exist."
+            );
+        }
+
+        datasets = Utils.DiscoverDatasets(options.DataPath);
+        GD.Print($"Discovered {datasets.Length} datasets in '{options.DataPath}'.");
     }
 
     public override async void _Ready()
@@ -158,7 +176,7 @@ public partial class Overlord : Node
         topicIslands.Clear();
         itemStructures.Clear();
 
-        var dataset = Datasets[index];
+        var dataset = datasets[index];
         Repo = await ActiveRepository.Load(dataset);
         CameraDistance = Mathf.Sqrt(Repo.BBox.Size.X * Repo.BBox.Size.X + Repo.BBox.Size.Y * Repo.BBox.Size.Y);
         Player.MovementMode.ResetCamera();
@@ -486,9 +504,14 @@ public partial class Overlord : Node
     private void BindUserInterface()
     {
         UI.ItemDescriptionLabel.Text = DefaultHint;
-        for (int i = 0; i < Datasets.Count; ++i)
+        if (datasets.IsDefaultOrEmpty)
         {
-            UI.DatasetDropdown.AddItem(Datasets[i].Name, i);
+            UI.ItemDescriptionLabel.Text = DatasetErrorHint;
+        }
+
+        for (int i = 0; i < datasets.Length; ++i)
+        {
+            UI.DatasetDropdown.AddItem(datasets[i].Name, i);
         }
 
         foreach (var name in Enum.GetNames<SlidingWindowPreset>())
