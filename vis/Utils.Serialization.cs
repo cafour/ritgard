@@ -26,7 +26,7 @@ public static partial class Utils
         using var stream = new FileAccessStream(resourcePath, FileAccess.ModeFlags.Read);
         return JsonSerializer.Deserialize<T>(stream, Mining.Utils.JsonSerializerOptions);
     }
-    
+
     public static ValueTask<T?> ReadGodotJsonAsync<T>(string resourcePath)
     {
         using var stream = new FileAccessStream(resourcePath, FileAccess.ModeFlags.Read);
