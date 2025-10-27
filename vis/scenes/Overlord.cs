@@ -83,7 +83,7 @@ public partial class Overlord : Node
 
     public VisualizationScope CurrentScope { get; private set; } = VisualizationScope.All;
 
-    public SlidingWindowPreset SlidingWindowPreset { get; private set; } = SlidingWindowPreset.Month;
+    public SlidingWindowPreset SlidingWindowPreset { get; private set; } = SlidingWindowPreset.Year;
 
     public TimeSpan SlidingWindowLength { get; private set; }
 
@@ -232,7 +232,7 @@ public partial class Overlord : Node
 
         Player.HoverChanged += OnHoverChanged;
 
-        await ShowStep(0);
+        await ShowStep(StepCount - 1);
     }
 
     private async Task ShowStep(int step)

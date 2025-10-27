@@ -36,6 +36,7 @@ public static partial class Utils
             }
         }
 
+        builder.Sort((a, b) => string.Compare(b.Name, a.Name, StringComparison.InvariantCultureIgnoreCase));
         return builder.ToImmutable();
     }
 }
