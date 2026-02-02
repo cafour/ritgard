@@ -8,11 +8,15 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="Ritgard"
 run/main_scene="uid://w0f8nai5q286"
-config/features=PackedStringArray("4.5", "C#", "Forward Plus")
+config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 boot_splash/bg_color=Color(0.1254902, 0.1254902, 0.1254902, 1)
 boot_splash/image="uid://dtv04hysx522"
 config/icon="uid://hu15lbrx0g31"
