@@ -1,17 +1,18 @@
 using System;
 using Godot;
+using Ritgard.Voxel;
 
 namespace Ritgard.Structures;
 
 public sealed partial class StructureBuffer : IWithVoxelLibrary
 {
     public VoxelBuffer Data { get; }
-    public VoxelTool Tool { get; }
+    // public VoxelTool Tool { get; }
     public Vector3I Size { get; }
-    public VoxelBlockyLibrary Library { get; }
+    public VoxelBlockLibrary Library { get; }
     public Vector3I OriginOffset { get; }
 
-    public StructureBuffer(Vector3I size, VoxelBlockyLibrary library, Vector3I? offset = default)
+    public StructureBuffer(Vector3I size, VoxelBlockLibrary library, Vector3I? offset = null)
     {
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
         {
@@ -20,32 +21,32 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
 
         Size = size;
         Library = library;
-        Data = new VoxelBuffer();
-        Data.Create(size.X + 2, size.Y + 2, size.Z + 2);
-        Tool = Data.GetVoxelTool();
+        Data = new VoxelBuffer(size.X + 2, size.Y + 2, size.Z + 2);
+        // Tool = Data.GetVoxelTool();
         OriginOffset = offset ?? new Vector3I(size.X / 2, 1, size.Z / 2);
     }
 
     public StructureBuffer SetAt(Vector3I pos, Blocks blockType)
     {
         pos += OriginOffset;
-        SetRaw(pos, (ulong)blockType);
+        SetRaw(pos, (byte)blockType);
         return this;
     }
 
-    public StructureBuffer SetRaw(Vector3I pos, ulong value)
+    public StructureBuffer SetRaw(Vector3I pos, byte value)
     {
-        Data.SetVoxel(value, pos.X, pos.Y, pos.Z, (uint)VoxelBuffer.ChannelId.ChannelType);
+        Data.SetVoxel(value, pos.X, pos.Y, pos.Z);
         return this;
     }
 
     public StructureBuffer FillSphere(Vector3I pos, int radius, Blocks blockType)
     {
         ResetTool();
-        Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
-        Tool.Value = (ulong)blockType;
-        Tool.Mode = VoxelTool.ModeEnum.Set;
-        Tool.DoSphere(pos + OriginOffset, radius);
+        // Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
+        // Tool.Value = (ulong)blockType;
+        // Tool.Mode = VoxelTool.ModeEnum.Set;
+        // Tool.DoSphere(pos + OriginOffset, radius);
+        throw new NotImplementedException();
         return this;
     }
 
@@ -75,7 +76,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     if (x * x + y * y + z * z < radiusSquared && rng.Randf() < spottiness)
                     {
-                        Tool.SetVoxel(pos + new Vector3I(x, y, z), (ulong)blockType);
+                        Data.SetVoxel((byte)blockType, pos + new Vector3I(x, y, z));
                     }
                 }
             }
@@ -87,16 +88,17 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
     public StructureBuffer FillLine(Vector3I from, Vector3I to, float fromRadius, float toRadius, Blocks blockType)
     {
         ResetTool();
-        Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
-        Tool.Value = (ulong)blockType;
-        Tool.Mode = VoxelTool.ModeEnum.Set;
-        Span<Vector3> points = stackalloc Vector3[2];
-        Span<float> radii = stackalloc float[2];
-        points[0] = from + OriginOffset;
-        points[1] = to + OriginOffset;
-        radii[0] = fromRadius;
-        radii[1] = toRadius;
-        Tool.DoPath(points, radii);
+        // Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
+        // Tool.Value = (ulong)blockType;
+        // Tool.Mode = VoxelTool.ModeEnum.Set;
+        // Span<Vector3> points = stackalloc Vector3[2];
+        // Span<float> radii = stackalloc float[2];
+        // points[0] = from + OriginOffset;
+        // points[1] = to + OriginOffset;
+        // radii[0] = fromRadius;
+        // radii[1] = toRadius;
+        // Tool.DoPath(points, radii);
+        throw new NotImplementedException();
         return this;
     }
 
@@ -119,7 +121,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
 
         void Set(Vector3I p)
         {
-            Data.SetVoxel((ulong)blockType, p.X, p.Y, p.Z, (uint)VoxelBuffer.ChannelId.ChannelType);
+            Data.SetVoxel((byte)blockType, p.X, p.Y, p.Z);
         }
         Set(from);
 
@@ -236,7 +238,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                     {
                         if (spottiness == 1.0f || spottiness < rng.Randf())
                         {
-                            SetRaw(pos + new Vector3I(x, h, z), (ulong)blockType);
+                            SetRaw(pos + new Vector3I(x, h, z), (byte)blockType);
                         }
                     }
                 }
@@ -263,7 +265,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     if (x * x + z * z < rSquared)
                     {
-                        SetRaw(pos + new Vector3I(x, height - h - 1, z) + OriginOffset, (ulong)blockType);
+                        SetRaw(pos + new Vector3I(x, height - h - 1, z) + OriginOffset, (byte)blockType);
                     }
                 }
             }
@@ -281,25 +283,27 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
             return this;
         }
 
-        Data.FillArea(
-            value: (ulong)blockType,
-            min: min,
-            max: max,
-            channel: (int)VoxelBuffer.ChannelId.ChannelType
-        );
+        // Data.FillArea(
+        //     value: (ulong)blockType,
+        //     min: min,
+        //     max: max,
+        //     channel: (int)VoxelBuffer.ChannelId.ChannelType
+        // );
+        throw new NotImplementedException();
         return this;
     }
 
     private void ResetTool()
     {
-        Tool.Value = default;
-        Tool.Channel = default;
-        Tool.EraserValue = default;
-        Tool.Mode = default;
-        Tool.SdfScale = default;
-        Tool.SdfStrength = default;
-        Tool.TextureIndex = default;
-        Tool.TextureOpacity = default;
-        Tool.TextureFalloff = default;
+        // Tool.Value = default;
+        // Tool.Channel = default;
+        // Tool.EraserValue = default;
+        // Tool.Mode = default;
+        // Tool.SdfScale = default;
+        // Tool.SdfStrength = default;
+        // Tool.TextureIndex = default;
+        // Tool.TextureOpacity = default;
+        // Tool.TextureFalloff = default;
+        throw new NotImplementedException();
     }
 }

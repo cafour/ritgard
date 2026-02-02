@@ -1,6 +1,6 @@
 namespace Ritgard;
 
-public enum Blocks : ulong
+public enum Blocks : byte
 {
     Air = 0,
     Stone = 1,

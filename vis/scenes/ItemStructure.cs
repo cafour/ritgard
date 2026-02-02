@@ -5,6 +5,7 @@ using Ritgard.Structures;
 using System;
 using System.Collections;
 using System.Linq;
+using Ritgard.Voxel;
 
 namespace Ritgard;
 
@@ -16,7 +17,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
     public const int MaxConeHeight = 20;
 
     [Export]
-    public VoxelBlockyLibrary Library { get; set; }
+    public VoxelBlockLibrary Library { get; set; }
 
     [Export]
     public Material Material { get; set; }
@@ -144,11 +145,8 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         var size = max - min;
         var buffer = new StructureBuffer(size, Library);
         structure.Build(buffer);
-        var mesher = new VoxelMesherBlocky
-        {
-            Library = Library
-        };
-        _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
+        var mesher = new VoxelMesher();
+        _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, Library, Material);
         _.Mesh.Position = new Vector3(-size.X / 2f + 0.5f, 0, -size.Z / 2f + 0.5f);
         Visible = true;
         Position = new Vector3(

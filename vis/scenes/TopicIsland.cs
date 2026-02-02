@@ -11,6 +11,7 @@ using NetTopologySuite.Index.HPRtree;
 using NetTopologySuite.Index.KdTree;
 using NetTopologySuite.Triangulate.Tri;
 using Ritgard.Mining;
+using Ritgard.Voxel;
 
 namespace Ritgard.Structures;
 
@@ -49,10 +50,7 @@ public partial class TopicIsland : Node3D
     public Topic Topic { get; set; }
 
     [Export]
-    public VoxelBlockyLibrary Library { get; set; }
-
-    [Export]
-    public VoxelMesherBlocky Mesher { get; set; }
+    public VoxelBlockLibrary Library { get; set; }
 
     [Export]
     public Material Material { get; set; }
@@ -83,7 +81,7 @@ public partial class TopicIsland : Node3D
         }
 
         var colorPalette = Palette
-            .Select(b => ((VoxelBlockyModelCube)Library.GetModel((uint)b)).Color)
+            .Select(b => Library.GetColor((byte)b))
             .ToImmutableArray();
         islandColor = colorPalette[Topic.Id % colorPalette.Length];
 
@@ -450,70 +448,6 @@ public partial class TopicIsland : Node3D
         }
 
         _.Label.Position = _.Label.Position with { Y = (IsCompletelySubmerged ? 0 : LabelVerticalOffset) + maxHeight };
-    }
-
-    private void ComputeBlockyMesh(IEnumerable<string> itemIds)
-    {
-        var maxHeight = Mathf.RoundToInt(itemIds.Max(i => Overlord.Instance.Heights[i]));
-        var intSize = new Vector3I(heightmapBox.Size.X, maxHeight, heightmapBox.Size.Y);
-        if (intSize.Y == 0)
-        {
-            _.Mesh.Visible = false;
-            return;
-        }
-
-        _.Mesh.Visible = true;
-
-        var buffer = new StructureBuffer(
-            size: intSize,
-            library: Library,
-            offset: new Vector3I(1, 1, 1)
-        );
-
-        for (int y = 0; y < Heightmap.GetLength(0); ++y)
-        {
-            for (int x = 0; x < Heightmap.GetLength(1); ++x)
-            {
-                var height = Heightmap[y, x];
-                if (height == 0)
-                {
-                    continue;
-                }
-
-                buffer.FillArea(
-                    new(x, 0, y),
-                    new(x + 1, height - DirtWidth - GrassWidth, y + 1),
-                    Blocks.Stone
-                );
-                buffer.FillArea(
-                    new(x, height - DirtWidth - GrassWidth, y),
-                    new(x + 1, height - GrassWidth, y + 1),
-                    Blocks.Dirt
-                );
-                buffer.FillArea(
-                    new(x, height - GrassWidth, y),
-                    new(x + 1, height, y + 1),
-                    Palette[Topic.Id % Palette.Length]
-                );
-            }
-        }
-
-        var shape = new ConcavePolygonShape3D();
-        var mesher = new VoxelMesherBlocky();
-        mesher.Library = Library;
-        var mesh = mesher.BuildMesh(buffer.Data, [Material]);
-        if (mesh is null)
-        {
-            GD.PushWarning($"Topic island '{Topic.GetPreferredTitle()}' did not produce a mesh.");
-            return;
-        }
-
-        // shape.SetFaces(mesh.GetFaces());
-        var position = new Vector3(heightmapBox.Position.X, 0, heightmapBox.Position.Y);
-        _.Mesh.Mesh = mesh;
-        _.Mesh.Position = position;
-        _.Body.Get().Position = position;
-        // _.Body.Collider.Shape = shape;
     }
 
     public static byte ToByteHeight(float height)

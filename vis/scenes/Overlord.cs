@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Ritgard.Voxel;
 
 namespace Ritgard;
 
@@ -48,7 +49,7 @@ public partial class Overlord : Node
     public UIWrapper UI { get; set; }
 
     [Export]
-    public VoxelBlockyLibrary Library { get; set; }
+    public VoxelBlockLibrary Library { get; set; }
 
     [Export]
     public MeshInstance3D Ocean { get; set; }

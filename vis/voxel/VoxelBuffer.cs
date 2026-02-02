@@ -1,0 +1,31 @@
+﻿using Godot;
+
+namespace Ritgard.Voxel;
+
+public struct VoxelBuffer
+{
+    public Vector3I Size { get; }
+
+    public VoxelBuffer(Vector3I size)
+    {
+        Size = size;
+        RawData = new byte[Size.Z, Size.Y, Size.X];
+    }
+
+    public VoxelBuffer(int width, int height, int depth) : this(new Vector3I(width, height, depth))
+    {
+    }
+
+    public byte[,,] RawData { get; }
+
+    public void SetVoxel(byte value, int x, int y, int z)
+    {
+        RawData[z, y, x] = value;
+    }
+
+    public void SetVoxel(byte value, Vector3I pos)
+    {
+        // TODO: Assert for positive coords
+        RawData[pos.Z, pos.Y, pos.Z] = value;
+    }
+}

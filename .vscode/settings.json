@@ -3,5 +3,5 @@
     "python.defaultInterpreterPath": "${workspaceFolder}/data-processing/.venv/bin/python",
     "python-envs.pythonProjects": [],
     "godotTools.lsp.autoReconnect.enabled": false,
-    "godotTools.editorPath.godot4": "c:\\dev\\ext\\godot\\voxel-441\\godot.windows.editor.x86_64.mono.exe"
+    "godotTools.editorPath.godot4": "c:\\dev\\godot\\Godot_v4.6-stable_mono_win64.exe"
 }

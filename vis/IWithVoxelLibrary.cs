@@ -1,8 +1,9 @@
 using Godot;
+using Ritgard.Voxel;
 
 namespace Ritgard;
 
 public interface IWithVoxelLibrary
 {
-    VoxelBlockyLibrary Library { get; }
+    VoxelBlockLibrary Library { get; }
 }

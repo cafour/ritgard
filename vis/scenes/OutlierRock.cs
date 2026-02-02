@@ -1,5 +1,6 @@
 using Godot;
 using Ritgard.Structures;
+using Ritgard.Voxel;
 
 namespace Ritgard;
 
@@ -7,13 +8,13 @@ namespace Ritgard;
 public partial class OutlierRock : Node3D, IWithVoxelLibrary
 {
     [Export]
-    public VoxelBlockyLibrary Library { get; set; }
+    public VoxelBlockLibrary Library { get; set; }
 
     [Export]
     public Material Material { get; set; }
 
     public ActiveItem Item { get; set; }
-    
+
     public int Height { get; private set; }
 
     public override void _Ready()
@@ -28,7 +29,7 @@ public partial class OutlierRock : Node3D, IWithVoxelLibrary
         {
             return;
         }
-        
+
         Height = height;
 
         if (Height == 0)
@@ -50,11 +51,8 @@ public partial class OutlierRock : Node3D, IWithVoxelLibrary
         var size = max - min;
         var buffer = new StructureBuffer(size, Library);
         structure.Build(buffer);
-        var mesher = new VoxelMesherBlocky
-        {
-            Library = Library
-        };
-        _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, [Material]);
+        var mesher = new VoxelMesher();
+        _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, Library, Material);
         _.Mesh.Position = new Vector3(
             x: -size.X / 2 + 0.5f,
             y: 0,
