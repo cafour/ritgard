@@ -16,6 +16,8 @@ public partial class VoxelBlockLibrary : Resource
     public ImmutableDictionary<string, byte> NameValueMap { get; private set; }
         = ImmutableDictionary<string, byte>.Empty;
 
+    public ImmutableHashSet<Material> Materials { get; private set; } = [];
+
     public void Bake()
     {
         var builder = ImmutableDictionary.CreateBuilder<string, byte>();
@@ -38,10 +40,16 @@ public partial class VoxelBlockLibrary : Resource
         }
 
         NameValueMap = builder.ToImmutable();
+        Materials = Types.Select(t => t.Material).OfType<Material>().ToImmutableHashSet();
     }
 
-    public byte GetBlockTypeIndex(string name)
+    public byte GetBlockTypeValue(string name)
     {
+        if (NameValueMap.IsEmpty)
+        {
+            throw new InvalidOperationException("The library is empty. Did you bake it?");
+        }
+
         if (NameValueMap.TryGetValue(name, out var value))
         {
             return value;

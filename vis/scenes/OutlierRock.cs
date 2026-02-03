@@ -54,9 +54,9 @@ public partial class OutlierRock : Node3D, IWithVoxelLibrary
         var mesher = new VoxelMesher();
         _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, Library, Material);
         _.Mesh.Position = new Vector3(
-            x: -size.X / 2 + 0.5f,
+            x: -size.X / 2.0f + 0.5f,
             y: 0,
-            z: -size.Z / 2 + 0.5f
+            z: -size.Z / 2.0f + 0.5f
         );
     }
 }

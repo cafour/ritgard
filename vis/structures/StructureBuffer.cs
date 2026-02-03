@@ -20,7 +20,7 @@ public sealed class StructureBuffer : IWithVoxelLibrary
 
         Size = size;
         Library = library;
-        Data = new VoxelBuffer(size.X + 2, size.Y + 2, size.Z + 2);
+        Data = new VoxelBuffer((uint)size.X + 2, (uint)size.Y + 2, (uint)size.Z + 2);
         OriginOffset = offset ?? new Vector3I(size.X / 2, 1, size.Z / 2);
     }
 
