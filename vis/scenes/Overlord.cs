@@ -498,7 +498,7 @@ public partial class Overlord : Node
             SlidingWindowPreset.YearAndHalf => TimeSpan.FromDays(547),
             SlidingWindowPreset.TwentyMonths => TimeSpan.FromDays(600),
             SlidingWindowPreset.TwoYears => TimeSpan.FromDays(730),
-            _ => throw new NotImplementedException()
+            _ => throw new NotSupportedException()
         };
     }
 

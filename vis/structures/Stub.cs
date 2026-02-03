@@ -16,7 +16,7 @@ public sealed class Stub : IStructure
 
     public void Build(StructureBuffer buffer)
     {
-        buffer.FillBresenhamLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, Blocks.Bark);
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, Blocks.Bark);
     }
 
 }

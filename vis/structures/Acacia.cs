@@ -27,7 +27,7 @@ public sealed class Acacia : IStructure
     {
         var totalHeight = TrunkHeight + 1;
         var trunk = Mathf.CeilToInt(Mathf.Log(totalHeight * BarkGrowth));
-        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, trunk, Mathf.CeilToInt(trunk / 2f), Blocks.Bark);
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, Blocks.Bark);
 
         if (TrunkHeight >= 3)
         {
@@ -35,29 +35,21 @@ public sealed class Acacia : IStructure
             buffer.FillLine(
                 Vector3I.Up * (TrunkHeight - 2),
                 Vector3I.Up * (TrunkHeight - 1) + Vector3I.Forward * (span - 1),
-                1,
-                1,
                 Blocks.Bark
             );
             buffer.FillLine(
                 Vector3I.Up * (TrunkHeight - 2),
                 Vector3I.Up * (TrunkHeight - 1) + Vector3I.Back * (span - 1),
-                1,
-                1,
                 Blocks.Bark
             );
             buffer.FillLine(
                 Vector3I.Up * (TrunkHeight - 2),
                 Vector3I.Up * (TrunkHeight - 1) + Vector3I.Left * (span - 1),
-                1,
-                1,
                 Blocks.Bark
             );
             buffer.FillLine(
                 Vector3I.Up * (TrunkHeight - 2),
                 Vector3I.Up * (TrunkHeight - 1) + Vector3I.Right * (span - 1),
-                1,
-                1,
                 Blocks.Bark
             );
         }

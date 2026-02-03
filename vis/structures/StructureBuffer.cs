@@ -4,10 +4,9 @@ using Ritgard.Voxel;
 
 namespace Ritgard.Structures;
 
-public sealed partial class StructureBuffer : IWithVoxelLibrary
+public sealed class StructureBuffer : IWithVoxelLibrary
 {
     public VoxelBuffer Data { get; }
-    // public VoxelTool Tool { get; }
     public Vector3I Size { get; }
     public VoxelBlockLibrary Library { get; }
     public Vector3I OriginOffset { get; }
@@ -22,31 +21,35 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         Size = size;
         Library = library;
         Data = new VoxelBuffer(size.X + 2, size.Y + 2, size.Z + 2);
-        // Tool = Data.GetVoxelTool();
         OriginOffset = offset ?? new Vector3I(size.X / 2, 1, size.Z / 2);
     }
 
     public StructureBuffer SetAt(Vector3I pos, Blocks blockType)
     {
         pos += OriginOffset;
-        SetRaw(pos, (byte)blockType);
-        return this;
-    }
-
-    public StructureBuffer SetRaw(Vector3I pos, byte value)
-    {
-        Data.SetVoxel(value, pos.X, pos.Y, pos.Z);
+        Data.SetVoxel((byte)blockType, pos);
         return this;
     }
 
     public StructureBuffer FillSphere(Vector3I pos, int radius, Blocks blockType)
     {
-        ResetTool();
-        // Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
-        // Tool.Value = (ulong)blockType;
-        // Tool.Mode = VoxelTool.ModeEnum.Set;
-        // Tool.DoSphere(pos + OriginOffset, radius);
-        throw new NotImplementedException();
+        pos += OriginOffset;
+        float radiusSquared = radius * radius;
+
+        for (int x = -radius + 1; x < radius; x++)
+        {
+            for (int y = -radius + 1; y < radius; y++)
+            {
+                for (int z = -radius + 1; z < radius; z++)
+                {
+                    if (x * x + y * y + z * z < radiusSquared)
+                    {
+                        Data.SetVoxel((byte)blockType, pos + new Vector3I(x, y, z));
+                    }
+                }
+            }
+        }
+
         return this;
     }
 
@@ -57,7 +60,8 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         {
             return this;
         }
-        else if (spottiness == 1.0f)
+
+        if (Math.Abs(spottiness - 1.0f) < float.Epsilon)
         {
             return FillSphere(pos, radius, blockType);
         }
@@ -85,24 +89,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
         return this;
     }
 
-    public StructureBuffer FillLine(Vector3I from, Vector3I to, float fromRadius, float toRadius, Blocks blockType)
-    {
-        ResetTool();
-        // Tool.Channel = VoxelBuffer.ChannelId.ChannelType;
-        // Tool.Value = (ulong)blockType;
-        // Tool.Mode = VoxelTool.ModeEnum.Set;
-        // Span<Vector3> points = stackalloc Vector3[2];
-        // Span<float> radii = stackalloc float[2];
-        // points[0] = from + OriginOffset;
-        // points[1] = to + OriginOffset;
-        // radii[0] = fromRadius;
-        // radii[1] = toRadius;
-        // Tool.DoPath(points, radii);
-        throw new NotImplementedException();
-        return this;
-    }
-
-    public StructureBuffer FillBresenhamLine(Vector3I from, Vector3I to, Blocks blockType)
+    public StructureBuffer FillLine(Vector3I from, Vector3I to, Blocks blockType)
     {
         from += OriginOffset;
         to += OriginOffset;
@@ -121,8 +108,9 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
 
         void Set(Vector3I p)
         {
-            Data.SetVoxel((byte)blockType, p.X, p.Y, p.Z);
+            Data.SetVoxel((byte)blockType, p);
         }
+
         Set(from);
 
         if (dx >= dy && dx >= dz)
@@ -137,11 +125,13 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                     current.Y += ys;
                     p1 -= 2 * dx;
                 }
+
                 if (p2 >= 0)
                 {
                     current.Z += zs;
                     p2 -= 2 * dx;
                 }
+
                 p1 += 2 * dy;
                 p2 += 2 * dz;
 
@@ -149,6 +139,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     return this;
                 }
+
                 Set(current);
             }
         }
@@ -164,11 +155,13 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                     current.X += xs;
                     p1 -= 2 * dy;
                 }
+
                 if (p2 >= 0)
                 {
                     current.Z += zs;
                     p2 -= 2 * dy;
                 }
+
                 p1 += 2 * dx;
                 p2 += 2 * dz;
 
@@ -176,6 +169,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     return this;
                 }
+
                 Set(current);
             }
         }
@@ -191,11 +185,13 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                     current.Y += ys;
                     p1 -= 2 * dz;
                 }
+
                 if (p2 >= 0)
                 {
                     current.Z += xs;
                     p2 -= 2 * dz;
                 }
+
                 p1 += 2 * dy;
                 p2 += 2 * dx;
 
@@ -203,6 +199,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     return this;
                 }
+
                 Set(current);
             }
         }
@@ -236,9 +233,9 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     for (int h = 0; h < height; ++h)
                     {
-                        if (spottiness == 1.0f || spottiness < rng.Randf())
+                        if (Math.Abs(spottiness - 1.0f) < float.Epsilon || spottiness < rng.Randf())
                         {
-                            SetRaw(pos + new Vector3I(x, h, z), (byte)blockType);
+                            Data.SetVoxel((byte)blockType, pos + new Vector3I(x, h, z));
                         }
                     }
                 }
@@ -265,7 +262,7 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
                 {
                     if (x * x + z * z < rSquared)
                     {
-                        SetRaw(pos + new Vector3I(x, height - h - 1, z) + OriginOffset, (byte)blockType);
+                        Data.SetVoxel((byte)blockType, pos + new Vector3I(x, height - h - 1, z) + OriginOffset);
                     }
                 }
             }
@@ -283,27 +280,18 @@ public sealed partial class StructureBuffer : IWithVoxelLibrary
             return this;
         }
 
-        // Data.FillArea(
-        //     value: (ulong)blockType,
-        //     min: min,
-        //     max: max,
-        //     channel: (int)VoxelBuffer.ChannelId.ChannelType
-        // );
-        throw new NotImplementedException();
-        return this;
-    }
+        for (int z = min.Z; z < max.Z; ++z)
+        {
+            for (int y = min.Y; y < max.Y; ++z)
+            {
+                for (int x = min.X; x < max.X; ++x)
+                {
+                    var pos = new Vector3I(x, y, z) + OriginOffset;
+                    Data.SetVoxel((byte)blockType, pos);
+                }
+            }
+        }
 
-    private void ResetTool()
-    {
-        // Tool.Value = default;
-        // Tool.Channel = default;
-        // Tool.EraserValue = default;
-        // Tool.Mode = default;
-        // Tool.SdfScale = default;
-        // Tool.SdfStrength = default;
-        // Tool.TextureIndex = default;
-        // Tool.TextureOpacity = default;
-        // Tool.TextureFalloff = default;
-        throw new NotImplementedException();
+        return this;
     }
 }

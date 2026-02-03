@@ -1,4 +1,5 @@
-﻿using Godot;
+﻿using System;
+using Godot;
 
 namespace Ritgard.Voxel;
 
@@ -25,7 +26,11 @@ public struct VoxelBuffer
 
     public void SetVoxel(byte value, Vector3I pos)
     {
-        // TODO: Assert for positive coords
+        if (pos.X < 0 || pos.Y < 0 || pos.Z < 0)
+        {
+            throw new ArgumentException("Only voxels at non-negative coords can be set.");
+        }
+
         RawData[pos.Z, pos.Y, pos.Z] = value;
     }
 }

@@ -20,7 +20,7 @@ public sealed class CubeTree : IStructure
 
     public void Build(StructureBuffer buffer)
     {
-        buffer.FillBresenhamLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, Blocks.Bark);
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * TrunkHeight, Blocks.Bark);
         if (CrownBreadth > 0)
         {
             // buffer.FillSpottyCylinder(Vector3I.Up * TrunkHeight, CrownBreadth, 1, Blocks.AcaciaLeaves, Leafiness);

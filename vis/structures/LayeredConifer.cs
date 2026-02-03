@@ -12,7 +12,7 @@ public sealed class LayeredConifer : IStructure
     public int TrunkHeight { get; set; }
 
     public BitArray Layers { get; set; }
-    
+
     public bool HasCap { get; set; }
 
     public int MaxBreadth { get; set; } = int.MaxValue;
@@ -30,7 +30,7 @@ public sealed class LayeredConifer : IStructure
     {
         var coneHeight = Layers.Length;
         var totalHeight = TrunkHeight + coneHeight;
-        buffer.FillBresenhamLine(Vector3I.Zero, Vector3I.Up * (totalHeight - 1), Blocks.Bark);
+        buffer.FillLine(Vector3I.Zero, Vector3I.Up * (totalHeight - 1), Blocks.Bark);
         buffer.FillSpottyCylinder(Vector3I.Up * (TrunkHeight + 0), 2, 1, Blocks.ConiferLeaves, 1);
 
         for (int i = 0; i < Layers.Length; ++i)
