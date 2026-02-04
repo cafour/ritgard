@@ -37,6 +37,14 @@ public class VoxelMesher
         { 2, 3, 7, 6 }
     };
 
+
+    public static readonly int[,] EdgeCorners =
+    {
+        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
+        { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 },
+        { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }
+    };
+
     // 3---2
     // |   |
     // 0---1
@@ -82,6 +90,10 @@ public class VoxelMesher
         { 2, 6, 10, 7 }
     };
 
+    public bool AmbientOcclusionEnabled { get; set; } = true;
+
+    public float AmbientOcclusionDarkness { get; set; } = 0.8f;
+
     public Mesh BuildMesh(VoxelBuffer buffer, VoxelBlockLibrary library, Material mainMaterial)
     {
         Span<int> sideLut = stackalloc int[(int)Sides.Count];
@@ -97,6 +109,9 @@ public class VoxelMesher
         var materialIndices = materials
             .Select((material, index) => (material, index))
             .ToImmutableDictionary(p => p.material, p => p.index);
+
+        // NB: Must be here because stackalloc'd memory is released only upon return.
+        Span<int> shadedCorners = stackalloc int[8];
 
         for (uint z = min.Z; z < max.Z; ++z)
         {
@@ -144,6 +159,31 @@ public class VoxelMesher
 
                         var indexOffset = surface.Positions.Count;
 
+                        if (AmbientOcclusionEnabled)
+                        {
+                            shadedCorners.Fill(0);
+                            for (int e = 0; e < 4; ++e)
+                            {
+                                var edge = SideEdges[side, e];
+                                var edgeValue = buffer.RawData[index + edgeLut[edge]];
+                                if (edgeValue != VoxelBuffer.NoneValue)
+                                {
+                                    ++shadedCorners[EdgeCorners[edge, 0]];
+                                    ++shadedCorners[EdgeCorners[edge, 1]];
+                                }
+                            }
+
+                            for (int c = 0; c < 4; ++c)
+                            {
+                                var corner = SideCorners[side, c];
+                                var cornerValue = buffer.RawData[index + cornerLut[corner]];
+                                if (cornerValue != VoxelBuffer.NoneValue)
+                                {
+                                    ++shadedCorners[corner];
+                                }
+                            }
+                        }
+
                         // positions
                         {
                             surface.Positions.AddRange(Enumerable.Repeat(Vector3.Zero, 4));
@@ -185,7 +225,20 @@ public class VoxelMesher
                                 colSpan[i] = blockType.Color;
                             }
 
-                            // TODO: Ambient occlusion
+                            if (AmbientOcclusionEnabled)
+                            {
+                                for (var c = 0; c < 4; ++c)
+                                {
+                                    var corner = SideCorners[side, c];
+                                    if (shadedCorners[corner] != 0)
+                                    {
+                                        var shade = AmbientOcclusionDarkness * shadedCorners[corner];
+                                        colSpan[c].R *= 1.0f - shade;
+                                        colSpan[c].G *= 1.0f - shade;
+                                        colSpan[c].B *= 1.0f - shade;
+                                    }
+                                }
+                            }
                         }
 
                         // indices
