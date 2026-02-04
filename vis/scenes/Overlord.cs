@@ -31,7 +31,7 @@ public partial class Overlord : Node
 
     public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
 
-    public static Overlord Instance { get; private set; }
+    public static Overlord Instance { get; private set; } = null!;
 
     [Export]
     public PackedScene ItemStructureScene { get; set; }
@@ -110,7 +110,7 @@ public partial class Overlord : Node
 
     private IConfiguration configuration;
     private VisualizationOptions options;
-    private ImmutableArray<DatasetInfo> datasets;
+    private ImmutableArray<DatasetInfo> datasets = [];
     private readonly Dictionary<int, TopicIsland> topicIslands = [];
     private readonly Dictionary<string, ItemStructure> itemStructures = [];
     private readonly Dictionary<string, OutlierRock> outlierRocks = [];
@@ -124,11 +124,7 @@ public partial class Overlord : Node
 
     public override void _EnterTree()
     {
-        if (Instance is not null)
-        {
-            Instance.QueueFree();
-        }
-
+        Instance?.QueueFree();
         Instance = this;
 
         generatedNodesContainer = GetNode<Node>("GeneratedNodesContainer");

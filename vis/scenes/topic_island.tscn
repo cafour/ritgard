@@ -1,8 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://rvdfdq5klsk4"]
+[gd_scene format=3 uid="uid://rvdfdq5klsk4"]
 
 [ext_resource type="Script" uid="uid://ej67kysjwwlq" path="res://scenes/TopicIsland.cs" id="1_cfvs4"]
-[ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="2_xsgby"]
-[ext_resource type="VoxelMesherBlocky" uid="uid://0j8lhvkaeh86" path="res://voxel_mesher.tres" id="3_wc82c"]
+[ext_resource type="Resource" uid="uid://coibdxwbc4v2" path="res://voxel_block_library.tres" id="2_wc82c"]
 [ext_resource type="Shader" uid="uid://qr2pwcp5cim5" path="res://shaders/topic_island.gdshader" id="4_4m8o0"]
 [ext_resource type="Shader" uid="uid://bnqc2iav2loar" path="res://shaders/outline.gdshader" id="5_4m8o0"]
 
@@ -17,22 +16,21 @@ shader = ExtResource("5_4m8o0")
 shader_parameter/color = Color(0.784851, 0.125123, 0, 1)
 shader_parameter/thickness = 0.25
 
-[node name="TopicIsland" type="Node3D"]
+[node name="TopicIsland" type="Node3D" unique_id=2049716673]
 script = ExtResource("1_cfvs4")
-Library = ExtResource("2_xsgby")
-Mesher = ExtResource("3_wc82c")
+Library = ExtResource("2_wc82c")
 Material = SubResource("ShaderMaterial_j52l4")
 HighlightMaterial = SubResource("ShaderMaterial_pnkat")
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1852387868]
 
-[node name="Body" type="StaticBody3D" parent="."]
+[node name="Body" type="StaticBody3D" parent="." unique_id=189659]
 collision_layer = 2
 collision_mask = 0
 
-[node name="Collider" type="CollisionShape3D" parent="Body"]
+[node name="Collider" type="CollisionShape3D" parent="Body" unique_id=499926556]
 
-[node name="Label" type="Label3D" parent="."]
+[node name="Label" type="Label3D" parent="." unique_id=54205848]
 pixel_size = 0.001
 offset = Vector2(0, 30)
 billboard = 1

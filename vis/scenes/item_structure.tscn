@@ -1,7 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://bx4226wl622ht"]
+[gd_scene format=3 uid="uid://bx4226wl622ht"]
 
 [ext_resource type="Script" uid="uid://05vfpmdpi2il" path="res://scenes/ItemStructure.cs" id="1_kiqts"]
-[ext_resource type="VoxelBlockyLibrary" uid="uid://cbghhwq48nb1x" path="res://voxel_library.tres" id="2_v15mh"]
+[ext_resource type="Resource" uid="uid://coibdxwbc4v2" path="res://voxel_block_library.tres" id="2_a3ed8"]
 [ext_resource type="Material" uid="uid://cep2p2lt1vumq" path="res://voxel_material.tres" id="3_38n5f"]
 [ext_resource type="Shader" uid="uid://bnqc2iav2loar" path="res://shaders/outline.gdshader" id="3_fjski"]
 
@@ -18,21 +18,21 @@ radius = 3.0
 radius = 3.0
 height = 6.0
 
-[node name="TestStructure" type="Node3D"]
+[node name="TestStructure" type="Node3D" unique_id=568953219]
 script = ExtResource("1_kiqts")
-Library = ExtResource("2_v15mh")
+Library = ExtResource("2_a3ed8")
 Material = ExtResource("3_38n5f")
 HighlightMaterial = SubResource("ShaderMaterial_38n5f")
 
-[node name="Body" type="StaticBody3D" parent="."]
+[node name="Body" type="StaticBody3D" parent="." unique_id=899686136]
 collision_layer = 2
 collision_mask = 0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Body"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Body" unique_id=1779687214]
 shape = SubResource("SphereShape3D_v15mh")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Body"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Body" unique_id=2026387744]
 visible = false
 mesh = SubResource("SphereMesh_v15mh")
 
-[node name="Mesh" type="MeshInstance3D" parent="."]
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1142248725]

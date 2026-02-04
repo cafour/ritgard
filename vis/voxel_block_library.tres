@@ -4,133 +4,131 @@
 [ext_resource type="Script" uid="uid://cfudvn0uj5gaw" path="res://voxel/VoxelBlockLibrary.cs" id="2_ak4ir"]
 
 [sub_resource type="Resource" id="Resource_kj7yv"]
+resource_name = "stone"
 script = ExtResource("1_kj7yv")
-Name = "stone"
 Color = Color(0.12549, 0.12549, 0.12549, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_slcdn"]
+resource_name = "grass"
 script = ExtResource("1_kj7yv")
-Name = "grass"
 Color = Color(0.17254902, 0.5529412, 0, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_o2oqi"]
+resource_name = "dirt"
 script = ExtResource("1_kj7yv")
-Name = "dirt"
 Color = Color(0.501961, 0.137255, 0, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_508ry"]
+resource_name = "important"
 script = ExtResource("1_kj7yv")
-Name = "important"
-Color = Color(1, 0, 0, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_8fe22"]
+resource_name = "missing"
 script = ExtResource("1_kj7yv")
-Name = "missing"
 Color = Color(0.571266, 0.00302011, 0.869848, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_6qcw4"]
+resource_name = "leaves"
 script = ExtResource("1_kj7yv")
-Name = "leaves"
 Color = Color(0.36078432, 0.5372549, 0.21176471, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_7kxxd"]
+resource_name = "bark"
 script = ExtResource("1_kj7yv")
-Name = "bark"
 Color = Color(0.596078, 0.360784, 0.25098, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_7yfqv"]
+resource_name = "acacia_leaves"
 script = ExtResource("1_kj7yv")
-Name = "acacia_leaves"
 Color = Color(0.43529412, 0.7254902, 0.68235296, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_letun"]
+resource_name = "conifer_leaves"
 script = ExtResource("1_kj7yv")
-Name = "conifer_leaves"
 Color = Color(0.21176471, 0.3137255, 0.17254902, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_jk2pl"]
+resource_name = "water"
 script = ExtResource("1_kj7yv")
-Name = "water"
 Color = Color(0.0196078, 0.0627451, 0.317647, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_ek263"]
+resource_name = "vis01"
 script = ExtResource("1_kj7yv")
-Name = "vis01"
 Color = Color(0.866667, 0.517647, 0.321569, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_oy2o0"]
+resource_name = "vis02"
 script = ExtResource("1_kj7yv")
-Name = "vis02"
 Color = Color(0.768627, 0.305882, 0.321569, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_gj7eh"]
+resource_name = "vis03"
 script = ExtResource("1_kj7yv")
-Name = "vis03"
 Color = Color(0.505882, 0.447059, 0.701961, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_g50pg"]
+resource_name = "vis04"
 script = ExtResource("1_kj7yv")
-Name = "vis04"
 Color = Color(0.576471, 0.470588, 0.376471, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_p0eyp"]
+resource_name = "vis05"
 script = ExtResource("1_kj7yv")
-Name = "vis05"
 Color = Color(0.854902, 0.545098, 0.764706, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_3bf2p"]
+resource_name = "vis06"
 script = ExtResource("1_kj7yv")
-Name = "vis06"
 Color = Color(0.54902, 0.54902, 0.54902, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_qmwbw"]
+resource_name = "vis07"
 script = ExtResource("1_kj7yv")
-Name = "vis07"
 Color = Color(0.8, 0.72549, 0.454902, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_5sb1r"]
+resource_name = "vis08"
 script = ExtResource("1_kj7yv")
-Name = "vis08"
 Color = Color(0.392157, 0.709804, 0.803922, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_pytfl"]
+resource_name = "leaves01"
 script = ExtResource("1_kj7yv")
-Name = "leaves01"
 Color = Color(0.0765, 0.17, 0.0425, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_53tco"]
+resource_name = "leaves02"
 script = ExtResource("1_kj7yv")
-Name = "leaves02"
 Color = Color(0.31084502, 0.51, 0.14790002, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [sub_resource type="Resource" id="Resource_2v1nb"]
+resource_name = "leaves03"
 script = ExtResource("1_kj7yv")
-Name = "leaves03"
 Color = Color(0.4118, 0.58, 0.44824332, 1)
 metadata/_custom_type_script = "uid://cdlffyi6poax5"
 
 [resource]
 script = ExtResource("2_ak4ir")
-Types = Array[ExtResource("1_kj7yv")]([SubResource("Resource_kj7yv"), SubResource("Resource_slcdn")])
+Types = Array[ExtResource("1_kj7yv")]([SubResource("Resource_kj7yv"), SubResource("Resource_slcdn"), SubResource("Resource_o2oqi"), SubResource("Resource_508ry"), SubResource("Resource_8fe22"), SubResource("Resource_6qcw4"), SubResource("Resource_7kxxd"), SubResource("Resource_7yfqv"), SubResource("Resource_letun"), SubResource("Resource_jk2pl"), SubResource("Resource_ek263"), SubResource("Resource_oy2o0"), SubResource("Resource_gj7eh"), SubResource("Resource_g50pg"), SubResource("Resource_p0eyp"), SubResource("Resource_3bf2p"), SubResource("Resource_qmwbw"), SubResource("Resource_5sb1r"), SubResource("Resource_pytfl"), SubResource("Resource_53tco"), SubResource("Resource_2v1nb")])
 metadata/_custom_type_script = "uid://cfudvn0uj5gaw"
-
