@@ -282,11 +282,11 @@ public sealed class StructureBuffer : IWithVoxelLibrary
 
         for (int z = min.Z; z < max.Z; ++z)
         {
-            for (int y = min.Y; y < max.Y; ++z)
+            for (int y = min.Y; y < max.Y; ++y)
             {
                 for (int x = min.X; x < max.X; ++x)
                 {
-                    var pos = new Vector3I(x, y, z) + OriginOffset;
+                    var pos = new Vector3I(x, y, z);
                     Data.SetVoxel((byte)blockType, pos);
                 }
             }

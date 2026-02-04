@@ -108,6 +108,14 @@ public class VoxelMesher
                     var value = buffer.RawData[index];
                     if (value == VoxelBuffer.NoneValue)
                     {
+                        // air
+                        continue;
+                    }
+
+                    var blockType = library.GetBlockType(value);
+                    if (blockType is null)
+                    {
+                        // also air
                         continue;
                     }
 
@@ -121,7 +129,6 @@ public class VoxelMesher
                         }
                     }
 
-                    var blockType = library.Types[value];
                     var material = blockType.Material ?? mainMaterial;
                     var surface = surfaces[blockType.Material is null ? 0 : materialIndices[material]];
 
@@ -157,8 +164,8 @@ public class VoxelMesher
 
                         // tangents
                         {
-                            surface.Tangents.AddRange(Enumerable.Repeat(Vector4.Zero, 4));
-                            var tanSpan = CollectionsMarshal.AsSpan(surface.Tangents)[^4..];
+                            surface.Tangents.AddRange(Enumerable.Repeat(0.0f, 4 * 4));
+                            var tanSpan = CollectionsMarshal.AsSpan(surface.Tangents)[^(4 * 4)..];
                             SetSideTangents(tanSpan, (Sides)side);
                         }
 
@@ -309,12 +316,15 @@ public class VoxelMesher
         }
     }
 
-    private static void SetSideTangents(Span<Vector4> tangents, Sides side)
+    private static void SetSideTangents(Span<float> tangents, Sides side)
     {
-        Assert.IsEquals(4, tangents.Length);
+        Assert.IsEquals(4 * 4, tangents.Length);
         for (int i = 0; i < 4; ++i)
         {
-            tangents[i] = SideTangents[(int)side];
+            tangents[i * 4 + 0] = SideTangents[(int)side][0];
+            tangents[i * 4 + 1] = SideTangents[(int)side][1];
+            tangents[i * 4 + 2] = SideTangents[(int)side][2];
+            tangents[i * 4 + 3] = SideTangents[(int)side][3];
         }
     }
 
@@ -340,7 +350,7 @@ public class VoxelMesher
     {
         public List<Vector3> Positions { get; } = [];
         public List<Vector2> UVs { get; } = [];
-        public List<Vector4> Tangents { get; } = [];
+        public List<float> Tangents { get; } = [];
         public List<Vector3> Normals { get; } = [];
         public List<Color> Colors { get; } = [];
         public List<int> Indices { get; } = [];

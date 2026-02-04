@@ -58,6 +58,16 @@ public partial class VoxelBlockLibrary : Resource
         return 0;
     }
 
+    public VoxelBlockType? GetBlockType(byte value)
+    {
+        if (value == VoxelBuffer.NoneValue)
+        {
+            return null;
+        }
+
+        return Types[value - 1];
+    }
+
     public Color GetColor(byte value)
     {
         if (value == 0)
