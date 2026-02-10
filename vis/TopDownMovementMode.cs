@@ -8,6 +8,7 @@ public class TopDownMovementMode(Player player) : IMovementMode
     public const float CameraBaseSize = 1000f;
     public const float DefaultPitch = -Mathf.Pi / 6;
     public const float DefaultYaw = -Mathf.Pi / 6;
+    public const float PanGestureSensitivity = 6f;
 
     public Player Player { get; } = player;
 
@@ -47,25 +48,45 @@ public class TopDownMovementMode(Player player) : IMovementMode
             ZoomLevel += step;
         }
 
+        if (@event is InputEventMagnifyGesture mag)
+        {
+            ZoomLevel /= mag.Factor;
+        }
+
         ZoomLevel = Mathf.Clamp(ZoomLevel, 0.01f, 10f);
 
-        if (Input.IsMouseButtonPressed(MouseButton.Left) && @event is InputEventMouseMotion pan)
+        if (Input.IsMouseButtonPressed(MouseButton.Left) && @event is InputEventMouseMotion motion)
         {
-            var windowFactor = Player.Camera.Size / Player.Camera.GetWindow().Size.Y;
-            var pitchFactor = -1f / Mathf.Sin(Pitch);
-            var diff = new Vector2(pan.ScreenRelative.X, pan.ScreenRelative.Y * pitchFactor);
-            diff = diff.Rotated(-Yaw) * windowFactor;
-            Player.Position += new Vector3(-diff.X, 0, -diff.Y);
+            Pan(motion.ScreenRelative.X, motion.ScreenRelative.Y);
+        }
+        else if (@event is InputEventPanGesture pan)
+        {
+            Pan(-pan.Delta.X * PanGestureSensitivity, -pan.Delta.Y * PanGestureSensitivity);
         }
         else if (Input.IsMouseButtonPressed(MouseButton.Right) && @event is InputEventMouseMotion rot)
         {
-            Pitch -= rot.ScreenRelative.Y * 0.005f;
-            Pitch = Mathf.Clamp(Pitch, -Mathf.Pi / 2, 0);
-            Yaw -= rot.ScreenRelative.X * 0.005f;
-            Yaw = Mathf.Wrap(Yaw, -Mathf.Pi, Mathf.Pi);
-
-            RotateCamera();
+            Rotate(rot.ScreenRelative.X, rot.ScreenRelative.Y);
         }
+    }
+
+    private void Pan(float x, float y)
+    {
+        GD.Print($"X={x}, Y={y}");
+        var windowFactor = Player.Camera.Size / Player.Camera.GetWindow().Size.Y;
+        var pitchFactor = -1f / Mathf.Sin(Pitch);
+        var diff = new Vector2(x, y * pitchFactor);
+        diff = diff.Rotated(-Yaw) * windowFactor;
+        Player.Position += new Vector3(-diff.X, 0, -diff.Y);
+    }
+
+    private void Rotate(float x, float y)
+    {
+        Pitch -= y * 0.005f;
+        Pitch = Mathf.Clamp(Pitch, -Mathf.Pi / 2, 0);
+        Yaw -= x * 0.005f;
+        Yaw = Mathf.Wrap(Yaw, -Mathf.Pi, Mathf.Pi);
+
+        RotateCamera();
     }
 
     public void Move(double delta)
