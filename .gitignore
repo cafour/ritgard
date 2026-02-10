@@ -3,3 +3,5 @@ bin/
 .idea/
 tmp/
 /data/**/*.json
+.DS_store
+/datasets/

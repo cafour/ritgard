@@ -145,6 +145,10 @@ print_islands={
 3d_physics/layer_1="Ground"
 3d_physics/layer_2="Items"
 
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true
+
 [voxel]
 
 ownership_checks=false

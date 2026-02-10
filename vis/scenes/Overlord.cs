@@ -128,17 +128,27 @@ public partial class Overlord : Node
         configuration = Mining.Utils.BuildConfiguration();
         options = new VisualizationOptions();
         configuration.Bind(options);
-        if (string.IsNullOrWhiteSpace(options.DataPath) || !Directory.Exists(options.DataPath))
+
+        options.DataPath ??= "./datasets";
+        var dataPath = FindDataPath(options.DataPath);
+        if (dataPath is null)
+        {
+            var dotnetDataDir = new DirectoryInfo(".").EnumerateDirectories()
+                .First(d => d.Name.StartsWith("data_Ritgard")).FullName;
+            GD.Print($"Found .NET data directory in '{dotnetDataDir}'.");
+            dataPath = FindDataPath(Path.Combine(dotnetDataDir, options.DataPath));
+        }
+        GD.Print($"Found '{dataPath}'.");
+        if (dataPath is null)
         {
             throw new ArgumentException(
                 $"Set a valid 'DataPath' in the tool's 'appsettings.json' file. "
-                + $"'{(options.DataPath is null ? "null" : new DirectoryInfo(options.DataPath).FullName)}' "
-                + $"is either null or does not exist."
+                + $"Could not find '{options.DataPath}' in '{new DirectoryInfo(".").FullName}' or any parent directory."
             );
         }
 
-        datasets = Utils.DiscoverDatasets(options.DataPath);
-        GD.Print($"Discovered {datasets.Length} datasets in '{options.DataPath}'.");
+        datasets = Utils.DiscoverDatasets(dataPath);
+        GD.Print($"Discovered {datasets.Length} datasets in '{dataPath}'.");
     }
 
     public override async void _Ready()
@@ -146,6 +156,23 @@ public partial class Overlord : Node
         BindUserInterface();
 
         await ShowDataset(0);
+    }
+
+    private static string? FindDataPath(string dataPath)
+    {
+        var current = new DirectoryInfo(dataPath);
+        while (current is not null && !current.Exists)
+        {
+            var parentDir = current.Parent?.Parent?.FullName;
+            if (parentDir is null)
+            {
+                break;
+            }
+
+            current = new DirectoryInfo(Path.Combine(parentDir, current.Name));
+        }
+
+        return current?.Exists == true ? current.FullName : null;
     }
 
     private async Task ShowDataset(int index)
@@ -384,72 +411,72 @@ public partial class Overlord : Node
                 break;
 
             case TopicIsland island:
-            {
-                currentStructure?.ToggleHighlight(false);
-                currentStructure = null;
-
-                currentIsland?.ToggleHighlight(false);
-                island.ToggleHighlight(true);
-                currentIsland = island;
-
-                var issueCount = 0;
-                var prCount = 0;
-                var discussionCount = 0;
-                foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key])
-                             .Where(i => i.TopicId == island.Topic.Id))
                 {
-                    switch (visibleItem.Conversation)
-                    {
-                        case Issue:
-                            issueCount++;
-                            break;
-                        case PullRequest:
-                            prCount++;
-                            break;
-                        case Discussion:
-                            discussionCount++;
-                            break;
-                    }
-                }
+                    currentStructure?.ToggleHighlight(false);
+                    currentStructure = null;
 
-                UI.ItemDescriptionLabel.Text =
-                    $"Topic #{island.Topic.Id}: {island.Topic.GetPreferredTitle()}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
-                break;
-            }
+                    currentIsland?.ToggleHighlight(false);
+                    island.ToggleHighlight(true);
+                    currentIsland = island;
+
+                    var issueCount = 0;
+                    var prCount = 0;
+                    var discussionCount = 0;
+                    foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key])
+                                 .Where(i => i.TopicId == island.Topic.Id))
+                    {
+                        switch (visibleItem.Conversation)
+                        {
+                            case Issue:
+                                issueCount++;
+                                break;
+                            case PullRequest:
+                                prCount++;
+                                break;
+                            case Discussion:
+                                discussionCount++;
+                                break;
+                        }
+                    }
+
+                    UI.ItemDescriptionLabel.Text =
+                        $"Topic #{island.Topic.Id}: {island.Topic.GetPreferredTitle()}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
+                    break;
+                }
 
             case null:
-            {
-                currentStructure?.ToggleHighlight(false);
-                currentStructure = null;
-
-                currentIsland?.ToggleHighlight(false);
-                currentIsland = null;
-
-                Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
-                var issueCount = 0;
-                var prCount = 0;
-                var discussionCount = 0;
-                foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key]))
                 {
-                    switch (visibleItem.Conversation)
-                    {
-                        case Issue:
-                            issueCount++;
-                            break;
-                        case PullRequest:
-                            prCount++;
-                            break;
-                        case Discussion:
-                            discussionCount++;
-                            break;
-                    }
-                }
+                    currentStructure?.ToggleHighlight(false);
+                    currentStructure = null;
 
-                var now = Repo.MinDate + CurrentStep * StepLength;
-                UI.ItemDescriptionLabel.Text =
-                    $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
-                break;
-            }
+                    currentIsland?.ToggleHighlight(false);
+                    currentIsland = null;
+
+                    Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
+                    var issueCount = 0;
+                    var prCount = 0;
+                    var discussionCount = 0;
+                    foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key]))
+                    {
+                        switch (visibleItem.Conversation)
+                        {
+                            case Issue:
+                                issueCount++;
+                                break;
+                            case PullRequest:
+                                prCount++;
+                                break;
+                            case Discussion:
+                                discussionCount++;
+                                break;
+                        }
+                    }
+
+                    var now = Repo.MinDate + CurrentStep * StepLength;
+                    UI.ItemDescriptionLabel.Text =
+                        $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
+                    break;
+                }
         }
     }
 

@@ -17,5 +17,6 @@
 
     <ItemGroup>
         <Content Include="appsettings.json" CopyToOutputDirectory="Always" />
+        <Content Include="../datasets/*.json" CopyToOutputDirectory="Always" LinkBase="datasets" />
     </ItemGroup>
 </Project>
