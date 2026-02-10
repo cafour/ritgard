@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -7,7 +6,6 @@ using System.Threading;
 using Godot;
 using NetTopologySuite.Algorithm.Hull;
 using NetTopologySuite.Geometries;
-using NetTopologySuite.Index.HPRtree;
 using NetTopologySuite.Index.KdTree;
 using NetTopologySuite.Triangulate.Tri;
 using Ritgard.Mining;

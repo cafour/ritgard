@@ -1,14 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.InteropServices.Marshalling;
-using Delaunator;
 using Microsoft.Extensions.Logging;
 using NetTopologySuite.Geometries;
-using NetTopologySuite.Index.KdTree;
 using NetTopologySuite.Triangulate;
-using NetTopologySuite.Triangulate.QuadEdge;
 
 namespace Ritgard.Mining;
 

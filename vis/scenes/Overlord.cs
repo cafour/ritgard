@@ -1,15 +1,9 @@
 using Godot;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.Triangulate;
-using NetTopologySuite.Triangulate.QuadEdge;
-using Ritgard.Data;
 using Ritgard.Mining;
 using Ritgard.Structures;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.IO;
 using System.Linq;

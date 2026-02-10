@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Godot;
-using NetTopologySuite.Utilities;
 using Color = Godot.Color;
 
 namespace Ritgard.Voxel;
@@ -333,7 +333,7 @@ public class VoxelMesher
 
     private static void SetSidePositions(Span<Vector3> positions, Sides side, float height = 1.0f)
     {
-        Assert.IsEquals(4, positions.Length);
+        Debug.Assert(positions.Length == 4);
         for (int i = 0; i < 4; ++i)
         {
             var corner = SideCorners[(int)side, i];
@@ -349,8 +349,7 @@ public class VoxelMesher
 
     private static void SetSideUVs(Span<Vector2> uvs, Sides side, float height = 1.0f)
     {
-        Assert.IsEquals(4, uvs.Length);
-
+        Debug.Assert(uvs.Length == 4);
         const float e = 0.001f;
         if (side is Sides.Top or Sides.Bottom)
         {
@@ -371,7 +370,7 @@ public class VoxelMesher
 
     private static void SetSideTangents(Span<float> tangents, Sides side)
     {
-        Assert.IsEquals(4 * 4, tangents.Length);
+        Debug.Assert(tangents.Length == 4 * 4);
         for (int i = 0; i < 4; ++i)
         {
             tangents[i * 4 + 0] = SideTangents[(int)side][0];
@@ -383,7 +382,7 @@ public class VoxelMesher
 
     private static void SetSideNormals(Span<Vector3> normals, Sides side)
     {
-        Assert.IsEquals(4, normals.Length);
+        Debug.Assert(normals.Length == 4);
         for (int i = 0; i < 4; ++i)
         {
             normals[i] = SideNormals[(int)side];
@@ -392,7 +391,7 @@ public class VoxelMesher
 
     private static void SetSideIndices(Span<int> indices, Sides side)
     {
-        Assert.IsEquals(6, indices.Length);
+        Debug.Assert(indices.Length == 6);
         for (int i = 0; i < 6; ++i)
         {
             indices[i] = SideQuadTriangles[(int)side, i];
