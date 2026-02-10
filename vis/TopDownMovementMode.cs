@@ -71,7 +71,6 @@ public class TopDownMovementMode(Player player) : IMovementMode
 
     private void Pan(float x, float y)
     {
-        GD.Print($"X={x}, Y={y}");
         var windowFactor = Player.Camera.Size / Player.Camera.GetWindow().Size.Y;
         var pitchFactor = -1f / Mathf.Sin(Pitch);
         var diff = new Vector2(x, y * pitchFactor);
