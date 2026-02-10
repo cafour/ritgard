@@ -180,10 +180,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             throw new InvalidOperationException("Cannot mine GitHub repositories without any tokens.");
         }
 
-        githubTokens = options.GitHubTokens.ToImmutableDictionary(
-            p => p.Key,
-            p => new GhToken(p.Key, p.Value.Token, p.Value.HttpLimit, p.Value.GraphQlLimit)
-        );
+        githubTokens = options.GitHubTokens
+            .Where(t => t.Value.Token.StartsWith("github"))
+            .ToImmutableDictionary(
+                p => p.Key,
+                p => new GhToken(p.Key, p.Value.Token, p.Value.HttpLimit, p.Value.GraphQlLimit)
+            );
 
         githubClients = githubTokens.ToImmutableDictionary(
             p => p.Key,

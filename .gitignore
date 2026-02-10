@@ -5,3 +5,4 @@ tmp/
 /data/**/*.json
 .DS_store
 /datasets/
+.vs/
