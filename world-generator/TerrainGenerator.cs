@@ -28,12 +28,14 @@ public class TerrainGenerator(ILoggerFactory loggerFactory)
                     loggerFactory.CreateLogger<IslandHeightmapGenerator>()
                 )
             );
-        foreach (var generator in islandGenerators.Values)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            generator.Initialize(ct);
-        }
+        Parallel.ForEach(
+            islandGenerators.Values,
+            generator =>
+            {
+                ct.ThrowIfCancellationRequested();
+                generator.Initialize(ct);
+            }
+        );
 
         var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
 
@@ -70,7 +72,7 @@ public class TerrainGenerator(ILoggerFactory loggerFactory)
         }
 
         return new TerrainGenerationResult(
-            RepositoryFullName: repo.Mining.Repository.FullName,
+            RepositoryName: repo.Mining.Repository.Name,
             StartedAt: startedAt,
             CompletedAt: DateTimeOffset.UtcNow,
             Terrains: terrains.ToImmutable()

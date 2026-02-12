@@ -117,7 +117,7 @@ public class IslandHeightmapGenerator(
         if (slidingWindow == TimeSpan.MaxValue)
         {
             stepLength = Repo.MaxDate - Repo.MinDate;
-            stepCount = 1;
+            stepCount = 2;
         }
 
         logger.LogInformation("Computing heights for each step and item in topic '{TopicName}'.",topicName);

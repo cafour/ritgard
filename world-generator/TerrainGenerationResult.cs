@@ -5,7 +5,7 @@ using Ritgard.Mining;
 namespace Ritgard.WorldGenerator;
 
 public record TerrainGenerationResult(
-    string RepositoryFullName,
+    string RepositoryName,
     DateTimeOffset StartedAt,
     DateTimeOffset CompletedAt,
     ImmutableArray<TerrainPreset> Terrains

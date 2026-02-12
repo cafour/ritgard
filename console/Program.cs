@@ -171,10 +171,10 @@ internal class Commands
         var generator = new TerrainGenerator(LoggerFactory);
         var terrainResult = generator.Generate(repo, cancellationToken);
 
-        output = $"{terrainResult.RepositoryFullName.ToLower()}_{terrainResult.CompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
+        output = $"{terrainResult.RepositoryName.ToLower()}_{terrainResult.CompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
         Log.LogInformation("Saving to '{OutputPath}'.", output);
 
-        await Utils.WriteJson(terrainResult, "./tmp.json", cancellationToken);
+        await Utils.WriteJson(terrainResult, output, cancellationToken);
     }
 
     // [Command("wtf")]

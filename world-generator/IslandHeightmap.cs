@@ -139,6 +139,7 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         binaryWriter.Write(value.PositionY);
         binaryWriter.Write(value.Scale);
         binaryWriter.Write(value.RawData);
+        binaryWriter.Flush();
         var span = memoryStream.GetBuffer().AsSpan(0, (int)memoryStream.Length);
         writer.WriteBase64StringValue(span);
     }
