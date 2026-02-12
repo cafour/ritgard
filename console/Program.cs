@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using ConsoleAppFramework;
 using Microsoft.Extensions.Logging;
 using Ritgard.Mining;
+using Ritgard.WorldGenerator;
+using Utils = Ritgard.Mining.Utils;
 
 var app = ConsoleApp.Create();
 app.Add<Commands>();
@@ -129,6 +131,58 @@ internal class Commands
                 );
             }
         }
+    }
+
+    /// <summary>
+    /// Compute terrain for a mined and data-processed repo.
+    /// </summary>
+    [Command("terrain")]
+    public async Task ComputeTerrain(
+        [Argument] string datasetPath,
+        [Argument] string positionsPath,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await using var datasetStream = File.OpenRead(datasetPath);
+        var miningResult = await JsonSerializer.DeserializeAsync<MiningResult>(
+            datasetStream,
+            cancellationToken: cancellationToken
+        );
+        if (miningResult is null)
+        {
+            throw new ArgumentException($"Could not read '{datasetPath}'.", nameof(datasetPath));
+        }
+
+        await using var positionsStream = File.OpenRead(positionsPath);
+        var topicResult = await JsonSerializer.DeserializeAsync<TopicModellingResult>(
+            positionsStream,
+            cancellationToken: cancellationToken
+        );
+        if (topicResult is null)
+        {
+            throw new ArgumentException($"Could not read '{positionsPath}'.", nameof(positionsPath));
+        }
+
+        var repo = ActiveRepository.Create(
+            new DatasetId(
+                Name: miningResult.Repository.Name,
+                DataFilePath: datasetPath,
+                TopicFilePath: positionsPath
+            ),
+            miningResult,
+            topicResult
+        );
+
+        var generator = new IslandHeightmapGenerator(LoggerFactory.CreateLogger<IslandHeightmapGenerator>());
+        var heightmap = generator.Generate(
+            repo: repo,
+            topicId: 1,
+            slidingWindow: TimeSpan.FromDays(365),
+            stepLength: TimeSpan.FromDays(1),
+            ct: cancellationToken
+        );
+        await using var tmpStream = File.OpenWrite("./tmp.json");
+        await JsonSerializer.SerializeAsync(tmpStream, heightmap, cancellationToken: cancellationToken);
     }
 
     // [Command("wtf")]

@@ -1,10 +1,19 @@
-using Godot;
+using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using NetTopologySuite.Triangulate.Tri;
 
-namespace Ritgard;
+namespace Ritgard.WorldGenerator;
 
-public static partial class Utils
+public static class Utils
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float Smoothstep(float from, float to, float value)
+    {
+        value = Math.Clamp((value - from) / (to - from), 0f, 1f);
+        return value * value * (3.0f - 2.0f * value);
+    }
+
     public static (float alpha, float beta, float gamma) GetBarycentricCoords(
         float x,
         float y,
@@ -53,7 +62,8 @@ public static partial class Utils
         var current = start;
         do
         {
-            var (alpha, beta, gamma) = Utils.GetBarycentricCoords(point, current);
+            var barycentricCoords = Utils.GetBarycentricCoords(point, current);
+            var (alpha, beta, gamma) = (barycentricCoords.X, barycentricCoords.Y, barycentricCoords.Z);
             if (alpha >= 0 && beta >= 0 && gamma >= 0)
             {
                 return (current, new(alpha, beta, gamma));

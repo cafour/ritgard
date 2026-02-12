@@ -1,8 +1,8 @@
-using Godot;
+using System.Numerics;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Triangulate.Tri;
 
-namespace Ritgard;
+namespace Ritgard.WorldGenerator;
 
 public static class NetTopologySuiteExtensions
 {

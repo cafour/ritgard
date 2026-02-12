@@ -10,7 +10,7 @@ namespace Ritgard.WorldGenerator;
 
 public record ActiveRepository
 {
-    public const int TreeRadius = 3;
+    public const int StructureRadius = 3;
 
     public required DatasetId Dataset { get; init; }
 
@@ -59,7 +59,7 @@ public record ActiveRepository
                     topicId: topicModelling.Items.GetValueOrDefault(i.Id)?.TopicId ?? -1
                 )
             );
-        var padding = new Vector2(TreeRadius + 1, TreeRadius + 1);
+        var padding = new Vector2(StructureRadius + 1, StructureRadius + 1);
         bbox = (min: bbox.min - center, max: bbox.max - center);
         bbox = (min: bbox.min - padding, max: bbox.max + padding);
 
@@ -78,11 +78,11 @@ public record ActiveRepository
             Mining = mining,
             TopicModelling = topicModelling,
             Items = items,
-            MaxDate = Utils.Max(
+            MaxDate = Ritgard.Mining.Utils.Max(
                 mining.Repository.UpdatedAt ?? default,
                 items.Values.Max(i => i.Conversation.UpdatedAt)
             ),
-            MinDate = Utils.Min(
+            MinDate = Ritgard.Mining.Utils.Min(
                 mining.Repository.CreatedAt,
                 items.Values.Min(i => i.Conversation.CreatedAt)
             ),

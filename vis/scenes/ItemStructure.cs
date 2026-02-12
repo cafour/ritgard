@@ -14,7 +14,7 @@ namespace Ritgard;
 public partial class ItemStructure : Node3D, IWithVoxelLibrary
 {
     public const int TrunkHeight = 2;
-    public const int Radius = ActiveRepository.TreeRadius;
+    public const int Radius = ActiveRepository.StructureRadius;
     public const int MaxConeHeight = 20;
 
     [Export]

@@ -64,7 +64,7 @@ public partial class TopicIsland : Node3D
 
     public byte[,] Heightmap { get; set; }
 
-    public VisualizationScope Scope { get; set; } = VisualizationScope.All;
+    public ConversationScope Scope { get; set; } = ConversationScope.All;
 
     public bool ShowOnlyWhenPopulated { get; set; } = false;
 

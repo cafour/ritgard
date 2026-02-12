@@ -1,75 +1,69 @@
 using System;
-using System.Threading.Tasks;
-using Godot;
-using Ritgard.Structures;
 
-namespace Ritgard;
+namespace Ritgard.WorldGenerator;
 
 public static class GaussianBlur
 {
-    public static void Blur(byte[,] data, float[] kernel, float[,] temp = null)
+    public static void Blur(IslandHeightmap heightmap, int step, float[] kernel, float[,] temp)
     {
-        var height = data.GetLength(0);
-        var width = data.GetLength(1);
-
         if (kernel.Length == 0)
         {
             throw new ArgumentException("Cannot blur with an empty kernel.");
         }
 
         var radius = (kernel.Length - 1) / 2;
-        temp ??= new float[height, width];
 
+        var slice = heightmap.GetRawStepSpan(step);
         // horizontal pass
-        Parallel.For(0, height, y =>
+        for (int y = 0; y < heightmap.SizeY; y++)
         {
-            for (int x = 0; x < width; x++)
+            for (int x = 0; x < heightmap.SizeX; x++)
             {
                 float sum = 0;
                 float weightSum = 0;
                 for (int k = -radius; k <= radius; k++)
                 {
                     int px = x + k;
-                    if (px >= 0 && px < width)
+                    if (px >= 0 && px < heightmap.SizeX)
                     {
                         float w = kernel[k + radius];
-                        sum += data[y, px] * w;
+                        sum += heightmap.ToIntHeight(slice[px + y * heightmap.SizeX]) * w;
                         weightSum += w;
                     }
                 }
 
                 temp[y, x] = sum / weightSum;
             }
-        });
+        }
 
         // vertical pass
-        Parallel.For(0, height, y =>
+        for (int y = 0; y < heightmap.SizeY; ++y)
         {
-            for (int x = 0; x < width; x++)
+            for (int x = 0; x < heightmap.SizeX; x++)
             {
                 float sum = 0;
                 float weightSum = 0;
                 for (int k = -radius; k <= radius; k++)
                 {
                     int py = y + k;
-                    if (py >= 0 && py < height)
+                    if (py >= 0 && py < heightmap.SizeY)
                     {
                         float w = kernel[k + radius];
                         sum += temp[py, x] * w;
                         weightSum += w;
                     }
                 }
-                data[y, x] = (byte)Mathf.Clamp(Mathf.RoundToInt(sum / weightSum), 0, 255);
-                // data[y, x] = TopicIsland.ToByteHeight(sum / weightSum);
+
+                slice[x + y * heightmap.SizeX] = heightmap.ToByteHeight((int)MathF.Round(sum / weightSum));
             }
-        });
+        }
     }
 
     public static float[] CreateKernel(float sigma, int radius = -1)
     {
         if (radius == -1)
         {
-            radius = Mathf.CeilToInt(3 * sigma);
+            radius = (int)MathF.Ceiling(3 * sigma);
         }
 
         var kernel = new float[radius * 2 + 1];
@@ -78,7 +72,7 @@ public static class GaussianBlur
 
         for (int i = -radius; i <= radius; i++)
         {
-            var v = Mathf.Exp(-(i * i) / s2);
+            var v = MathF.Exp(-(i * i) / s2);
             kernel[i + radius] = v;
             sum += v;
         }

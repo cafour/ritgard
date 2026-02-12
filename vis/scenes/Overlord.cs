@@ -77,7 +77,7 @@ public partial class Overlord : Node
 
     public int CurrentStep { get; private set; }
 
-    public VisualizationScope CurrentScope { get; private set; } = VisualizationScope.All;
+    public ConversationScope CurrentScope { get; private set; } = ConversationScope.All;
 
     public SlidingWindowPreset SlidingWindowPreset { get; private set; } = SlidingWindowPreset.Year;
 
@@ -489,7 +489,7 @@ public partial class Overlord : Node
         UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
     }
 
-    private async Task OnScopeCheck(CheckButton button, VisualizationScope scope)
+    private async Task OnScopeCheck(CheckButton button, ConversationScope scope)
     {
         if (button.ButtonPressed)
         {
@@ -548,13 +548,13 @@ public partial class Overlord : Node
         };
         UI.SlidingWindowDropdown.Selected = UI.SlidingWindowDropdown.GetItemIndex((int)SlidingWindowPreset);
 
-        UI.IssuesCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Issues);
-        UI.IssuesCheck.Pressed += async () => await OnScopeCheck(UI.IssuesCheck, VisualizationScope.Issues);
-        UI.PRsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.PullRequests);
-        UI.PRsCheck.Pressed += async () => await OnScopeCheck(UI.PRsCheck, VisualizationScope.PullRequests);
-        UI.DiscussionsCheck.ButtonPressed = CurrentScope.HasFlag(VisualizationScope.Discussions);
+        UI.IssuesCheck.ButtonPressed = CurrentScope.HasFlag(ConversationScope.Issues);
+        UI.IssuesCheck.Pressed += async () => await OnScopeCheck(UI.IssuesCheck, ConversationScope.Issues);
+        UI.PRsCheck.ButtonPressed = CurrentScope.HasFlag(ConversationScope.PullRequests);
+        UI.PRsCheck.Pressed += async () => await OnScopeCheck(UI.PRsCheck, ConversationScope.PullRequests);
+        UI.DiscussionsCheck.ButtonPressed = CurrentScope.HasFlag(ConversationScope.Discussions);
         UI.DiscussionsCheck.Pressed +=
-            async () => await OnScopeCheck(UI.DiscussionsCheck, VisualizationScope.Discussions);
+            async () => await OnScopeCheck(UI.DiscussionsCheck, ConversationScope.Discussions);
         UI.OnlyPopulatedIslandsCheck.ButtonPressed = ShowOnlyPopulatedIslands;
         UI.OnlyPopulatedIslandsCheck.Pressed += async () =>
         {
