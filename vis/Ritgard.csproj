@@ -1,6 +1,6 @@
 <Project Sdk="Godot.NET.Sdk/4.6.0">
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
         <EnableDynamicLoading>true</EnableDynamicLoading>
         <Nullable>enable</Nullable>
     </PropertyGroup>
@@ -13,6 +13,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\mining\Ritgard.Mining.csproj" />
+        <ProjectReference Include="..\world-generator\Ritgard.WorldGenerator.csproj" />
     </ItemGroup>
 
     <ItemGroup>
