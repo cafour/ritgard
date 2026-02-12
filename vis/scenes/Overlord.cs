@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Ritgard.Voxel;
+using Ritgard.WorldGenerator;
 
 namespace Ritgard;
 
@@ -195,8 +196,8 @@ public partial class Overlord : Node
         itemStructures.Clear();
 
         var dataset = datasets[index];
-        Repo = await ActiveRepository.Load(dataset);
-        CameraDistance = Mathf.Sqrt(Repo.BBox.Size.X * Repo.BBox.Size.X + Repo.BBox.Size.Y * Repo.BBox.Size.Y);
+        Repo = dataset.Load();
+        CameraDistance = Mathf.Sqrt(Repo.BBoxSize.X * Repo.BBoxSize.X + Repo.BBoxSize.Y * Repo.BBoxSize.Y);
         Player.MovementMode.ResetCamera();
         StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / StepLength));
         Heights.Clear();
@@ -205,16 +206,16 @@ public partial class Overlord : Node
         SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);
         UI.CurrentStepSpinBox.MaxValue = StepCount - 1;
 
-        ((PlaneMesh)Ocean.Mesh).Size = Repo.BBox.Size;
-        ((PlaneMesh)DeepOcean.Mesh).Size = Repo.BBox.Size + new Vector2(BorderWidth, BorderWidth);
-        ((PlaneMesh)TopBorder.Mesh).Size = new Vector2(Repo.BBox.Size.X + BorderWidth * 2, BorderWidth);
-        TopBorder.Position = TopBorder.Position with { Z = -Repo.BBox.Size.Y / 2 };
-        ((PlaneMesh)RightBorder.Mesh).Size = new Vector2(BorderWidth, Repo.BBox.Size.Y + BorderWidth * 2);
-        RightBorder.Position = RightBorder.Position with { X = Repo.BBox.Size.X / 2 };
-        ((PlaneMesh)BottomBorder.Mesh).Size = new Vector2(Repo.BBox.Size.X + BorderWidth * 2, BorderWidth);
-        BottomBorder.Position = BottomBorder.Position with { Z = Repo.BBox.Size.Y / 2 };
-        ((PlaneMesh)LeftBorder.Mesh).Size = new Vector2(BorderWidth, Repo.BBox.Size.Y + BorderWidth * 2);
-        LeftBorder.Position = LeftBorder.Position with { X = -Repo.BBox.Size.X / 2 };
+        ((PlaneMesh)Ocean.Mesh).Size = Repo.BBoxSize.ToGodot();
+        ((PlaneMesh)DeepOcean.Mesh).Size = Repo.BBoxSize.ToGodot() + new Vector2(BorderWidth, BorderWidth);
+        ((PlaneMesh)TopBorder.Mesh).Size = new Vector2(Repo.BBoxSize.X + BorderWidth * 2, BorderWidth);
+        TopBorder.Position = TopBorder.Position with { Z = -Repo.BBoxSize.Y / 2 };
+        ((PlaneMesh)RightBorder.Mesh).Size = new Vector2(BorderWidth, Repo.BBoxSize.Y + BorderWidth * 2);
+        RightBorder.Position = RightBorder.Position with { X = Repo.BBoxSize.X / 2 };
+        ((PlaneMesh)BottomBorder.Mesh).Size = new Vector2(Repo.BBoxSize.X + BorderWidth * 2, BorderWidth);
+        BottomBorder.Position = BottomBorder.Position with { Z = Repo.BBoxSize.Y / 2 };
+        ((PlaneMesh)LeftBorder.Mesh).Size = new Vector2(BorderWidth, Repo.BBoxSize.Y + BorderWidth * 2);
+        LeftBorder.Position = LeftBorder.Position with { X = -Repo.BBoxSize.X / 2 };
 
         foreach (var (topicId, topic) in Repo.TopicModelling.Topics)
         {

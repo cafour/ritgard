@@ -1,10 +1,9 @@
 using System;
-using System.Text;
+using System.Numerics;
 using BTree;
-using Godot;
 using Ritgard.Mining;
 
-namespace Ritgard;
+namespace Ritgard.WorldGenerator;
 
 public record ActiveItem(
     string Id,
@@ -36,7 +35,7 @@ public record ActiveItem(
         );
     }
 
-    public override string ToString()
+    public override string? ToString()
     {
         return Conversation.ToString();
     }

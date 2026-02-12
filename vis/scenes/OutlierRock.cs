@@ -1,6 +1,7 @@
 using Godot;
 using Ritgard.Structures;
 using Ritgard.Voxel;
+using Ritgard.WorldGenerator;
 
 namespace Ritgard;
 

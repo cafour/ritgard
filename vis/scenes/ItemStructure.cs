@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Linq;
 using Ritgard.Voxel;
+using Ritgard.WorldGenerator;
 
 namespace Ritgard;
 
@@ -13,7 +14,7 @@ namespace Ritgard;
 public partial class ItemStructure : Node3D, IWithVoxelLibrary
 {
     public const int TrunkHeight = 2;
-    public const int Radius = 3;
+    public const int Radius = ActiveRepository.TreeRadius;
     public const int MaxConeHeight = 20;
 
     [Export]

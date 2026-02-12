@@ -1,8 +1,8 @@
 using System;
 
-namespace Ritgard;
+namespace Ritgard.WorldGenerator;
 
-public record struct ActiveItemEvent(
+public readonly record struct ActiveItemEvent(
     DateTimeOffset Timestamp,
     object? OriginalEvent
 ) : IComparable<ActiveItemEvent>

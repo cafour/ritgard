@@ -10,6 +10,7 @@ using NetTopologySuite.Index.KdTree;
 using NetTopologySuite.Triangulate.Tri;
 using Ritgard.Mining;
 using Ritgard.Voxel;
+using Ritgard.WorldGenerator;
 
 namespace Ritgard.Structures;
 
