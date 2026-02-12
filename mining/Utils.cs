@@ -69,7 +69,7 @@ public static partial class Utils
     {
         using var reader = new StreamReader(path);
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-        return (await csv.GetRecordsAsync<T>(token).ToArrayAsync()).ToImmutableArray();
+        return [..await csv.GetRecordsAsync<T>(token).ToArrayAsync(token)];
     }
 
     public static async Task WriteJson<T>(

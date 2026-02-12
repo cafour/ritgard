@@ -16,6 +16,9 @@ using Ritgard.Mining;
 namespace Ritgard.WorldGenerator;
 
 public class IslandHeightmapGenerator(
+    ActiveRepository repo,
+    int topicId,
+    ConversationScope scope,
     ILogger<IslandHeightmapGenerator>? logger = null
 )
 {
@@ -29,22 +32,72 @@ public class IslandHeightmapGenerator(
     private readonly ILogger<IslandHeightmapGenerator> logger
         = logger ?? NullLoggerFactory.Instance.CreateLogger<IslandHeightmapGenerator>();
 
+    private ImmutableArray<ActiveItem> items = [];
+    private readonly KdTree<int> itemTree = new KdTree<int>();
+    private string topicName = "<Unknown topic>";
+    private (int x, int y) min;
+    private (int x, int y) max;
+    private (int x, int y) size;
+    private MaskElement[,] mask = null!;
+
+    public ActiveRepository Repo { get; } = repo;
+    public int TopicId { get; } = topicId;
+    public ConversationScope Scope { get; } = scope;
+
+    public void Initialize(CancellationToken ct = default)
+    {
+        if (!Repo.TopicModelling.Topics.TryGetValue(TopicId, out var topic))
+        {
+            throw new ArgumentException($"Topic '{TopicId}' does not exist.", nameof(topicId));
+        }
+
+        topicName = topic.GetPreferredTitle();
+
+        logger.LogInformation("Initializing island generator for topic '{TopicName}'.", topicName);
+
+        items =
+        [
+            ..Repo.Items.Values
+                .Where(i => i.TopicId == TopicId && i.Conversation.IsInScope(Scope))
+        ];
+
+        if (items.Length == 0)
+        {
+            logger.LogWarning(
+                "Topic '{TopicName}' is empty. An invalid heightmap will be generated. This is probably a bug.",
+                topic.GetPreferredTitle()
+            );
+        }
+
+        for (int i = 0; i < items.Length; ++i)
+        {
+            var item = items[i];
+            itemTree.Insert(new Coordinate(item.Position.X, item.Position.Y), i);
+        }
+
+        min = (
+            (int)MathF.Floor(items.Min(i => i.Position.X)) - HeightmapPadding,
+            (int)MathF.Floor(items.Min(i => i.Position.Y)) - HeightmapPadding
+        );
+        max = (
+            (int)MathF.Ceiling(items.Max(i => i.Position.X)) + HeightmapPadding,
+            (int)MathF.Ceiling(items.Max(i => i.Position.Y)) + HeightmapPadding
+        );
+        size = (
+            max.x - min.x,
+            max.y - min.y
+        );
+        mask = PrepareMask(ct);
+    }
+
     public IslandHeightmap Generate(
-        ActiveRepository repo,
-        int topicId,
         TimeSpan slidingWindow,
         TimeSpan stepLength,
-        ConversationScope scope = ConversationScope.All,
         int startStep = 0,
         int stepCount = -1,
         CancellationToken ct = default
     )
     {
-        if (!repo.TopicModelling.Topics.TryGetValue(topicId, out var topic))
-        {
-            throw new ArgumentException($"Topic '{topicId}' does not exist.", nameof(topicId));
-        }
-
         if (startStep < 0)
         {
             throw new ArgumentException("Start step must not be negative.", nameof(startStep));
@@ -57,46 +110,31 @@ public class IslandHeightmapGenerator(
 
         if (stepCount < 0)
         {
-            var startDate = repo.MinDate + startStep * stepLength;
-            stepCount = Math.Max(1, (int)Math.Ceiling((repo.MaxDate - startDate) / stepLength));
+            var startDate = Repo.MinDate + startStep * stepLength;
+            stepCount = Math.Max(1, (int)Math.Ceiling((Repo.MaxDate - startDate) / stepLength));
         }
 
-        var items = repo.Items.Values
-            .Where(i => i.TopicId == topicId && i.Conversation.IsInScope(scope))
-            .ToImmutableArray();
-
-        if (items.Length == 0)
+        if (slidingWindow == TimeSpan.MaxValue)
         {
-            logger.LogWarning(
-                "Topic '{TopicName}' is empty. An invalid heightmap will be generated. This is probably a bug.",
-                topic.GetPreferredTitle()
-            );
+            stepLength = Repo.MaxDate - Repo.MinDate;
+            stepCount = 1;
         }
 
-        var itemTree = new KdTree<int>();
-        for (int i =0; i < items.Length; ++i)
-        {
-            var item = items[i];
-            itemTree.Insert(new Coordinate(item.Position.X, item.Position.Y), i);
-        }
-
-        logger.LogInformation(
-            "Computing heights for each step and item in topic '{TopicName}'.",
-            topic.GetPreferredTitle()
-        );
-        var heights = GetHeights(repo, items, slidingWindow, stepLength, stepCount);
+        logger.LogInformation("Computing heights for each step and item in topic '{TopicName}'.",topicName);
+        var heights = GetHeights(Repo, items, slidingWindow, stepLength, stepCount);
         var maxHeight = heights.Max();
         // NB: +2 because of the two special height values (0 = deep sea, 1 = shallow sea)
         var scale = 1 << Math.Max(0, BitOperations.Log2((uint)maxHeight + 2) - 7);
 
-        logger.LogInformation("Initializing heightmap for topic '{TopicName}'.", topic.GetPreferredTitle());
-        var heightmap = InitializeHeightmap(items, stepCount, scale);
-
-        var (triTree, hullPolygon) = Triangulate(repo, items, topicId, scope, ct);
-        if (triTree is null)
-        {
-            return IslandHeightmap.Invalid;
-        }
+        logger.LogInformation("Initializing heightmap for topic '{TopicName}'.", topicName);
+        var heightmap = IslandHeightmap.CreateEmpty(
+            sizeX: size.x,
+            sizeY: size.y,
+            positionX: min.x,
+            positionY: min.y,
+            stepCount: stepCount,
+            scale: scale
+        );
 
         Parallel.ForEach(
             Partitioner.Create(startStep, startStep + stepCount),
@@ -121,21 +159,18 @@ public class IslandHeightmapGenerator(
                         return;
                     }
 
-                    logger.LogInformation("{ThreadId}: step {Step} {RelativeStep}/{RelativeStepCount}",
-                        Environment.CurrentManagedThreadId,
-                        step,
-                        step - range.Item1,
-                        range.Item2 - range.Item1
-                    );
+                    // logger.LogInformation(
+                    //     "{ThreadId}: step {Step} {RelativeStep}/{RelativeStepCount}",
+                    //     Environment.CurrentManagedThreadId,
+                    //     step,
+                    //     step - range.Item1,
+                    //     range.Item2 - range.Item1
+                    // );
                     ComputeHeightmapStep(
                         heightmap: heightmap,
-                        items: items,
-                        itemTree,
                         heights: heights.AsSpan(items.Length * step, items.Length),
                         blurTemp: blurTemp,
                         step: step,
-                        triTree: triTree,
-                        hullPolygon: hullPolygon,
                         ct: ct
                     );
                 }
@@ -145,31 +180,8 @@ public class IslandHeightmapGenerator(
         return heightmap;
     }
 
-    private IslandHeightmap InitializeHeightmap(ImmutableArray<ActiveItem> items, int stepCount, int scale)
-    {
-        var bbox = (
-            minX: (int)MathF.Floor(items.Min(i => i.Position.X)) - HeightmapPadding,
-            minY: (int)MathF.Floor(items.Min(i => i.Position.Y)) - HeightmapPadding,
-            maxX: (int)MathF.Ceiling(items.Max(i => i.Position.X)) + HeightmapPadding,
-            maxY: (int)MathF.Ceiling(items.Max(i => i.Position.Y)) + HeightmapPadding
-        );
-
-        return IslandHeightmap.CreateEmpty(
-            sizeX: bbox.maxX - bbox.minX,
-            sizeY: bbox.maxY - bbox.minY,
-            positionX: bbox.minX,
-            positionY: bbox.minY,
-            stepCount: stepCount,
-            scale: scale
-        );
-    }
-
     private void ComputeHeightmapStep(
         IslandHeightmap heightmap,
-        ImmutableArray<ActiveItem> items,
-        KdTree<int> itemTree,
-        KdTree<Tri> triTree,
-        Geometry? hullPolygon,
         ReadOnlySpan<int> heights,
         int step,
         float[,] blurTemp,
@@ -178,83 +190,50 @@ public class IslandHeightmapGenerator(
     {
         var slice = heightmap.GetRawStepSpan(step);
 
-        var maxHeight = 0;
-        foreach (var height in heights)
-        {
-            maxHeight = Math.Max(maxHeight, height);
-        }
-
-        for (int z = 0; z < heightmap.SizeY; ++z)
+        for (int y = 0; y < heightmap.SizeY; ++y)
         {
             for (int x = 0; x < heightmap.SizeX; ++x)
             {
-                if (ct.IsCancellationRequested)
+                ct.ThrowIfCancellationRequested();
+
+                ref var value = ref slice[x + y * heightmap.SizeX];
+                var currentMask = mask[y, x];
+                value = currentMask.BaseHeight;
+                if (currentMask.BarycentricCoords != default)
                 {
-                    return;
+                    var (alpha, beta, gamma) = (
+                        currentMask.BarycentricCoords.X,
+                        currentMask.BarycentricCoords.Y,
+                        currentMask.BarycentricCoords.Z
+                    );
+
+                    var v0Height = heights[currentMask.ItemIndices.item1];
+                    var v1Height = heights[currentMask.ItemIndices.item2];
+                    var v2Height = heights[currentMask.ItemIndices.item3];
+
+                    var height = v0Height * Utils.Smoothstep(0, 1, alpha)
+                        + v1Height * Utils.Smoothstep(0, 1, beta)
+                        + v2Height * Utils.Smoothstep(0, 1, gamma);
+                    value = heightmap.ToByteHeight(height);
                 }
+            }
+        }
 
-                ref var value = ref slice[x + z * heightmap.SizeX];
+        for (int i = 0; i < items.Length; ++i)
+        {
+            ct.ThrowIfCancellationRequested();
 
-                var px = x + heightmap.PositionX;
-                var py = z + heightmap.PositionY;
-
-                var coord = new Coordinate(px, py);
-
-                if (hullPolygon is not null && hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
+            var item = items[i];
+            var height = heightmap.ToByteHeight(heights[i]);
+            var px = (int)MathF.Round(item.Position.X) - heightmap.PositionX;
+            var py = (int)MathF.Round(item.Position.Y) - heightmap.PositionY;
+            for (int y = -StructureRadius; y <= StructureRadius; ++y)
+            {
+                for (int x = -StructureRadius; x <= StructureRadius; ++x)
                 {
-                    value = 1;
-                }
-
-                var nearestTri = triTree.NearestNeighbor(coord);
-                if (nearestTri is not null)
-                {
-                    var (containingTri, barycentricCoords) =
-                        Utils.LocateTriangle(nearestTri.Data, new Vector2(px, py));
-                    var (alpha, beta, gamma) = (barycentricCoords.X, barycentricCoords.Y, barycentricCoords.Z);
-                    if (containingTri is not null)
+                    if (new Vector2(x, y).Length() < StructureRadius)
                     {
-                        var v0Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(0));
-                        var v1Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(1));
-                        var v2Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(2));
-                        if (v0Item is null
-                            || v1Item is null
-                            || v2Item is null
-                            || v0Item == v1Item
-                            || v0Item == v2Item
-                            || v1Item == v2Item
-                           )
-                        {
-                            logger.LogWarning("Couldn't re-determine which item is at coordinate ({CoordX}, {CoordY}).",
-                                px, py);
-                            continue;
-                        }
-
-                        var v0Height = heights[v0Item.Data];
-                        var v1Height = heights[v1Item.Data];
-                        var v2Height = heights[v2Item.Data];
-
-                        var height = v0Height * Utils.Smoothstep(0, 1, alpha)
-                            + v1Height * Utils.Smoothstep(0, 1, beta)
-                            + v2Height * Utils.Smoothstep(0, 1, gamma);
-                        value = heightmap.ToByteHeight(height);
-                    }
-                }
-
-                var nearestPoint = itemTree.NearestNeighbor(coord);
-                if (nearestPoint is not null)
-                {
-                    var nearestPointHeight = heights[nearestPoint.Data];
-                    var distance = nearestPoint.Coordinate.Distance(coord);
-                    if (distance < StructureRadius)
-                    {
-                        value = heightmap.ToByteHeight(nearestPointHeight);
-                    }
-
-                    if (hullPolygon is not null
-                        && !hullPolygon.Contains(GeometryFactory.Default.CreatePoint(nearestPoint.Coordinate))
-                        && distance < StructureRadius * 1.5f)
-                    {
-                        value = 1;
+                        slice[(x + px) + (y + py) * heightmap.SizeX] = height;
                     }
                 }
             }
@@ -264,6 +243,11 @@ public class IslandHeightmapGenerator(
 
         for (int i = 0; i < items.Length; ++i)
         {
+            if (ct.IsCancellationRequested)
+            {
+                return;
+            }
+
             var item = items[i];
             var height = heightmap.ToByteHeight(heights[i]);
             var px = (int)MathF.Round(item.Position.X) - heightmap.PositionX;
@@ -291,6 +275,9 @@ public class IslandHeightmapGenerator(
             return [];
         }
 
+        // NB: adjust for when sliding window is meant to capture the entire history
+        slidingWindow = slidingWindow == TimeSpan.MaxValue ? repo.MaxDate - repo.MinDate : slidingWindow;
+
         var result = ImmutableArray.CreateBuilder<int>(items.Length * stepCount);
         for (int s = 0; s < stepCount; ++s)
         {
@@ -304,13 +291,7 @@ public class IslandHeightmapGenerator(
         return result.ToImmutable();
     }
 
-    private (KdTree<Tri>? triTree, Geometry? hullPolygon) Triangulate(
-        ActiveRepository repo,
-        ImmutableArray<ActiveItem> items,
-        int topicId,
-        ConversationScope scope,
-        CancellationToken ct
-    )
+    private (KdTree<Tri> triTree, Geometry? hullPolygon) Triangulate(CancellationToken ct)
     {
         var coords = items.Select(i => new Coordinate(i.Position.X, i.Position.Y)).ToArray();
         var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
@@ -329,10 +310,7 @@ public class IslandHeightmapGenerator(
             var stdDeviation = Math.Sqrt(triMaxSides.Average(l => (l - avgTriMaxSide) * (l - avgTriMaxSide)));
             for (int i = hullTris.Count - 1; i >= 0; --i)
             {
-                if (ct.IsCancellationRequested)
-                {
-                    return (null, null);
-                }
+                ct.ThrowIfCancellationRequested();
 
                 var tri = hullTris[i];
                 var maxSide = Math.Max(tri.GetLength(0), Math.Max(tri.GetLength(1), tri.GetLength(2)));
@@ -344,8 +322,8 @@ public class IslandHeightmapGenerator(
                 }
 
                 var triPolygon = tri.ToPolygon(GeometryFactory.Default);
-                var intrudingPoints = repo.ItemTree.Query(triPolygon.EnvelopeInternal)
-                    .Where(n => n.Data.TopicId != topicId && n.Data.Conversation.IsInScope(scope))
+                var intrudingPoints = Repo.ItemTree.Query(triPolygon.EnvelopeInternal)
+                    .Where(n => n.Data.TopicId != TopicId && n.Data.Conversation.IsInScope(Scope))
                     .Where(n => triPolygon.Contains(
                             GeometryFactory.Default.CreatePoint(
                                 new Coordinate(n.Data.Position.X, n.Data.Position.Y)
@@ -377,10 +355,87 @@ public class IslandHeightmapGenerator(
             logger.LogError(
                 ex,
                 "Failed to get a hull polygon for topic '{TopicName}'. Result will look 'spotty'.",
-                repo.TopicModelling.Topics[topicId].GetPreferredTitle()
+                Repo.TopicModelling.Topics[TopicId].GetPreferredTitle()
             );
         }
 
         return (triTree, hullPolygon);
     }
+
+    private MaskElement[,] PrepareMask(CancellationToken ct = default)
+    {
+        var (triTree, hullPolygon) = Triangulate(ct);
+
+        var mask = new MaskElement[size.y, size.x];
+        for (int y = 0; y < size.y; ++y)
+        {
+            for (int x = 0; x < size.x; ++x)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                ref var current = ref mask[y, x];
+
+                var px = x + min.x;
+                var py = y + min.y;
+
+                var coord = new Coordinate(px, py);
+
+                if (hullPolygon is not null && hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
+                {
+                    current.BaseHeight = 1;
+                }
+
+                var nearestTri = triTree.NearestNeighbor(coord);
+                if (nearestTri is not null)
+                {
+                    var (containingTri, barycentricCoords) =
+                        Utils.LocateTriangle(nearestTri.Data, new Vector2(px, py));
+                    if (containingTri is not null)
+                    {
+                        var v0Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(0));
+                        var v1Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(1));
+                        var v2Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(2));
+                        if (v0Item is null
+                            || v1Item is null
+                            || v2Item is null
+                            || v0Item == v1Item
+                            || v0Item == v2Item
+                            || v1Item == v2Item
+                           )
+                        {
+                            logger.LogWarning(
+                                "Couldn't re-determine which item is at coordinate ({CoordX}, {CoordY}).",
+                                px,
+                                py
+                            );
+                            continue;
+                        }
+
+                        current.ItemIndices = (v0Item.Data, v1Item.Data, v2Item.Data);
+                        current.BarycentricCoords = barycentricCoords;
+                    }
+                }
+
+                var nearestPoint = itemTree.NearestNeighbor(coord);
+                if (nearestPoint is not null)
+                {
+                    var distance = nearestPoint.Coordinate.Distance(coord);
+                    if (hullPolygon is not null
+                        && !hullPolygon.Contains(GeometryFactory.Default.CreatePoint(nearestPoint.Coordinate))
+                        && distance < StructureRadius * 1.5f)
+                    {
+                        current.BaseHeight = 1;
+                    }
+                }
+            }
+        }
+
+        return mask;
+    }
+
+    private record struct MaskElement(
+        (int item1, int item2, int item3) ItemIndices,
+        Vector3 BarycentricCoords,
+        byte BaseHeight
+    );
 }

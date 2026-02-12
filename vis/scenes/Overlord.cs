@@ -503,23 +503,6 @@ public partial class Overlord : Node
         await ShowStep(CurrentStep);
     }
 
-    private TimeSpan GetSlidingWindowLength(SlidingWindowPreset preset)
-    {
-        return preset switch
-        {
-            SlidingWindowPreset.All => StepCount * StepLength,
-            SlidingWindowPreset.Week => TimeSpan.FromDays(7),
-            SlidingWindowPreset.Month => TimeSpan.FromDays(30),
-            SlidingWindowPreset.Quarter => TimeSpan.FromDays(120),
-            SlidingWindowPreset.HalfYear => TimeSpan.FromDays(180),
-            SlidingWindowPreset.Year => TimeSpan.FromDays(365),
-            SlidingWindowPreset.YearAndHalf => TimeSpan.FromDays(547),
-            SlidingWindowPreset.TwentyMonths => TimeSpan.FromDays(600),
-            SlidingWindowPreset.TwoYears => TimeSpan.FromDays(730),
-            _ => throw new NotSupportedException()
-        };
-    }
-
     private void BindUserInterface()
     {
         UI.ItemDescriptionLabel.Text = DefaultHint;
