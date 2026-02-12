@@ -87,10 +87,16 @@ public class IslandHeightmapGenerator(
         var heights = GetHeights(repo, items, slidingWindow, stepLength, stepCount);
         var maxHeight = heights.Max();
         // NB: +2 because of the two special height values (0 = deep sea, 1 = shallow sea)
-        var scale = 1 << Math.Min(0, BitOperations.Log2((uint)maxHeight + 2) - 7);
+        var scale = 1 << Math.Max(0, BitOperations.Log2((uint)maxHeight + 2) - 7);
 
         logger.LogInformation("Initializing heightmap for topic '{TopicName}'.", topic.GetPreferredTitle());
         var heightmap = InitializeHeightmap(items, stepCount, scale);
+
+        var (triTree, hullPolygon) = Triangulate(repo, items, topicId, scope, ct);
+        if (triTree is null)
+        {
+            return IslandHeightmap.Invalid;
+        }
 
         Parallel.ForEach(
             Partitioner.Create(startStep, startStep + stepCount),
@@ -115,16 +121,21 @@ public class IslandHeightmapGenerator(
                         return;
                     }
 
+                    logger.LogInformation("{ThreadId}: step {Step} {RelativeStep}/{RelativeStepCount}",
+                        Environment.CurrentManagedThreadId,
+                        step,
+                        step - range.Item1,
+                        range.Item2 - range.Item1
+                    );
                     ComputeHeightmapStep(
                         heightmap: heightmap,
                         items: items,
                         itemTree,
                         heights: heights.AsSpan(items.Length * step, items.Length),
-                        repo: repo,
-                        topicId: topicId,
                         blurTemp: blurTemp,
                         step: step,
-                        scope: scope,
+                        triTree: triTree,
+                        hullPolygon: hullPolygon,
                         ct: ct
                     );
                 }
@@ -157,12 +168,11 @@ public class IslandHeightmapGenerator(
         IslandHeightmap heightmap,
         ImmutableArray<ActiveItem> items,
         KdTree<int> itemTree,
+        KdTree<Tri> triTree,
+        Geometry? hullPolygon,
         ReadOnlySpan<int> heights,
-        ActiveRepository repo,
-        int topicId,
         int step,
         float[,] blurTemp,
-        ConversationScope scope,
         CancellationToken ct = default
     )
     {
@@ -174,76 +184,6 @@ public class IslandHeightmapGenerator(
             maxHeight = Math.Max(maxHeight, height);
         }
 
-        var coords = items.Select(i => new Coordinate(i.Position.X, i.Position.Y)).ToArray();
-        var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
-        var hull = new ConcaveHull(pointCloud)
-        {
-            MaximumEdgeLengthRatio = 0.5,
-            HolesAllowed = true
-        };
-        var hullTris = hull.GetHullTris() ?? [];
-        var triTree = new KdTree<Tri>();
-        if (hullTris.Count > 0)
-        {
-            var triMaxSides = hullTris.Select(t => Math.Max(t.GetLength(0), Math.Max(t.GetLength(1), t.GetLength(2))))
-                .ToImmutableArray();
-            var avgTriMaxSide = triMaxSides.Average();
-            var stdDeviation = Math.Sqrt(triMaxSides.Average(l => (l - avgTriMaxSide) * (l - avgTriMaxSide)));
-            for (int i = hullTris.Count - 1; i >= 0; --i)
-            {
-                if (ct.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                var tri = hullTris[i];
-                var maxSide = Math.Max(tri.GetLength(0), Math.Max(tri.GetLength(1), tri.GetLength(2)));
-                if (maxSide > avgTriMaxSide + TriOutlierCutoff * stdDeviation)
-                {
-                    tri.Remove();
-                    hullTris.RemoveAt(i);
-                    continue;
-                }
-
-                var triPolygon = tri.ToPolygon(GeometryFactory.Default);
-                var intrudingPoints = repo.ItemTree.Query(triPolygon.EnvelopeInternal)
-                    .Where(n => n.Data.TopicId != topicId && n.Data.Conversation.IsInScope(scope))
-                    .Where(n => triPolygon.Contains(
-                            GeometryFactory.Default.CreatePoint(
-                                new Coordinate(n.Data.Position.X, n.Data.Position.Y)
-                            )
-                        )
-                    )
-                    .ToImmutableArray();
-                if (intrudingPoints.Length > 0)
-                {
-                    tri.Remove();
-                    hullTris.RemoveAt(i);
-                }
-                else
-                {
-                    var triCentroid = tri.GetCentroid();
-                    triTree.Insert(new Coordinate(triCentroid.X, triCentroid.Y), tri);
-                }
-            }
-        }
-
-        Geometry? hullPolygon = null;
-        try
-        {
-            hullPolygon = hull.GetHull(hullTris);
-            hullPolygon = hullPolygon.Buffer(MathF.Min(1, (int)MathF.Round(StructureRadius / 2f)));
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(
-                ex,
-                "Failed to get a hull polygon for topic '{TopicName}' at step '{StepIndex}'. Result will look 'spotty'.",
-                repo.TopicModelling.Topics[topicId].GetPreferredTitle(),
-                step
-            );
-        }
-
         for (int z = 0; z < heightmap.SizeY; ++z)
         {
             for (int x = 0; x < heightmap.SizeX; ++x)
@@ -253,7 +193,7 @@ public class IslandHeightmapGenerator(
                     return;
                 }
 
-                ref var value = ref slice[x + z * heightmap.SizeY];
+                ref var value = ref slice[x + z * heightmap.SizeX];
 
                 var px = x + heightmap.PositionX;
                 var py = z + heightmap.PositionY;
@@ -362,5 +302,85 @@ public class IslandHeightmapGenerator(
         }
 
         return result.ToImmutable();
+    }
+
+    private (KdTree<Tri>? triTree, Geometry? hullPolygon) Triangulate(
+        ActiveRepository repo,
+        ImmutableArray<ActiveItem> items,
+        int topicId,
+        ConversationScope scope,
+        CancellationToken ct
+    )
+    {
+        var coords = items.Select(i => new Coordinate(i.Position.X, i.Position.Y)).ToArray();
+        var pointCloud = Geometry.DefaultFactory.CreateMultiPointFromCoords(coords);
+        var hull = new ConcaveHull(pointCloud)
+        {
+            MaximumEdgeLengthRatio = 0.5,
+            HolesAllowed = true
+        };
+        var hullTris = hull.GetHullTris() ?? [];
+        var triTree = new KdTree<Tri>();
+        if (hullTris.Count > 0)
+        {
+            var triMaxSides = hullTris.Select(t => Math.Max(t.GetLength(0), Math.Max(t.GetLength(1), t.GetLength(2))))
+                .ToImmutableArray();
+            var avgTriMaxSide = triMaxSides.Average();
+            var stdDeviation = Math.Sqrt(triMaxSides.Average(l => (l - avgTriMaxSide) * (l - avgTriMaxSide)));
+            for (int i = hullTris.Count - 1; i >= 0; --i)
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    return (null, null);
+                }
+
+                var tri = hullTris[i];
+                var maxSide = Math.Max(tri.GetLength(0), Math.Max(tri.GetLength(1), tri.GetLength(2)));
+                if (maxSide > avgTriMaxSide + TriOutlierCutoff * stdDeviation)
+                {
+                    tri.Remove();
+                    hullTris.RemoveAt(i);
+                    continue;
+                }
+
+                var triPolygon = tri.ToPolygon(GeometryFactory.Default);
+                var intrudingPoints = repo.ItemTree.Query(triPolygon.EnvelopeInternal)
+                    .Where(n => n.Data.TopicId != topicId && n.Data.Conversation.IsInScope(scope))
+                    .Where(n => triPolygon.Contains(
+                            GeometryFactory.Default.CreatePoint(
+                                new Coordinate(n.Data.Position.X, n.Data.Position.Y)
+                            )
+                        )
+                    )
+                    .ToImmutableArray();
+                if (intrudingPoints.Length > 0)
+                {
+                    tri.Remove();
+                    hullTris.RemoveAt(i);
+                }
+                else
+                {
+                    var triCentroid = tri.GetCentroid();
+                    triTree.Insert(new Coordinate(triCentroid.X, triCentroid.Y), tri);
+                }
+            }
+        }
+
+        Geometry? hullPolygon = null;
+        try
+        {
+            hullPolygon = hull.GetHull(hullTris);
+            hullPolygon = hullPolygon.Buffer(MathF.Min(1, (int)MathF.Round(StructureRadius / 2f)));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Failed to get a hull polygon for topic '{TopicName}'. Result will look 'spotty'.",
+                repo.TopicModelling.Topics[topicId].GetPreferredTitle()
+            );
+        }
+
+        return (triTree, hullPolygon);
     }
 }

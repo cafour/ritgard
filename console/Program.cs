@@ -121,7 +121,9 @@ internal class Commands
                 gitLocInfo.AddedLineCount,
                 gitLocInfo.DeletedLineCount
             );
-            foreach (var entry in gitLocInfo.Entries.OrderByDescending(e => e.Value.AddedLineCount + e.Value.DeletedLineCount))
+            foreach (var entry in gitLocInfo.Entries.OrderByDescending(e =>
+                         e.Value.AddedLineCount + e.Value.DeletedLineCount
+                     ))
             {
                 Log.LogInformation(
                     "{FileType}: {AddedLineCount} added, {DeletedLineCount} deleted",
@@ -143,21 +145,13 @@ internal class Commands
         CancellationToken cancellationToken = default
     )
     {
-        await using var datasetStream = File.OpenRead(datasetPath);
-        var miningResult = await JsonSerializer.DeserializeAsync<MiningResult>(
-            datasetStream,
-            cancellationToken: cancellationToken
-        );
+        var miningResult = await Utils.ReadJson<MiningResult>(datasetPath, cancellationToken);
         if (miningResult is null)
         {
             throw new ArgumentException($"Could not read '{datasetPath}'.", nameof(datasetPath));
         }
 
-        await using var positionsStream = File.OpenRead(positionsPath);
-        var topicResult = await JsonSerializer.DeserializeAsync<TopicModellingResult>(
-            positionsStream,
-            cancellationToken: cancellationToken
-        );
+        var topicResult = await Utils.ReadJson<TopicModellingResult>(positionsPath, cancellationToken);
         if (topicResult is null)
         {
             throw new ArgumentException($"Could not read '{positionsPath}'.", nameof(positionsPath));
@@ -181,8 +175,7 @@ internal class Commands
             stepLength: TimeSpan.FromDays(1),
             ct: cancellationToken
         );
-        await using var tmpStream = File.OpenWrite("./tmp.json");
-        await JsonSerializer.SerializeAsync(tmpStream, heightmap, cancellationToken: cancellationToken);
+        await Utils.WriteJson(heightmap, "./tmp.json", cancellationToken);
     }
 
     // [Command("wtf")]

@@ -78,7 +78,7 @@ public static partial class Utils
         CancellationToken token = default
     )
     {
-        using var stream = new FileStream(path, FileMode.Create);
+        await using var stream = new FileStream(path, FileMode.Create);
 
         await JsonSerializer.SerializeAsync(stream, value, JsonSerializerOptions, cancellationToken: token);
     }
@@ -88,7 +88,7 @@ public static partial class Utils
         CancellationToken token = default
     )
     {
-        using var stream = new FileStream(path, FileMode.Open);
+        await using var stream = new FileStream(path, FileMode.Open);
 
         return await JsonSerializer.DeserializeAsync<T>(stream, JsonSerializerOptions, cancellationToken: token);
     }
