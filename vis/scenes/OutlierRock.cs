@@ -9,12 +9,12 @@ namespace Ritgard;
 public partial class OutlierRock : Node3D, IWithVoxelLibrary
 {
     [Export]
-    public VoxelBlockLibrary Library { get; set; }
+    public required VoxelBlockLibrary Library { get; set; }
 
     [Export]
-    public Material Material { get; set; }
+    public required Material Material { get; set; }
 
-    public ActiveItem Item { get; set; }
+    public required ActiveItem Item { get; set; }
 
     public int Height { get; private set; }
 

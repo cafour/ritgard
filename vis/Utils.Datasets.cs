@@ -7,6 +7,7 @@ namespace Ritgard;
 public static partial class Utils
 {
     public const string PositionsFileSuffix = "-positions";
+    public const string TerrainFileSuffix = "-terrain";
 
     public static ImmutableArray<DatasetInfo> DiscoverDatasets(string dataPath)
     {
@@ -23,6 +24,13 @@ public static partial class Utils
             var datasetName = Path.GetFileNameWithoutExtension(candidateFile.Name);
             var positionsFilename = $"{datasetName}{PositionsFileSuffix}.json";
             var positionsPath = Path.Combine(dataDir.FullName, positionsFilename);
+            var terrainFilename = $"{datasetName}{TerrainFileSuffix}.json";
+            var terrainPath = Path.Combine(dataDir.FullName, terrainFilename);
+            if (!File.Exists(terrainPath))
+            {
+                terrainPath = null;
+            }
+
             if (File.Exists(positionsPath))
             {
                 builder.Add(
@@ -30,7 +38,8 @@ public static partial class Utils
                     {
                         Name = datasetName,
                         DataFilePath = candidateFile.FullName,
-                        TopicFilePath = positionsPath
+                        TopicFilePath = positionsPath,
+                        TerrainFilePath = terrainPath
                     }
                 );
             }

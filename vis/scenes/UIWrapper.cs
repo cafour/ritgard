@@ -32,4 +32,6 @@ public partial class UIWrapper : Control
     public SpinBox MaxNormalizedHeightSpinBox => _.Controls.Container.MaxNormalizedHeight;
 
     public ColorRect Crosshair => _.CrosshairContainer.Crosshair;
+
+    public Control LoadingBox => _.LoadingContainer;
 }

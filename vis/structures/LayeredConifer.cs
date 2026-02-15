@@ -11,7 +11,7 @@ public sealed class LayeredConifer : IStructure
 
     public int TrunkHeight { get; set; }
 
-    public BitArray Layers { get; set; }
+    public required BitArray Layers { get; set; }
 
     public bool HasCap { get; set; }
 

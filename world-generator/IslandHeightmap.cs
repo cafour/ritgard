@@ -15,6 +15,7 @@ public readonly record struct IslandHeightmap(
     int PositionX,
     int PositionY,
     int Scale,
+    byte[] MaxHeight,
     byte[] RawData
 )
 {
@@ -36,6 +37,7 @@ public readonly record struct IslandHeightmap(
             positionX,
             positionY,
             scale,
+            new byte[stepCount],
             new byte[sizeX * sizeY * stepCount]
         );
     }
@@ -115,7 +117,6 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         var bytes = reader.GetBytesFromBase64();
         using var memoryStream = new MemoryStream(bytes);
         using var brotliStream = new BrotliStream(memoryStream, CompressionMode.Decompress);
-        brotliStream.Seek(0, SeekOrigin.Begin);
         using var binaryReader = new BinaryReader(brotliStream);
         var width = binaryReader.ReadInt32();
         var height = binaryReader.ReadInt32();
@@ -123,8 +124,9 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         var posX = binaryReader.ReadInt32();
         var posY = binaryReader.ReadInt32();
         var scale = binaryReader.ReadInt32();
+        var maxHeight = binaryReader.ReadBytes(stepCount);
         var rawData = binaryReader.ReadBytes(width * height * stepCount);
-        return new IslandHeightmap(width, height, stepCount, posX, posY, scale, rawData);
+        return new IslandHeightmap(width, height, stepCount, posX, posY, scale, maxHeight, rawData);
     }
 
     public override void Write(Utf8JsonWriter writer, IslandHeightmap value, JsonSerializerOptions options)
@@ -138,6 +140,7 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         binaryWriter.Write(value.PositionX);
         binaryWriter.Write(value.PositionY);
         binaryWriter.Write(value.Scale);
+        binaryWriter.Write(value.MaxHeight);
         binaryWriter.Write(value.RawData);
         binaryWriter.Flush();
         var span = memoryStream.GetBuffer().AsSpan(0, (int)memoryStream.Length);

@@ -18,6 +18,8 @@ public record ActiveRepository
 
     public required TopicModellingResult TopicModelling { get; init; }
 
+    public TerrainGenerationResult? Terrain { get; init; } = null;
+
     public required ImmutableDictionary<string, ActiveItem> Items { get; init; }
 
     public required KdTree<ActiveItem> ItemTree { get; init; }
@@ -32,7 +34,12 @@ public record ActiveRepository
 
     public Vector2 BBoxSize { get; init; }
 
-    public static ActiveRepository Create(DatasetId dataset, MiningResult mining, TopicModellingResult topicModelling)
+    public static ActiveRepository Create(
+        DatasetId dataset,
+        MiningResult mining,
+        TopicModellingResult topicModelling,
+        TerrainGenerationResult? terrain = null
+    )
     {
         var bbox = (
             min: new Vector2(
@@ -77,6 +84,7 @@ public record ActiveRepository
             Dataset = dataset,
             Mining = mining,
             TopicModelling = topicModelling,
+            Terrain = terrain,
             Items = items,
             MaxDate = Ritgard.Mining.Utils.Max(
                 mining.Repository.UpdatedAt ?? default,

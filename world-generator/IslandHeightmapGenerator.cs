@@ -114,17 +114,11 @@ public class IslandHeightmapGenerator(
             stepCount = Math.Max(1, (int)Math.Ceiling((Repo.MaxDate - startDate) / stepLength));
         }
 
-        if (slidingWindow == TimeSpan.MaxValue)
-        {
-            stepLength = Repo.MaxDate - Repo.MinDate;
-            stepCount = 2;
-        }
-
         logger.LogInformation("Computing heights for each step and item in topic '{TopicName}'.",topicName);
-        var heights = GetHeights(Repo, items, slidingWindow, stepLength, stepCount);
-        var maxHeight = heights.Max();
+        var heights = GetHeights(Repo, items, slidingWindow, stepLength, startStep, stepCount);
+        var globalMaxHeight = heights.Max();
         // NB: +2 because of the two special height values (0 = deep sea, 1 = shallow sea)
-        var scale = 1 << Math.Max(0, BitOperations.Log2((uint)maxHeight + 2) - 7);
+        var scale = 1 << Math.Max(0, BitOperations.Log2((uint)globalMaxHeight + 2) - 7);
 
         logger.LogInformation("Initializing heightmap for topic '{TopicName}'.", topicName);
         var heightmap = IslandHeightmap.CreateEmpty(
@@ -135,16 +129,22 @@ public class IslandHeightmapGenerator(
             stepCount: stepCount,
             scale: scale
         );
+        for (int s = 0; s < stepCount; ++s)
+        {
+            var currentHeights = heights.AsSpan(s * items.Length, items.Length);
+            heightmap.MaxHeight[s] = heightmap.ToByteHeight(currentHeights.Max());
+        }
 
         Parallel.ForEach(
             Partitioner.Create(startStep, startStep + stepCount),
             (range, state) =>
             {
                 logger.LogInformation(
-                    "Thread {ThreadId} is processing step range [{RangeStart}, {RangeEnd}).",
+                    "Thread {ThreadId} is processing step range [{RangeStart}, {RangeEnd}) of topic '{TopicName}'.",
                     Environment.CurrentManagedThreadId,
                     range.Item1,
-                    range.Item2
+                    range.Item2,
+                    topicName
                 );
                 var blurTemp = new float[heightmap.SizeY, heightmap.SizeX];
                 for (int step = range.Item1; step < range.Item2; ++step)
@@ -166,11 +166,12 @@ public class IslandHeightmapGenerator(
                     //     step - range.Item1,
                     //     range.Item2 - range.Item1
                     // );
+                    var absoluteStep = step - startStep;
                     ComputeHeightmapStep(
                         heightmap: heightmap,
-                        heights: heights.AsSpan(items.Length * step, items.Length),
+                        heights: heights.AsSpan(items.Length * absoluteStep, items.Length),
                         blurTemp: blurTemp,
-                        step: step,
+                        step: absoluteStep,
                         ct: ct
                     );
                 }
@@ -267,6 +268,7 @@ public class IslandHeightmapGenerator(
         ImmutableArray<ActiveItem> items,
         TimeSpan slidingWindow,
         TimeSpan stepLength,
+        int startStep,
         int stepCount
     )
     {
@@ -279,7 +281,7 @@ public class IslandHeightmapGenerator(
         slidingWindow = slidingWindow == TimeSpan.MaxValue ? repo.MaxDate - repo.MinDate : slidingWindow;
 
         var result = ImmutableArray.CreateBuilder<int>(items.Length * stepCount);
-        for (int s = 0; s < stepCount; ++s)
+        for (int s = startStep; s < startStep + stepCount; ++s)
         {
             var now = repo.MinDate + stepLength * s;
             foreach (var item in items)

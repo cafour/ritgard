@@ -17,6 +17,7 @@ namespace Ritgard;
 
 public partial class Overlord : Node
 {
+    public const double SteppingCooldown = 0.5;
     public const string DateTimeFormat = "yyyy-MM-dd HH:mm";
     public const float DefaultMaxNormalizedHeight = 42f;
     public const string DefaultHint = "Hover over a structure to see its description...";
@@ -24,58 +25,64 @@ public partial class Overlord : Node
     public const float BorderWidth = 5f;
     public const float SunRotationStep = Mathf.Pi / 6;
 
-    public static readonly TimeSpan DefaultStep = TimeSpan.FromDays(1);
-
     public static Overlord Instance { get; private set; } = null!;
 
     [Export]
-    public PackedScene ItemStructureScene { get; set; }
+    public PackedScene ItemStructureScene { get; set; } = null!;
 
     [Export]
-    public PackedScene TopicIslandScene { get; set; }
+    public PackedScene TopicIslandScene { get; set; } = null!;
 
     [Export]
-    public PackedScene OutlierRockScene { get; set; }
+    public PackedScene OutlierRockScene { get; set; } = null!;
 
     [Export]
-    public Player Player { get; set; }
+    public Player Player { get; set; } = null!;
 
     [Export]
-    public UIWrapper UI { get; set; }
+    // ReSharper disable once InconsistentNaming
+    public UIWrapper UI { get; set; } = null!;
 
     [Export]
-    public VoxelBlockLibrary Library { get; set; }
+    public VoxelBlockLibrary Library { get; set; } = null!;
 
     [Export]
-    public MeshInstance3D Ocean { get; set; }
+    public MeshInstance3D Ocean { get; set; } = null!;
 
     [Export]
-    public DirectionalLight3D Sun { get; set; }
+    public DirectionalLight3D Sun { get; set; } = null!;
 
     /// <summary>
     /// Exists to prevent the ocean from being semi-transparent on clean screenshots.
     /// </summary>
     [Export]
-    public MeshInstance3D DeepOcean { get; set; }
+    public MeshInstance3D DeepOcean { get; set; } = null!;
 
     [Export]
-    public MeshInstance3D TopBorder { get; set; }
+    public MeshInstance3D TopBorder { get; set; } = null!;
 
     [Export]
-    public MeshInstance3D RightBorder { get; set; }
+    public MeshInstance3D RightBorder { get; set; } = null!;
 
     [Export]
-    public MeshInstance3D BottomBorder { get; set; }
+    public MeshInstance3D BottomBorder { get; set; } = null!;
 
     [Export]
-    public MeshInstance3D LeftBorder { get; set; }
+    public MeshInstance3D LeftBorder { get; set; } = null!;
 
     [Export]
-    public WorldEnvironment Environment { get; set; }
+    public WorldEnvironment Environment { get; set; } = null!;
 
     public int CurrentDataset { get; set; } = -1;
 
     public int CurrentStep { get; private set; }
+
+    public DateTimeOffset Now => Repo is not null
+        ? Repo.MinDate + CurrentStep * StepLength
+        : throw new InvalidOperationException("Now is only available when a repo is loaded.");
+
+    // NB: Currently not configurable at runtime.
+    public TimeSpan StepLength => TerrainGenerator.StepLength;
 
     public ConversationScope CurrentScope { get; private set; } = ConversationScope.All;
 
@@ -83,11 +90,9 @@ public partial class Overlord : Node
 
     public TimeSpan SlidingWindowLength { get; private set; }
 
-    public TimeSpan StepLength { get; private set; } = DefaultStep;
-
     public int StepCount { get; private set; }
 
-    public bool ShowClosedAsStubs { get; private set; } = true;
+    public bool ShowClosedAsStubs { get; private set; } = false;
 
     public bool ShowOnlyPopulatedIslands { get; private set; } = false;
 
@@ -97,25 +102,29 @@ public partial class Overlord : Node
 
     public float MaxNormalizedHeight { get; private set; } = DefaultMaxNormalizedHeight;
 
-    public ActiveRepository Repo { get; private set; }
+    public ActiveRepository? Repo { get; private set; }
+    public TerrainPreset? CurrentTerrain { get; private set; }
 
     public float CameraDistance { get; private set; } = 100f;
 
     public Dictionary<string, float> Heights { get; } = [];
 
-    private IConfiguration configuration;
-    private VisualizationOptions options;
+    private IConfiguration configuration = null!;
+    private VisualizationOptions options = null!;
     private ImmutableArray<DatasetInfo> datasets = [];
     private readonly Dictionary<int, TopicIsland> topicIslands = [];
     private readonly Dictionary<string, ItemStructure> itemStructures = [];
     private readonly Dictionary<string, OutlierRock> outlierRocks = [];
-    private ItemStructure currentStructure;
-    private TopicIsland currentIsland;
-    private Node generatedNodesContainer;
-    private Texture2D topicIdTexture;
-    private Texture2D itemIdTexture;
-    private CancellationTokenSource? lastHeightmapCts = null;
-    private Task? lastHeightmapTask = null;
+    private ItemStructure? currentStructure;
+    private TopicIsland? currentIsland;
+
+    private Node generatedNodesContainer = null!;
+
+    // private Texture2D topicIdTexture;
+    // private Texture2D itemIdTexture;
+    // private CancellationTokenSource? lastHeightmapCts = null;
+    // private Task? lastHeightmapTask = null;
+    private double steppingStartedAt = -1;
 
     public override void _EnterTree()
     {
@@ -139,6 +148,7 @@ public partial class Overlord : Node
             GD.Print($"Found .NET data directory in '{dotnetDataDir}'.");
             dataPath = FindDataPath(Path.Combine(dotnetDataDir, options.DataPath));
         }
+
         GD.Print($"Found '{dataPath}'.");
         if (dataPath is null)
         {
@@ -159,10 +169,44 @@ public partial class Overlord : Node
         await ShowDataset(0);
     }
 
+    public override async void _Process(double delta)
+    {
+        var justStarted = Input.IsActionJustPressed(InputActions.LargeStepNext)
+            || Input.IsActionJustPressed(InputActions.LargeStepPrev) || Input.IsActionJustPressed(InputActions.StepPrev)
+            || Input.IsActionJustPressed(InputActions.StepNext);
+        if (justStarted)
+        {
+            steppingStartedAt = Time.GetUnixTimeFromSystem();
+        }
+
+        if (Input.IsActionPressed(InputActions.LargeStepNext))
+        {
+            await ShowStep(
+                CurrentStep + Mathf.RoundToInt(SlidingWindowLength / TerrainGenerator.StepLength),
+                checkCooldown: !justStarted
+            );
+        }
+        else if (Input.IsActionPressed(InputActions.LargeStepPrev))
+        {
+            await ShowStep(
+                CurrentStep - Mathf.RoundToInt(SlidingWindowLength / TerrainGenerator.StepLength),
+                checkCooldown: !justStarted
+            );
+        }
+        else if (Input.IsActionPressed(InputActions.StepNext))
+        {
+            await ShowStep(CurrentStep + 1, checkCooldown: !justStarted);
+        }
+        else if (Input.IsActionPressed(InputActions.StepPrev))
+        {
+            await ShowStep(CurrentStep - 1, checkCooldown: !justStarted);
+        }
+    }
+
     private static string? FindDataPath(string dataPath)
     {
         var current = new DirectoryInfo(dataPath);
-        while (current is not null && !current.Exists)
+        while (!current.Exists)
         {
             var parentDir = current.Parent?.Parent?.FullName;
             if (parentDir is null)
@@ -173,15 +217,17 @@ public partial class Overlord : Node
             current = new DirectoryInfo(Path.Combine(parentDir, current.Name));
         }
 
-        return current?.Exists == true ? current.FullName : null;
+        return current.Exists ? current.FullName : null;
     }
 
-    private async Task ShowDataset(int index)
+    private async Task ShowDataset(int index, CancellationToken ct = default)
     {
         if (CurrentDataset == index)
         {
             return;
         }
+
+        UI.LoadingBox.Visible = true;
 
         CurrentDataset = index;
 
@@ -196,14 +242,25 @@ public partial class Overlord : Node
         itemStructures.Clear();
 
         var dataset = datasets[index];
-        Repo = dataset.Load();
+        Repo = await dataset.Load(ct);
+        CurrentTerrain =
+            Repo.Terrain?.Terrains.SingleOrDefault(p =>
+                p.Scope == CurrentScope && p.SlidingWindow == SlidingWindowPreset
+            );
+        if (CurrentTerrain is null)
+        {
+            throw new NullReferenceException("Could not find a terrain.");
+        }
+
         CameraDistance = Mathf.Sqrt(Repo.BBoxSize.X * Repo.BBoxSize.X + Repo.BBoxSize.Y * Repo.BBoxSize.Y);
         Player.MovementMode.ResetCamera();
-        StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / StepLength));
+        StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / TerrainGenerator.StepLength));
         Heights.Clear();
 
         // NB: if preset is All, we have to recompute it
-        SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);
+        SlidingWindowLength = SlidingWindowPreset == SlidingWindowPreset.All
+            ? Math.Ceiling((Repo.MaxDate - Repo.MinDate) / StepLength) * StepLength
+            : SlidingWindowPreset.ToTimeSpan();
         UI.CurrentStepSpinBox.MaxValue = StepCount - 1;
 
         ((PlaneMesh)Ocean.Mesh).Size = Repo.BBoxSize.ToGodot();
@@ -252,13 +309,34 @@ public partial class Overlord : Node
         Player.HoverChanged += OnHoverChanged;
 
         await ShowStep(StepCount - 1);
+        UI.LoadingBox.Visible = false;
     }
 
-    private async Task ShowStep(int step)
+    private async Task ShowStep(int step, bool checkCooldown = false)
     {
+        if (checkCooldown && Time.GetUnixTimeFromSystem() - steppingStartedAt < SteppingCooldown)
+        {
+            return;
+        }
+
+        if (Repo is null)
+        {
+            GD.PushWarning($"No dataset selected. Cannot show step '{step}'.");
+            return;
+        }
+
+        CurrentTerrain =
+            Repo.Terrain?.Terrains.SingleOrDefault(p =>
+                p.Scope == CurrentScope && p.SlidingWindow == SlidingWindowPreset
+            );
+        if (CurrentTerrain is null)
+        {
+            throw new NullReferenceException("Could not find a terrain.");
+        }
+
         step = Math.Clamp(step, 0, StepCount - 1);
 
-        var now = Repo.MinDate + StepLength * step;
+        var now = Repo.MinDate + TerrainGenerator.StepLength * step;
         var slidingEvents = Repo.Items.Values.ToImmutableDictionary(
             v => v.Id,
             v => v.Events.GetRange(now - SlidingWindowLength, now, true).Count()
@@ -294,73 +372,61 @@ public partial class Overlord : Node
 
         RefreshCurrentStepControls(step);
 
-        if (lastHeightmapTask is not null && !lastHeightmapTask.IsCompleted)
+        foreach (var topicIsland in topicIslands.Values)
         {
-            GD.Print("Cancelling previous heightmap task.");
-            if (lastHeightmapCts is not null)
-            {
-                await lastHeightmapCts.CancelAsync();
-                lastHeightmapCts.Dispose();
-            }
-
-            lastHeightmapCts = null;
-            lastHeightmapTask = null;
+            topicIsland.UpdatePlane(step);
         }
 
-        var currentHeightmapCts = new CancellationTokenSource();
-        var currentHeightmapTask = Task.WhenAll(
-            topicIslands.Values.Select(i => Task.Run(
-                    () => i.ComputeHeightmap(currentHeightmapCts.Token),
-                    currentHeightmapCts.Token
-                )
-            )
-        );
-        lastHeightmapTask = currentHeightmapTask;
-        lastHeightmapCts = currentHeightmapCts;
-
-        try
-        {
-            await currentHeightmapTask;
-            foreach (var topicIsland in topicIslands.Values)
-            {
-                topicIsland.UpdatePlane();
-            }
-        }
-        catch (TaskCanceledException)
-        {
-            // nop
-        }
+        // if (lastHeightmapTask is not null && !lastHeightmapTask.IsCompleted)
+        // {
+        //     GD.Print("Cancelling previous heightmap task.");
+        //     if (lastHeightmapCts is not null)
+        //     {
+        //         await lastHeightmapCts.CancelAsync();
+        //         lastHeightmapCts.Dispose();
+        //     }
+        //
+        //     lastHeightmapCts = null;
+        //     lastHeightmapTask = null;
+        // }
+        //
+        // var currentHeightmapCts = new CancellationTokenSource();
+        // var currentHeightmapTask = Task.WhenAll(
+        //     topicIslands.Values.Select(i => Task.Run(
+        //             () => i.ComputeHeightmap(currentHeightmapCts.Token),
+        //             currentHeightmapCts.Token
+        //         )
+        //     )
+        // );
+        // lastHeightmapTask = currentHeightmapTask;
+        // lastHeightmapCts = currentHeightmapCts;
+        //
+        // try
+        // {
+        //     await currentHeightmapTask;
+        //     foreach (var topicIsland in topicIslands.Values)
+        //     {
+        //         topicIsland.UpdatePlane();
+        //     }
+        // }
+        // catch (TaskCanceledException)
+        // {
+        //     // nop
+        // }
     }
 
-    public override async void _Input(InputEvent @event)
+    public override void _Input(InputEvent @event)
     {
         if (@event.IsAction("interact") && @event.IsPressed())
         {
-            if (currentStructure is not null)
+            if (currentStructure is not null && Repo is not null)
             {
                 var item = Repo.Items.GetValueOrDefault(currentStructure.Item.Id);
-                if (!string.IsNullOrEmpty(item.Conversation.Url))
+                if (!string.IsNullOrEmpty(item?.Conversation.Url))
                 {
                     OS.ShellOpen(item.Conversation.Url);
                 }
             }
-        }
-
-        if (@event.IsAction(InputActions.LargeStepNext) && @event.IsPressed())
-        {
-            await ShowStep(CurrentStep + Mathf.RoundToInt(SlidingWindowLength / StepLength));
-        }
-        else if (@event.IsAction(InputActions.LargeStepPrev) && @event.IsPressed())
-        {
-            await ShowStep(CurrentStep - Mathf.RoundToInt(SlidingWindowLength / StepLength));
-        }
-        else if (@event.IsAction(InputActions.StepNext) && @event.IsPressed())
-        {
-            await ShowStep(CurrentStep + 1);
-        }
-        else if (@event.IsAction(InputActions.StepPrev) && @event.IsPressed())
-        {
-            await ShowStep(CurrentStep - 1);
         }
 
         if (@event.IsAction(InputActions.RotateSun) && @event.IsPressed())
@@ -370,6 +436,12 @@ public partial class Overlord : Node
 
         if (@event.IsAction(InputActions.PrintIslands) && @event.IsPressed())
         {
+            if (Repo is null)
+            {
+                GD.PushWarning("No dataset selected. Cannot print a list of topics.");
+                return;
+            }
+
             var topicStats = Repo.Items.Values.Where(i => Heights[i.Id] > 0)
                 .GroupBy(i => i.TopicId)
                 .Select(g => (
@@ -389,8 +461,13 @@ public partial class Overlord : Node
         }
     }
 
-    private void OnHoverChanged(CollisionObject3D hoveree)
+    private void OnHoverChanged(CollisionObject3D? hoveree)
     {
+        if (Repo is null)
+        {
+            return;
+        }
+
         var parent = hoveree?.GetParent();
         switch (parent)
         {
@@ -412,78 +489,89 @@ public partial class Overlord : Node
                 break;
 
             case TopicIsland island:
+            {
+                if (island.Topic is null)
                 {
-                    currentStructure?.ToggleHighlight(false);
-                    currentStructure = null;
-
-                    currentIsland?.ToggleHighlight(false);
-                    island.ToggleHighlight(true);
-                    currentIsland = island;
-
-                    var issueCount = 0;
-                    var prCount = 0;
-                    var discussionCount = 0;
-                    foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key])
-                                 .Where(i => i.TopicId == island.Topic.Id))
-                    {
-                        switch (visibleItem.Conversation)
-                        {
-                            case Issue:
-                                issueCount++;
-                                break;
-                            case PullRequest:
-                                prCount++;
-                                break;
-                            case Discussion:
-                                discussionCount++;
-                                break;
-                        }
-                    }
-
-                    UI.ItemDescriptionLabel.Text =
-                        $"Topic #{island.Topic.Id}: {island.Topic.GetPreferredTitle()}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
                     break;
                 }
+
+                currentStructure?.ToggleHighlight(false);
+                currentStructure = null;
+
+                currentIsland?.ToggleHighlight(false);
+                island.ToggleHighlight(true);
+                currentIsland = island;
+
+                var issueCount = 0;
+                var prCount = 0;
+                var discussionCount = 0;
+                foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key])
+                             .Where(i => i.TopicId == island.Topic.Id))
+                {
+                    switch (visibleItem.Conversation)
+                    {
+                        case Issue:
+                            issueCount++;
+                            break;
+                        case PullRequest:
+                            prCount++;
+                            break;
+                        case Discussion:
+                            discussionCount++;
+                            break;
+                    }
+                }
+
+                UI.ItemDescriptionLabel.Text =
+                    $"Topic #{island.Topic.Id}: {island.Topic.GetPreferredTitle()}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
+                break;
+            }
 
             case null:
+            {
+                currentStructure?.ToggleHighlight(false);
+                currentStructure = null;
+
+                currentIsland?.ToggleHighlight(false);
+                currentIsland = null;
+
+                Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
+                var issueCount = 0;
+                var prCount = 0;
+                var discussionCount = 0;
+                foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key]))
                 {
-                    currentStructure?.ToggleHighlight(false);
-                    currentStructure = null;
-
-                    currentIsland?.ToggleHighlight(false);
-                    currentIsland = null;
-
-                    Input.SetDefaultCursorShape(Input.CursorShape.Arrow);
-                    var issueCount = 0;
-                    var prCount = 0;
-                    var discussionCount = 0;
-                    foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key]))
+                    switch (visibleItem.Conversation)
                     {
-                        switch (visibleItem.Conversation)
-                        {
-                            case Issue:
-                                issueCount++;
-                                break;
-                            case PullRequest:
-                                prCount++;
-                                break;
-                            case Discussion:
-                                discussionCount++;
-                                break;
-                        }
+                        case Issue:
+                            issueCount++;
+                            break;
+                        case PullRequest:
+                            prCount++;
+                            break;
+                        case Discussion:
+                            discussionCount++;
+                            break;
                     }
-
-                    var now = Repo.MinDate + CurrentStep * StepLength;
-                    UI.ItemDescriptionLabel.Text =
-                        $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
-                    break;
                 }
+
+                var now = Repo.MinDate + CurrentStep * TerrainGenerator.StepLength;
+                UI.ItemDescriptionLabel.Text =
+                    $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
+                break;
+            }
         }
     }
 
     private void RefreshCurrentStepControls(int step)
     {
-        var now = Repo.MinDate + StepLength * step;
+        if (Repo is null)
+        {
+            GD.PushWarning("No dataset is selected. Cannot refresh step controls.");
+            return;
+        }
+
+        var now = Repo.MinDate + TerrainGenerator.StepLength * step;
         CurrentStep = step;
         UI.CurrentStepSpinBox.SetValueNoSignal(step);
         UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
@@ -523,9 +611,18 @@ public partial class Overlord : Node
 
         UI.SlidingWindowDropdown.ItemSelected += async i =>
         {
+            if (Repo is null)
+            {
+                GD.PushWarning("No repo selected. Cannot choose the sliding window length.");
+                return;
+            }
+
             var name = UI.SlidingWindowDropdown.GetItemText((int)i);
             SlidingWindowPreset = Enum.Parse<SlidingWindowPreset>(name);
-            SlidingWindowLength = GetSlidingWindowLength(SlidingWindowPreset);
+            // NB: if preset is All, we have to recompute it
+            SlidingWindowLength = SlidingWindowPreset == SlidingWindowPreset.All
+                ? Math.Ceiling((Repo.MaxDate - Repo.MinDate) / StepLength) * StepLength
+                : SlidingWindowPreset.ToTimeSpan();
 
             await ShowStep(CurrentStep);
         };
@@ -551,6 +648,12 @@ public partial class Overlord : Node
 
         UI.CurrentDateTime.TextSubmitted += async text =>
         {
+            if (Repo is null)
+            {
+                GD.PushWarning("No dataset is selected. Cannot change step.");
+                return;
+            }
+
             if (DateTimeOffset.TryParseExact(
                     text,
                     [DateTimeFormat, "yyyy-MM-dd"],
@@ -561,7 +664,7 @@ public partial class Overlord : Node
             {
                 var step = dateTime < Repo.MinDate ? 0
                     : dateTime >= Repo.MaxDate ? StepCount - 1
-                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / StepLength);
+                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / TerrainGenerator.StepLength);
                 await ShowStep(step);
             }
             else

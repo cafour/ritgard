@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Godot;
 using Ritgard.Mining;
 using Ritgard.WorldGenerator;
@@ -17,7 +19,10 @@ public partial class DatasetInfo : Resource
     [Export]
     public string? TopicFilePath { get; set; }
 
-    public ActiveRepository Load()
+    [Export]
+    public string? TerrainFilePath { get; set; }
+
+    public async Task<ActiveRepository> Load(CancellationToken ct = default)
     {
         if (Name is null || DataFilePath is null || TopicFilePath is null)
         {
@@ -30,6 +35,18 @@ public partial class DatasetInfo : Resource
         {
             throw new ArgumentException($"Failed to load data for dataset '${Name}'.");
         }
-        return ActiveRepository.Create(new DatasetId(Name, DataFilePath, TopicFilePath), mining, topicModelling);
+
+        TerrainGenerationResult? terrain = null;
+        if (TerrainFilePath is not null)
+        {
+            terrain = await Utils.ReadGodotJsonAsync<TerrainGenerationResult>(TerrainFilePath, ct);
+        }
+
+        return ActiveRepository.Create(
+            new DatasetId(Name, DataFilePath, TopicFilePath),
+            mining,
+            topicModelling,
+            terrain
+        );
     }
 }

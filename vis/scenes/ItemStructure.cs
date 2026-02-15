@@ -18,15 +18,15 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
     public const int MaxConeHeight = 20;
 
     [Export]
-    public VoxelBlockLibrary Library { get; set; }
+    public VoxelBlockLibrary Library { get; set; } = null!;
 
     [Export]
-    public Material Material { get; set; }
+    public Material Material { get; set; } = null!;
 
     [Export]
-    public Material HighlightMaterial { get; set; }
+    public Material HighlightMaterial { get; set; } = null!;
 
-    public ActiveItem Item { get; set; }
+    public ActiveItem Item { get; set; } = null!;
 
     public bool IsHighlighted { get; set; }
 
@@ -118,28 +118,28 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
             return;
         }
 
-        var now = Overlord.Instance.Repo.MinDate + step * Overlord.Instance.StepLength;
-        IStructure structure = Overlord.Instance.ShowClosedAsStubs && Item.Conversation.IsClosed(now, Overlord.Instance.StepLength)
-            ? new Stub { TrunkHeight = TrunkHeight }
-            : Item.Conversation switch
-            {
-                Issue => new Conifer
+        IStructure structure = Overlord.Instance.ShowClosedAsStubs
+            && Item.Conversation.IsClosed(Overlord.Instance.Now, Overlord.Instance.StepLength)
+                ? new Stub { TrunkHeight = TrunkHeight }
+                : Item.Conversation switch
                 {
-                    TrunkHeight = TrunkHeight,
-                    CrownBreadth = Radius
-                },
-                PullRequest => new Broadleaf
-                {
-                    TrunkHeight = TrunkHeight,
-                    CrownBreadth = Radius
-                },
-                Discussion => new CubeTree()
-                {
-                    TrunkHeight = TrunkHeight,
-                    CrownBreadth = Radius
-                },
-                _ => throw new NotSupportedException()
-            };
+                    Issue => new Conifer
+                    {
+                        TrunkHeight = TrunkHeight,
+                        CrownBreadth = Radius
+                    },
+                    PullRequest => new Broadleaf
+                    {
+                        TrunkHeight = TrunkHeight,
+                        CrownBreadth = Radius
+                    },
+                    Discussion => new CubeTree()
+                    {
+                        TrunkHeight = TrunkHeight,
+                        CrownBreadth = Radius
+                    },
+                    _ => throw new NotSupportedException()
+                };
 
 
         var (min, max) = structure.Measure();

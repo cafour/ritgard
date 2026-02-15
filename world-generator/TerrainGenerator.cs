@@ -10,6 +10,8 @@ namespace Ritgard.WorldGenerator;
 
 public class TerrainGenerator(ILoggerFactory loggerFactory)
 {
+    public static readonly TimeSpan StepLength = TimeSpan.FromDays(1);
+
     private readonly ILogger<TerrainGenerator> logger = loggerFactory.CreateLogger<TerrainGenerator>();
 
     public TerrainGenerationResult Generate(ActiveRepository repo, CancellationToken ct = default)
@@ -56,7 +58,7 @@ public class TerrainGenerator(ILoggerFactory loggerFactory)
                     topicId,
                     generator.Generate(
                         ((SlidingWindowPreset)slidingWindow).ToTimeSpan(),
-                        TimeSpan.FromDays(1),
+                        StepLength,
                         ct: ct
                     )
                 );

@@ -10,7 +10,7 @@ public partial class Player : Node3D
     public const float BaseHeight = 100f;
     public const float HoverReach = 4096;
 
-    public static Player Instance { get; private set; }
+    public static Player Instance { get; private set; } = null!;
 
     private readonly IMovementMode[] movementModes = new IMovementMode[(int)ControlMode.Max + 1];
 
@@ -37,19 +37,15 @@ public partial class Player : Node3D
     [Signal]
     public delegate void HoverChangedEventHandler(CollisionObject3D hoveree);
 
-    public CollisionObject3D Hoveree { get; private set; }
+    public CollisionObject3D? Hoveree { get; private set; }
 
-    public Camera3D Camera { get; private set; }
+    public Camera3D Camera { get; private set; } = null!;
 
-    public IMovementMode MovementMode { get; private set; }
+    public IMovementMode MovementMode { get; private set; } = null!;
 
     public override void _EnterTree()
     {
-        if (Instance is not null)
-        {
-            Instance.QueueFree();
-        }
-
+        Instance?.QueueFree();
         Instance = this;
 
         Camera = GetNode<Camera3D>("Camera");
@@ -88,6 +84,12 @@ public partial class Player : Node3D
 
     public async Task TakeScreenshot(bool clean)
     {
+        if (Overlord.Instance.Repo is null)
+        {
+            GD.PushWarning("No repo loaded. Cannot take a screenshot.");
+            return;
+        }
+
         var viewport = GetViewport();
 
         Sky? originalSky = null;
