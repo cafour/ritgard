@@ -168,8 +168,8 @@ internal class Commands
             topicResult
         );
 
-        var generator = new TerrainGenerator(LoggerFactory);
-        var terrainResult = generator.Generate(repo, cancellationToken);
+        var generator = new TerrainGenerator(repo, LoggerFactory);
+        var terrainResult = generator.Generate(ct: cancellationToken);
 
         output = $"{terrainResult.RepositoryName.ToLower()}_{terrainResult.CompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
         Log.LogInformation("Saving to '{OutputPath}'.", output);

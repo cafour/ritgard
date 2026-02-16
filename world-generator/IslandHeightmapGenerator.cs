@@ -44,6 +44,8 @@ public class IslandHeightmapGenerator(
     public int TopicId { get; } = topicId;
     public ConversationScope Scope { get; } = scope;
 
+    public bool IsInitialized { get; private set; }
+
     public void Initialize(CancellationToken ct = default)
     {
         if (!Repo.TopicModelling.Topics.TryGetValue(TopicId, out var topic))
@@ -88,6 +90,8 @@ public class IslandHeightmapGenerator(
             max.y - min.y
         );
         mask = PrepareMask(ct);
+
+        IsInitialized = true;
     }
 
     public IslandHeightmap Generate(

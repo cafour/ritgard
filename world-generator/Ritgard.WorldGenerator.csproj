@@ -1,19 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\mining\Ritgard.Mining.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\mining\Ritgard.Mining.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="BTree">
-      <HintPath>..\..\..\..\.nuget\packages\devam.btree\3.0.1\lib\netstandard2.0\BTree.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="DevAM.BTree" Version="3.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.3" />
+    </ItemGroup>
 
-  <PropertyGroup>
-    <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
 </Project>

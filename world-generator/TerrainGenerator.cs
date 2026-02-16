@@ -3,35 +3,51 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Ritgard.Mining;
 
 namespace Ritgard.WorldGenerator;
 
-public class TerrainGenerator(ILoggerFactory loggerFactory)
+public class TerrainGenerator(
+    ActiveRepository repo,
+    ILoggerFactory loggerFactory
+)
 {
     public static readonly TimeSpan StepLength = TimeSpan.FromDays(1);
 
     private readonly ILogger<TerrainGenerator> logger = loggerFactory.CreateLogger<TerrainGenerator>();
+    private readonly IMemoryCache cache = new MemoryCache(new MemoryCacheOptions(), loggerFactory);
 
-    public TerrainGenerationResult Generate(ActiveRepository repo, CancellationToken ct = default)
+    public TerrainGenerationResult Generate(
+        ConversationScope scope = ConversationScope.All,
+        int startStep = 0,
+        int stepCount = -1,
+        CancellationToken ct = default
+    )
     {
         var startedAt = DateTimeOffset.UtcNow;
 
-        var scope = ConversationScope.All;
         var islandGenerators = repo.TopicModelling.Topics
             .Where(p => p.Key != -1)
             .ToImmutableDictionary(
                 p => p.Key,
-                p => new IslandHeightmapGenerator(
-                    repo,
-                    p.Key,
-                    scope,
-                    loggerFactory.CreateLogger<IslandHeightmapGenerator>()
-                )
+                p => cache.GetOrCreate<IslandHeightmapGenerator>(
+                    new CacheKey(scope, p.Key),
+                    entry =>
+                    {
+                        // TODO: entry size
+                        return new IslandHeightmapGenerator(
+                            repo,
+                            p.Key,
+                            scope,
+                            loggerFactory.CreateLogger<IslandHeightmapGenerator>()
+                        );
+                    }
+                )!
             );
         Parallel.ForEach(
-            islandGenerators.Values,
+            islandGenerators.Values.Where(g => !g.IsInitialized),
             generator =>
             {
                 ct.ThrowIfCancellationRequested();
@@ -59,6 +75,8 @@ public class TerrainGenerator(ILoggerFactory loggerFactory)
                     generator.Generate(
                         ((SlidingWindowPreset)slidingWindow).ToTimeSpan(),
                         StepLength,
+                        startStep: startStep,
+                        stepCount: stepCount,
                         ct: ct
                     )
                 );
@@ -80,4 +98,9 @@ public class TerrainGenerator(ILoggerFactory loggerFactory)
             Terrains: terrains.ToImmutable()
         );
     }
+
+    private record CacheKey(
+        ConversationScope Scope,
+        int TopicId
+    );
 }
