@@ -172,8 +172,11 @@ public partial class TopicIsland : Node3D
         _.Mesh.SetSurfaceOverrideMaterial(0, material as Material);
         _.Body.Get().Position = _.Mesh.Position;
         _.Label.Text = Topic?.GetPreferredTitle() ?? FallbackTopicLabel;
-        var halfSize = new Vector2(heightmap.SizeX, heightmap.SizeY) * 0.5f;
-        _.Label.Position = _.Mesh.Position + new Vector3(halfSize.X, LabelVerticalOffset, halfSize.Y);
+        _.Label.Position = _.Mesh.Position + new Vector3(
+            heightmap.SizeX / 2f,
+            LabelVerticalOffset,
+            heightmap.SizeY / 2f
+        );
     }
 
     public void UpdatePlane(int step)
@@ -215,9 +218,9 @@ public partial class TopicIsland : Node3D
 
         if (_.Body.Collider is not null)
         {
-            // var shape = new ConcavePolygonShape3D();
-            // shape.SetFaces(arrayMesh.GetFaces());
-            // _.Body.Collider.Shape = shape;
+            var shape = new ConcavePolygonShape3D();
+            shape.SetFaces(arrayMesh.GetFaces());
+            _.Body.Collider.Shape = shape;
         }
 
         _.Label.Position = _.Label.Position with { Y = (isCompletelySubmerged ? 0 : LabelVerticalOffset) + maxHeight };

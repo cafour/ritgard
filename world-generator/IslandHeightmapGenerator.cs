@@ -215,7 +215,11 @@ public class IslandHeightmapGenerator(
                     var height = v0Height * Utils.Smoothstep(0, 1, alpha)
                         + v1Height * Utils.Smoothstep(0, 1, beta)
                         + v2Height * Utils.Smoothstep(0, 1, gamma);
-                    value = heightmap.ToByteHeight(height);
+                    var byteHeight = heightmap.ToByteHeight(height);
+                    if (byteHeight > value)
+                    {
+                        value = byteHeight;
+                    }
                 }
             }
         }
@@ -234,7 +238,11 @@ public class IslandHeightmapGenerator(
                 {
                     if (new Vector2(x, y).Length() < StructureRadius)
                     {
-                        slice[(x + px) + (y + py) * heightmap.SizeX] = height;
+                        ref var value = ref slice[(x + px) + (y + py) * heightmap.SizeX];
+                        if (value < height)
+                        {
+                            value = height;
+                        }
                     }
                 }
             }
@@ -257,7 +265,11 @@ public class IslandHeightmapGenerator(
             {
                 for (int x = -StructureSafetyRange; x <= StructureSafetyRange; ++x)
                 {
-                    slice[(x + px) + (y + py) * heightmap.SizeX] = height;
+                    ref var value = ref slice[(x + px) + (y + py) * heightmap.SizeX];
+                    if (value < height)
+                    {
+                        value = height;
+                    }
                 }
             }
         }
@@ -415,6 +427,7 @@ public class IslandHeightmapGenerator(
 
                         current.ItemIndices = (v0Item.Data, v1Item.Data, v2Item.Data);
                         current.BarycentricCoords = barycentricCoords;
+                        current.BaseHeight = 1;
                     }
                 }
 

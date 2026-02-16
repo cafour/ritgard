@@ -148,7 +148,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         structure.Build(buffer);
         var mesher = new VoxelMesher();
         _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, Library, Material);
-        _.Mesh.Position = new Vector3(-size.X / 2f + 0.5f, 0, -size.Z / 2f + 0.5f);
+        _.Mesh.Position = new Vector3(-buffer.OriginOffset.X + 0.5f, 0, -buffer.OriginOffset.Z + 0.5f);
         Visible = true;
         Position = new Vector3(
             Position.X,

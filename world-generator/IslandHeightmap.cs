@@ -19,6 +19,8 @@ public readonly record struct IslandHeightmap(
     byte[] RawData
 )
 {
+    public const byte DeepSea = 0;
+    public const byte ShallowSea = 1;
     public static readonly IslandHeightmap Invalid = CreateEmpty(0, 0, 0, 0, 0, 0);
 
     public static IslandHeightmap CreateEmpty(
@@ -64,18 +66,18 @@ public readonly record struct IslandHeightmap(
     public byte ToByteHeight(int height)
     {
         // NB: height 0 and 1 have special meanings; 0 is invisible deep sea; 1 is shallow sea
-        var intHeight = height < 0 ? 0
-            : height == 0 ? 1
-            : (height + 2) / Scale;
+        var intHeight = height < 0 ? DeepSea
+            : height == 0 ? ShallowSea
+            : height / Scale + 2;
         return (byte)Math.Clamp(intHeight, 0, 255);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte ToByteHeight(float height)
     {
-        var intHeight = height < 0f ? 0
-            : MathF.Abs(height) < float.Epsilon ? 1
-            : ((int)MathF.Round(height) + 2) / Scale;
+        var intHeight = height < 0f ? DeepSea
+            : MathF.Abs(height) < float.Epsilon ? ShallowSea
+            : (int)MathF.Round(height / Scale) + 2;
         return (byte)Math.Clamp(intHeight, 0, 255);
     }
 
@@ -84,9 +86,9 @@ public readonly record struct IslandHeightmap(
     {
         return value switch
         {
-            0 => -10,
-            1 => -1,
-            _ => value * Scale - 2
+            DeepSea => -10,
+            ShallowSea => -1,
+            _ => (value - 2) * Scale
         };
     }
 

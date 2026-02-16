@@ -41,7 +41,7 @@ public class TerrainGenerator(ILoggerFactory loggerFactory)
 
         var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
 
-        for (int slidingWindow = 0; slidingWindow < (int)SlidingWindowPreset.MaxValue; ++slidingWindow)
+        for (int slidingWindow = 0; slidingWindow <= (int)SlidingWindowPreset.MaxValue; ++slidingWindow)
         {
             var heightmaps = ImmutableDictionary.CreateBuilder<int, IslandHeightmap>();
             foreach (var (topicId, generator) in islandGenerators)

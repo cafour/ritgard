@@ -604,7 +604,7 @@ public partial class Overlord : Node
             UI.DatasetDropdown.AddItem(datasets[i].Name, i);
         }
 
-        foreach (var name in Enum.GetNames<SlidingWindowPreset>())
+        foreach (var name in Enum.GetNames<SlidingWindowPreset>().Where(s => s != nameof(SlidingWindowPreset.MaxValue)))
         {
             UI.SlidingWindowDropdown.AddItem(name, (int)Enum.Parse<SlidingWindowPreset>(name));
         }

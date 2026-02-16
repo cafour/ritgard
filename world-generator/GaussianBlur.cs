@@ -54,7 +54,14 @@ public static class GaussianBlur
                     }
                 }
 
-                slice[x + y * heightmap.SizeX] = heightmap.ToByteHeight((int)MathF.Round(sum / weightSum));
+
+                var result = heightmap.ToByteHeight(sum / weightSum);
+                ref var value = ref slice[x + y * heightmap.SizeX];
+                // value = result;
+                if (value > 2)
+                {
+                    value = result;
+                }
             }
         }
     }
