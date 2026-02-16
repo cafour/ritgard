@@ -16,7 +16,7 @@ public static class SpanExtensions
             {
                 if (span[i] > result)
                 {
-                    result = span[1];
+                    result = span[i];
                 }
             }
 

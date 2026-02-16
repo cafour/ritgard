@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
@@ -21,12 +22,23 @@ public class TerrainGenerator(
 
     public TerrainGenerationResult Generate(
         ConversationScope scope = ConversationScope.All,
+        SlidingWindowPreset slidingWindowPresets = SlidingWindowPreset.AllPresets,
         int startStep = 0,
         int stepCount = -1,
         CancellationToken ct = default
     )
     {
         var startedAt = DateTimeOffset.UtcNow;
+
+        if (scope == ConversationScope.None)
+        {
+            return new TerrainGenerationResult(
+                RepositoryName: repo.Mining.Repository.Name,
+                StartedAt: startedAt,
+                CompletedAt: DateTimeOffset.UtcNow,
+                Terrains: []
+            );
+        }
 
         var islandGenerators = repo.TopicModelling.Topics
             .Where(p => p.Key != -1)
@@ -57,36 +69,44 @@ public class TerrainGenerator(
 
         var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
 
-        for (int slidingWindow = 0; slidingWindow <= (int)SlidingWindowPreset.MaxValue; ++slidingWindow)
+        for (int slidingWindow = 1; slidingWindow <= (int)SlidingWindowPreset.MaxValue; slidingWindow <<= 1)
         {
-            var heightmaps = ImmutableDictionary.CreateBuilder<int, IslandHeightmap>();
-            foreach (var (topicId, generator) in islandGenerators)
+            if (!slidingWindowPresets.HasFlag((SlidingWindowPreset)slidingWindow))
             {
-                ct.ThrowIfCancellationRequested();
-
-                logger.LogInformation(
-                    "Generating heightmap for topic '{TopicId}', the '{SlidingWindow}', and '{Scope}' scope.",
-                    topicId,
-                    (SlidingWindowPreset)slidingWindow,
-                    scope
-                );
-                heightmaps.Add(
-                    topicId,
-                    generator.Generate(
-                        ((SlidingWindowPreset)slidingWindow).ToTimeSpan(),
-                        StepLength,
-                        startStep: startStep,
-                        stepCount: stepCount,
-                        ct: ct
-                    )
-                );
+                continue;
             }
+
+            var heightmaps = new ConcurrentDictionary<int, IslandHeightmap>();
+            var window = slidingWindow;
+            Parallel.ForEach(
+                islandGenerators.Keys,
+                topicId =>
+                {
+                    var generator = islandGenerators[topicId];
+                    logger.LogInformation(
+                        "Generating heightmap for topic '{TopicId}', the '{SlidingWindow}', and '{Scope}' scope.",
+                        topicId,
+                        (SlidingWindowPreset)window,
+                        scope
+                    );
+                    heightmaps.TryAdd(
+                        topicId,
+                        generator.Generate(
+                            ((SlidingWindowPreset)window).ToTimeSpan(),
+                            StepLength,
+                            startStep: startStep,
+                            stepCount: stepCount,
+                            ct: ct
+                        )
+                    );
+                }
+            );
 
             terrains.Add(
                 new TerrainPreset(
                     SlidingWindow: (SlidingWindowPreset)slidingWindow,
                     Scope: scope,
-                    IslandHeightmaps: heightmaps.ToImmutable()
+                    IslandHeightmaps: heightmaps.ToImmutableDictionary()
                 )
             );
         }

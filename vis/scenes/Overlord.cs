@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Ritgard.Voxel;
 using Ritgard.WorldGenerator;
 
@@ -24,6 +25,19 @@ public partial class Overlord : Node
     public const string DatasetErrorHint = "No datasets found. Check 'DataPath' in appsettings.json.";
     public const float BorderWidth = 5f;
     public const float SunRotationStep = Mathf.Pi / 6;
+
+    public static readonly ImmutableArray<SlidingWindowPreset> SlidingWindowOptions =
+    [
+        SlidingWindowPreset.All,
+        SlidingWindowPreset.Week,
+        SlidingWindowPreset.Month,
+        SlidingWindowPreset.Quarter,
+        SlidingWindowPreset.HalfYear,
+        SlidingWindowPreset.Year,
+        SlidingWindowPreset.YearAndHalf,
+        SlidingWindowPreset.TwentyMonths,
+        SlidingWindowPreset.TwoYears,
+    ];
 
     public static Overlord Instance { get; private set; } = null!;
 
@@ -117,8 +131,8 @@ public partial class Overlord : Node
     private readonly Dictionary<string, OutlierRock> outlierRocks = [];
     private ItemStructure? currentStructure;
     private TopicIsland? currentIsland;
-
     private Node generatedNodesContainer = null!;
+    private TerrainGenerator? generator;
 
     // private Texture2D topicIdTexture;
     // private Texture2D itemIdTexture;
@@ -243,14 +257,8 @@ public partial class Overlord : Node
 
         var dataset = datasets[index];
         Repo = await dataset.Load(ct);
-        CurrentTerrain =
-            Repo.Terrain?.Terrains.SingleOrDefault(p =>
-                p.Scope == CurrentScope && p.SlidingWindow == SlidingWindowPreset
-            );
-        if (CurrentTerrain is null)
-        {
-            throw new NullReferenceException("Could not find a terrain.");
-        }
+        generator = new TerrainGenerator(Repo, Utils.LoggerFactory);
+        await PrepareTerrain(CurrentStep, ct);
 
         CameraDistance = Mathf.Sqrt(Repo.BBoxSize.X * Repo.BBoxSize.X + Repo.BBoxSize.Y * Repo.BBoxSize.Y);
         Player.MovementMode.ResetCamera();
@@ -325,16 +333,9 @@ public partial class Overlord : Node
             return;
         }
 
-        CurrentTerrain =
-            Repo.Terrain?.Terrains.SingleOrDefault(p =>
-                p.Scope == CurrentScope && p.SlidingWindow == SlidingWindowPreset
-            );
-        if (CurrentTerrain is null)
-        {
-            throw new NullReferenceException("Could not find a terrain.");
-        }
-
         step = Math.Clamp(step, 0, StepCount - 1);
+
+        await PrepareTerrain(step);
 
         var now = Repo.MinDate + TerrainGenerator.StepLength * step;
         var slidingEvents = Repo.Items.Values.ToImmutableDictionary(
@@ -604,8 +605,9 @@ public partial class Overlord : Node
             UI.DatasetDropdown.AddItem(datasets[i].Name, i);
         }
 
-        foreach (var name in Enum.GetNames<SlidingWindowPreset>().Where(s => s != nameof(SlidingWindowPreset.MaxValue)))
+        foreach (var option in SlidingWindowOptions)
         {
+            var name = Enum.GetName(option) ?? throw new NotImplementedException();
             UI.SlidingWindowDropdown.AddItem(name, (int)Enum.Parse<SlidingWindowPreset>(name));
         }
 
@@ -702,5 +704,60 @@ public partial class Overlord : Node
             ShouldShowTrees = UI.ShowTreesCheck.ButtonPressed;
             await ShowStep(CurrentStep);
         };
+    }
+
+    private async Task PrepareTerrain(int step, CancellationToken ct = default)
+    {
+        if (Repo is null || generator is null)
+        {
+            throw new InvalidOperationException(
+                "Cannot generate terrain when no repo is loaded or no generator ready."
+            );
+        }
+
+        var foundTerrain =
+            Repo.Terrain?.Terrains.SingleOrDefault(p =>
+                p.Scope == CurrentScope && p.SlidingWindow == SlidingWindowPreset
+            );
+        var anyHeightmap = foundTerrain?.IslandHeightmaps.FirstOrDefault().Value;
+        if (foundTerrain is not null && step >= anyHeightmap?.StartStep
+            && step < anyHeightmap?.StartStep + anyHeightmap?.StepCount
+        )
+        {
+            if (CurrentTerrain != foundTerrain)
+            {
+                CurrentTerrain = foundTerrain;
+                foreach (var island in topicIslands.Values)
+                {
+                    island.InitializePlane();
+                }
+            }
+
+            return;
+        }
+
+        await WithLoading(() => Task.Run(() =>
+                {
+                    CurrentTerrain = generator.Generate(CurrentScope, SlidingWindowPreset, step, 1, ct).Terrains
+                        .SingleOrDefault();
+                },
+                ct
+            )
+        );
+        foreach (var island in topicIslands.Values)
+        {
+            island.InitializePlane();
+        }
+    }
+
+    private async Task WithLoading(Func<Task> action)
+    {
+        var originalValue = UI.LoadingBox.Visible;
+        UI.LoadingBox.Visible = true;
+        await action().ConfigureAwait(true);
+        if (UI.LoadingBox.Visible)
+        {
+            UI.LoadingBox.Visible = originalValue;
+        }
     }
 }

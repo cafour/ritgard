@@ -69,6 +69,12 @@ public class IslandHeightmapGenerator(
                 "Topic '{TopicName}' is empty. An invalid heightmap will be generated. This is probably a bug.",
                 topic.GetPreferredTitle()
             );
+            min = (0, 0);
+            max = (0, 0);
+            size = (0, 0);
+
+            IsInitialized = true;
+            return;
         }
 
         for (int i = 0; i < items.Length; ++i)
@@ -118,7 +124,7 @@ public class IslandHeightmapGenerator(
             stepCount = Math.Max(1, (int)Math.Ceiling((Repo.MaxDate - startDate) / stepLength));
         }
 
-        logger.LogInformation("Computing heights for each step and item in topic '{TopicName}'.",topicName);
+        logger.LogInformation("Computing heights for each step and item in topic '{TopicName}'.", topicName);
         var heights = GetHeights(Repo, items, slidingWindow, stepLength, startStep, stepCount);
         var globalMaxHeight = heights.Max();
         // NB: +2 because of the two special height values (0 = deep sea, 1 = shallow sea)
@@ -130,6 +136,7 @@ public class IslandHeightmapGenerator(
             sizeY: size.y,
             positionX: min.x,
             positionY: min.y,
+            startStep: startStep,
             stepCount: stepCount,
             scale: scale
         );
@@ -175,7 +182,7 @@ public class IslandHeightmapGenerator(
                         heightmap: heightmap,
                         heights: heights.AsSpan(items.Length * absoluteStep, items.Length),
                         blurTemp: blurTemp,
-                        step: absoluteStep,
+                        step: step,
                         ct: ct
                     );
                 }
@@ -385,69 +392,73 @@ public class IslandHeightmapGenerator(
         var (triTree, hullPolygon) = Triangulate(ct);
 
         var mask = new MaskElement[size.y, size.x];
-        for (int y = 0; y < size.y; ++y)
-        {
-            for (int x = 0; x < size.x; ++x)
+        Parallel.For(
+            0,
+            size.y,
+            y =>
             {
-                ct.ThrowIfCancellationRequested();
-
-                ref var current = ref mask[y, x];
-
-                var px = x + min.x;
-                var py = y + min.y;
-
-                var coord = new Coordinate(px, py);
-
-                if (hullPolygon is not null && hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
+                for (int x = 0; x < size.x; ++x)
                 {
-                    current.BaseHeight = 1;
-                }
+                    ct.ThrowIfCancellationRequested();
 
-                var nearestTri = triTree.NearestNeighbor(coord);
-                if (nearestTri is not null)
-                {
-                    var (containingTri, barycentricCoords) =
-                        Utils.LocateTriangle(nearestTri.Data, new Vector2(px, py));
-                    if (containingTri is not null)
+                    ref var current = ref mask[y, x];
+
+                    var px = x + min.x;
+                    var py = y + min.y;
+
+                    var coord = new Coordinate(px, py);
+
+                    if (hullPolygon is not null && hullPolygon.Contains(GeometryFactory.Default.CreatePoint(coord)))
                     {
-                        var v0Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(0));
-                        var v1Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(1));
-                        var v2Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(2));
-                        if (v0Item is null
-                            || v1Item is null
-                            || v2Item is null
-                            || v0Item == v1Item
-                            || v0Item == v2Item
-                            || v1Item == v2Item
-                           )
-                        {
-                            logger.LogWarning(
-                                "Couldn't re-determine which item is at coordinate ({CoordX}, {CoordY}).",
-                                px,
-                                py
-                            );
-                            continue;
-                        }
-
-                        current.ItemIndices = (v0Item.Data, v1Item.Data, v2Item.Data);
-                        current.BarycentricCoords = barycentricCoords;
                         current.BaseHeight = 1;
                     }
-                }
 
-                var nearestPoint = itemTree.NearestNeighbor(coord);
-                if (nearestPoint is not null)
-                {
-                    var distance = nearestPoint.Coordinate.Distance(coord);
-                    if (hullPolygon is not null
-                        && !hullPolygon.Contains(GeometryFactory.Default.CreatePoint(nearestPoint.Coordinate))
-                        && distance < StructureRadius * 1.5f)
+                    var nearestTri = triTree.NearestNeighbor(coord);
+                    if (nearestTri is not null)
                     {
-                        current.BaseHeight = 1;
+                        var (containingTri, barycentricCoords) =
+                            Utils.LocateTriangle(nearestTri.Data, new Vector2(px, py));
+                        if (containingTri is not null)
+                        {
+                            var v0Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(0));
+                            var v1Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(1));
+                            var v2Item = itemTree.NearestNeighbor(containingTri.GetCoordinate(2));
+                            if (v0Item is null
+                                || v1Item is null
+                                || v2Item is null
+                                || v0Item == v1Item
+                                || v0Item == v2Item
+                                || v1Item == v2Item
+                               )
+                            {
+                                logger.LogWarning(
+                                    "Couldn't re-determine which item is at coordinate ({CoordX}, {CoordY}).",
+                                    px,
+                                    py
+                                );
+                                continue;
+                            }
+
+                            current.ItemIndices = (v0Item.Data, v1Item.Data, v2Item.Data);
+                            current.BarycentricCoords = barycentricCoords;
+                            current.BaseHeight = 1;
+                        }
+                    }
+
+                    var nearestPoint = itemTree.NearestNeighbor(coord);
+                    if (nearestPoint is not null)
+                    {
+                        var distance = nearestPoint.Coordinate.Distance(coord);
+                        if (hullPolygon is not null
+                            && !hullPolygon.Contains(GeometryFactory.Default.CreatePoint(nearestPoint.Coordinate))
+                            && distance < StructureRadius * 1.5f)
+                        {
+                            current.BaseHeight = 1;
+                        }
                     }
                 }
             }
-        }
+        );
 
         return mask;
     }

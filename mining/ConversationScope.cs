@@ -9,7 +9,7 @@ public enum ConversationScope
     Issues = 1 << 0,
     PullRequests = 1 << 1,
     Discussions = 1 << 2,
-    All = int.MaxValue
+    All = Issues | PullRequests | Discussions
 }
 
 public static class ConversationScopeExtensions

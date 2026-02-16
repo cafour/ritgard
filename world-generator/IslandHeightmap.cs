@@ -11,6 +11,7 @@ namespace Ritgard.WorldGenerator;
 public readonly record struct IslandHeightmap(
     int SizeX,
     int SizeY,
+    int StartStep,
     int StepCount,
     int PositionX,
     int PositionY,
@@ -21,11 +22,12 @@ public readonly record struct IslandHeightmap(
 {
     public const byte DeepSea = 0;
     public const byte ShallowSea = 1;
-    public static readonly IslandHeightmap Invalid = CreateEmpty(0, 0, 0, 0, 0, 0);
+    public static readonly IslandHeightmap Invalid = CreateEmpty(0, 0, 0, 0, 0, 0, 0);
 
     public static IslandHeightmap CreateEmpty(
         int sizeX,
         int sizeY,
+        int startStep,
         int stepCount,
         int positionX,
         int positionY,
@@ -35,6 +37,7 @@ public readonly record struct IslandHeightmap(
         return new IslandHeightmap(
             sizeX,
             sizeY,
+            startStep,
             stepCount,
             positionX,
             positionY,
@@ -45,10 +48,17 @@ public readonly record struct IslandHeightmap(
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetMaxHeight(int step)
+    {
+        EnsureBounds(0, 0, step);
+        return ToIntHeight(MaxHeight[step - StartStep]);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetIndex(int x, int y, int step)
     {
         EnsureBounds(x, y, step);
-        return x + y * SizeX + step * (SizeX * SizeY);
+        return x + y * SizeX + (step - StartStep) * (SizeX * SizeY);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,7 +69,7 @@ public readonly record struct IslandHeightmap(
 
     public Span<byte> GetRawStepSpan(int step)
     {
-        return RawData.AsSpan(SizeX * SizeY * step, SizeX * SizeY);
+        return RawData.AsSpan(SizeX * SizeY * (step - StartStep), SizeX * SizeY);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -105,7 +115,7 @@ public readonly record struct IslandHeightmap(
             throw new ArgumentException($"Y coordinate '{y}' is invalid.");
         }
 
-        if (step < 0 || step > StepCount)
+        if (step < StartStep || (step - StartStep) > StepCount)
         {
             throw new ArgumentException($"Step '{step}' is invalid.");
         }
@@ -122,13 +132,14 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         using var binaryReader = new BinaryReader(brotliStream);
         var width = binaryReader.ReadInt32();
         var height = binaryReader.ReadInt32();
+        var startStep = binaryReader.ReadInt32();
         var stepCount = binaryReader.ReadInt32();
         var posX = binaryReader.ReadInt32();
         var posY = binaryReader.ReadInt32();
         var scale = binaryReader.ReadInt32();
         var maxHeight = binaryReader.ReadBytes(stepCount);
         var rawData = binaryReader.ReadBytes(width * height * stepCount);
-        return new IslandHeightmap(width, height, stepCount, posX, posY, scale, maxHeight, rawData);
+        return new IslandHeightmap(width, height, startStep, stepCount, posX, posY, scale, maxHeight, rawData);
     }
 
     public override void Write(Utf8JsonWriter writer, IslandHeightmap value, JsonSerializerOptions options)
@@ -138,6 +149,7 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         using var binaryWriter = new BinaryWriter(brotliStream);
         binaryWriter.Write(value.SizeX);
         binaryWriter.Write(value.SizeY);
+        binaryWriter.Write(value.StartStep);
         binaryWriter.Write(value.StepCount);
         binaryWriter.Write(value.PositionX);
         binaryWriter.Write(value.PositionY);

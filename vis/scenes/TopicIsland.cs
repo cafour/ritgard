@@ -88,14 +88,23 @@ public partial class TopicIsland : Node3D
         }
     }
 
-    private void InitializePlane()
+    public void InitializePlane()
     {
-        if (Topic is null || Overlord.Instance.CurrentTerrain is null)
+        if (Topic is null)
         {
             throw new InvalidOperationException(
-                "Cannot initialize the topic island if either its Topic property or the current terrain are null."
+                "Cannot initialize the topic island if either its Topic property is null."
             );
         }
+
+        if (Overlord.Instance.CurrentTerrain is null)
+        {
+            Visible = false;
+            return;
+        }
+
+        Visible = true;
+        arrayMesh.ClearSurfaces();
 
         var heightmap = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
         if (heightmap.SizeX < 1 || heightmap.SizeY < 1)
@@ -181,13 +190,20 @@ public partial class TopicIsland : Node3D
 
     public void UpdatePlane(int step)
     {
-        if (Overlord.Instance.CurrentTerrain is null || Topic is null)
+        if (Topic is null)
         {
             throw new InvalidOperationException(
-                "Cannot update the island terrain if the global CurrentTerrain is null or this island has no Topic."
+                "Cannot update the island terrain if this island has no Topic."
             );
         }
 
+        if (Overlord.Instance.CurrentTerrain is null)
+        {
+            Visible = false;
+            return;
+        }
+
+        Visible = true;
         var heightmap = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
         var hh = heightmap.SizeY;
         var hw = heightmap.SizeX;
@@ -202,7 +218,7 @@ public partial class TopicIsland : Node3D
         var bytes = MemoryMarshal.AsBytes(vertices.AsSpan());
         arrayMesh.SurfaceUpdateVertexRegion(0, 0, bytes);
 
-        var maxHeight = heightmap.ToIntHeight(heightmap.MaxHeight[step]);
+        var maxHeight = heightmap.GetMaxHeight(step);
         var isCompletelySubmerged = maxHeight < 0;
 
         if (ShowOnlyWhenPopulated && isCompletelySubmerged)

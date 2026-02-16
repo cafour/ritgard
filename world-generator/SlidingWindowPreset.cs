@@ -1,19 +1,23 @@
 using System;
+using System.Collections.Immutable;
 
 namespace Ritgard.WorldGenerator;
 
+[Flags]
 public enum SlidingWindowPreset
 {
-    All,
-    Week,
-    Month,
-    Quarter,
-    HalfYear,
-    Year,
-    YearAndHalf,
-    TwentyMonths,
-    TwoYears,
-    MaxValue = TwoYears
+    Invalid = 0,
+    All = 1 << 0,
+    Week = 1 << 1,
+    Month = 1 << 2,
+    Quarter = 1 << 3,
+    HalfYear = 1 << 4,
+    Year = 1 << 5,
+    YearAndHalf = 1 << 6,
+    TwentyMonths = 1 << 7,
+    TwoYears = 1 << 8,
+    MaxValue = TwoYears,
+    AllPresets = int.MaxValue
 }
 
 public static class SlidingWindowPresetExtensions
