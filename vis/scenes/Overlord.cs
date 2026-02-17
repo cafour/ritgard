@@ -92,11 +92,13 @@ public partial class Overlord : Node
     public int CurrentStep { get; private set; }
 
     public DateTimeOffset Now => Repo is not null
-        ? Repo.MinDate + CurrentStep * StepLength
+        ? Repo.MinDate + CurrentStep * SingleStepLength
         : throw new InvalidOperationException("Now is only available when a repo is loaded.");
 
     // NB: Currently not configurable at runtime.
-    public TimeSpan StepLength => TerrainGenerator.StepLength;
+    public TimeSpan SingleStepLength => TerrainGenerator.StepLength;
+
+    public int StepLength { get; set; } = 1;
 
     public ConversationScope CurrentScope { get; private set; } = ConversationScope.All;
 
@@ -209,11 +211,11 @@ public partial class Overlord : Node
         }
         else if (Input.IsActionPressed(InputActions.StepNext))
         {
-            await ShowStep(CurrentStep + 1, checkCooldown: !justStarted);
+            await ShowStep(CurrentStep + StepLength, checkCooldown: !justStarted);
         }
         else if (Input.IsActionPressed(InputActions.StepPrev))
         {
-            await ShowStep(CurrentStep - 1, checkCooldown: !justStarted);
+            await ShowStep(CurrentStep - StepLength, checkCooldown: !justStarted);
         }
     }
 
@@ -267,7 +269,7 @@ public partial class Overlord : Node
 
         // NB: if preset is All, we have to recompute it
         SlidingWindowLength = SlidingWindowPreset == SlidingWindowPreset.All
-            ? Math.Ceiling((Repo.MaxDate - Repo.MinDate) / StepLength) * StepLength
+            ? Math.Ceiling((Repo.MaxDate - Repo.MinDate) / SingleStepLength) * SingleStepLength
             : SlidingWindowPreset.ToTimeSpan();
         UI.CurrentStepSpinBox.MaxValue = StepCount - 1;
 
@@ -576,6 +578,7 @@ public partial class Overlord : Node
         CurrentStep = step;
         UI.CurrentStepSpinBox.SetValueNoSignal(step);
         UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
+        UI.MaxStepLabel.Text = $"/ {StepCount - 1}";
     }
 
     private async Task OnScopeCheck(CheckButton button, ConversationScope scope)
@@ -623,7 +626,7 @@ public partial class Overlord : Node
             SlidingWindowPreset = Enum.Parse<SlidingWindowPreset>(name);
             // NB: if preset is All, we have to recompute it
             SlidingWindowLength = SlidingWindowPreset == SlidingWindowPreset.All
-                ? Math.Ceiling((Repo.MaxDate - Repo.MinDate) / StepLength) * StepLength
+                ? Math.Ceiling((Repo.MaxDate - Repo.MinDate) / SingleStepLength) * SingleStepLength
                 : SlidingWindowPreset.ToTimeSpan();
 
             await ShowStep(CurrentStep);
@@ -704,6 +707,12 @@ public partial class Overlord : Node
             ShouldShowTrees = UI.ShowTreesCheck.ButtonPressed;
             await ShowStep(CurrentStep);
         };
+
+        UI.StepLengthSpinBox.Value = StepLength;
+        UI.StepLengthSpinBox.ValueChanged += value =>
+        {
+            StepLength = Mathf.RoundToInt(value);
+        };
     }
 
     private async Task PrepareTerrain(int step, CancellationToken ct = default)
@@ -722,7 +731,7 @@ public partial class Overlord : Node
         var anyHeightmap = foundTerrain?.IslandHeightmaps.FirstOrDefault().Value;
         if (foundTerrain is not null && step >= anyHeightmap?.StartStep
             && step < anyHeightmap?.StartStep + anyHeightmap?.StepCount
-        )
+           )
         {
             if (CurrentTerrain != foundTerrain)
             {
@@ -736,7 +745,8 @@ public partial class Overlord : Node
             return;
         }
 
-        await WithLoading(() => Task.Run(() =>
+        await WithLoading(() => Task.Run(
+                () =>
                 {
                     CurrentTerrain = generator.Generate(CurrentScope, SlidingWindowPreset, step, 1, ct).Terrains
                         .SingleOrDefault();

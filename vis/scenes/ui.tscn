@@ -2,6 +2,7 @@
 
 [ext_resource type="FontFile" uid="uid://dmxjwe62r0f6c" path="res://fonts/IBMPlexMono-SemiBold.otf" id="1_nt7q6"]
 [ext_resource type="Script" uid="uid://bxgp35x25054d" path="res://scenes/UIWrapper.cs" id="1_x4jx1"]
+[ext_resource type="Script" uid="uid://tmu61fs1gpp2" path="res://SidePanel.cs" id="3_yev5y"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kigm6"]
 content_margin_left = 16.0
@@ -95,6 +96,7 @@ offset_top = 56.0
 offset_bottom = 551.00024
 grow_horizontal = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_i2pvy")
+script = ExtResource("3_yev5y")
 
 [node name="Container" type="VBoxContainer" parent="Controls" unique_id=1612696639]
 layout_mode = 2
@@ -106,6 +108,10 @@ text = "Dataset"
 [node name="DatasetDropdown" type="OptionButton" parent="Controls/Container" unique_id=263292814]
 layout_mode = 2
 
+[node name="Filler0" type="Control" parent="Controls/Container" unique_id=194343458]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
 [node name="SlidingWindowLabel" type="Label" parent="Controls/Container" unique_id=879843249]
 layout_mode = 2
 text = "Sliding window"
@@ -113,18 +119,49 @@ text = "Sliding window"
 [node name="SlidingWindowDropdown" type="OptionButton" parent="Controls/Container" unique_id=2095049736]
 layout_mode = 2
 
+[node name="Filler1" type="Control" parent="Controls/Container" unique_id=70985741]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
 [node name="CurrentStepLabel" type="Label" parent="Controls/Container" unique_id=1363072309]
 layout_mode = 2
 text = "Current step"
 
-[node name="CurrentStep" type="SpinBox" parent="Controls/Container" unique_id=1806416888]
+[node name="CurrentStepContainer" type="HBoxContainer" parent="Controls/Container" unique_id=1080618547]
 layout_mode = 2
+
+[node name="CurrentStep" type="SpinBox" parent="Controls/Container/CurrentStepContainer" unique_id=1806416888]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MaxStep" type="Label" parent="Controls/Container/CurrentStepContainer" unique_id=642387253]
+layout_mode = 2
+text = "/ 0000"
 
 [node name="CurrentDateTime" type="LineEdit" parent="Controls/Container" unique_id=1038844875]
 custom_minimum_size = Vector2(175, 0)
 layout_mode = 2
 placeholder_text = "yyyy-MM-dd HH:mm"
 emoji_menu_enabled = false
+
+[node name="Filler2" type="Control" parent="Controls/Container" unique_id=1673696713]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="StepLengthLabel" type="Label" parent="Controls/Container" unique_id=1850398425]
+layout_mode = 2
+text = "Step length"
+
+[node name="StepLength" type="SpinBox" parent="Controls/Container" unique_id=466310664]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+value = 1.0
+allow_greater = true
+
+[node name="Filler3" type="Control" parent="Controls/Container" unique_id=341568777]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
 [node name="ShowTreesCheck" type="CheckButton" parent="Controls/Container" unique_id=289932220]
 layout_mode = 2
@@ -152,11 +189,23 @@ layout_mode = 2
 text = "Only active topics
 "
 
-[node name="NormalizeHeightsCheck" type="CheckButton" parent="Controls/Container" unique_id=269295636]
+[node name="Filler4" type="Control" parent="Controls/Container" unique_id=565662220]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="NormalizeHeightsLabel" type="Label" parent="Controls/Container" unique_id=1683024283]
 layout_mode = 2
 text = "Normalize heights"
 
-[node name="MaxNormalizedHeight" type="SpinBox" parent="Controls/Container" unique_id=749143707]
+[node name="NormalizeHeightsContainer" type="HBoxContainer" parent="Controls/Container" unique_id=355991033]
 layout_mode = 2
+
+[node name="NormalizeHeightsCheck" type="CheckButton" parent="Controls/Container/NormalizeHeightsContainer" unique_id=269295636]
+layout_mode = 2
+
+[node name="MaxNormalizedHeight" type="SpinBox" parent="Controls/Container/NormalizeHeightsContainer" unique_id=749143707]
+layout_mode = 2
+size_flags_horizontal = 3
 min_value = 1.0
 value = 1.0
+allow_greater = true

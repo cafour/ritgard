@@ -119,7 +119,7 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
         }
 
         IStructure structure = Overlord.Instance.ShowClosedAsStubs
-            && Item.Conversation.IsClosed(Overlord.Instance.Now, Overlord.Instance.StepLength)
+            && Item.Conversation.IsClosed(Overlord.Instance.Now, Overlord.Instance.SingleStepLength)
                 ? new Stub { TrunkHeight = TrunkHeight }
                 : Item.Conversation switch
                 {

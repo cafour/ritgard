@@ -11,7 +11,11 @@ public partial class UIWrapper : Control
 
     public OptionButton SlidingWindowDropdown => _.Controls.Container.SlidingWindowDropdown;
 
-    public SpinBox CurrentStepSpinBox => _.Controls.Container.CurrentStep;
+    public SpinBox CurrentStepSpinBox => _.Controls.Container.CurrentStepContainer.CurrentStep;
+
+    public SpinBox StepLengthSpinBox => _.Controls.Container.StepLength;
+
+    public Label MaxStepLabel => _.Controls.Container.CurrentStepContainer.MaxStep;
 
     public LineEdit CurrentDateTime => _.Controls.Container.CurrentDateTime;
 
@@ -27,9 +31,9 @@ public partial class UIWrapper : Control
 
     public CheckButton OnlyPopulatedIslandsCheck => _.Controls.Container.OnlyPopulatedIslandsCheck;
 
-    public CheckButton NormalizeHeightsCheck => _.Controls.Container.NormalizeHeightsCheck;
+    public CheckButton NormalizeHeightsCheck => _.Controls.Container.NormalizeHeightsContainer.NormalizeHeightsCheck;
 
-    public SpinBox MaxNormalizedHeightSpinBox => _.Controls.Container.MaxNormalizedHeight;
+    public SpinBox MaxNormalizedHeightSpinBox => _.Controls.Container.NormalizeHeightsContainer.MaxNormalizedHeight;
 
     public ColorRect Crosshair => _.CrosshairContainer.Crosshair;
 
