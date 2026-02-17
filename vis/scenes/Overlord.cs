@@ -91,6 +91,8 @@ public partial class Overlord : Node
 
     public int CurrentStep { get; private set; }
 
+    public int CurrentStepMaxHeight { get; private set; }
+
     public DateTimeOffset Now => Repo is not null
         ? Repo.MinDate + CurrentStep * SingleStepLength
         : throw new InvalidOperationException("Now is only available when a repo is loaded.");
@@ -377,7 +379,7 @@ public partial class Overlord : Node
 
         foreach (var topicIsland in topicIslands.Values)
         {
-            topicIsland.UpdatePlane(step);
+            topicIsland.UpdatePlane(step, scale);
         }
 
         // if (lastHeightmapTask is not null && !lastHeightmapTask.IsCompleted)
@@ -420,6 +422,12 @@ public partial class Overlord : Node
 
     public override void _Input(InputEvent @event)
     {
+        var focusedControl = GetViewport().GuiGetFocusOwner();
+        if (focusedControl is not null)
+        {
+            return;
+        }
+
         if (@event.IsAction("interact") && @event.IsPressed())
         {
             if (currentStructure is not null && Repo is not null)

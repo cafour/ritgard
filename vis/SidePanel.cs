@@ -6,6 +6,18 @@ public partial class SidePanel : Control
 {
     public override void _Input(InputEvent e)
     {
+        var focusOwner = GetViewport()?.GuiGetFocusOwner();
+        if (focusOwner is null)
+        {
+            return;
+        }
+
+        if (e.IsAction("ui_cancel"))
+        {
+            focusOwner.ReleaseFocus();
+            return;
+        }
+
         if (e is InputEventMouseButton mbe)
         {
             if (MakeInputLocal(mbe) is InputEventMouseButton local)
@@ -13,7 +25,7 @@ public partial class SidePanel : Control
                 var rect = new Rect2(Vector2.Zero, Size);
                 if (!rect.HasPoint(local.Position))
                 {
-                    GetViewport()?.GuiGetFocusOwner()?.ReleaseFocus();
+                    focusOwner.ReleaseFocus();
                 }
             }
         }

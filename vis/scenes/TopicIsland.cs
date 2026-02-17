@@ -188,7 +188,7 @@ public partial class TopicIsland : Node3D
         );
     }
 
-    public void UpdatePlane(int step)
+    public void UpdatePlane(int step, float scale = 1.0f)
     {
         if (Topic is null)
         {
@@ -211,7 +211,12 @@ public partial class TopicIsland : Node3D
         {
             for (int x = 0; x < hw; ++x)
             {
-                vertices[y * hw + x].Y = heightmap.GetHeight(x, y, step);
+                float height = heightmap.GetHeight(x, y, step);
+                if (height > 0)
+                {
+                    height *= scale;
+                }
+                vertices[y * hw + x].Y = height;
             }
         }
 

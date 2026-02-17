@@ -57,6 +57,11 @@ public partial class Player : Node3D
 
     public override void _Process(double delta)
     {
+        if (GetViewport().GuiGetFocusOwner() is not null)
+        {
+            return;
+        }
+
         MovementMode.Move(delta);
     }
 
@@ -67,6 +72,12 @@ public partial class Player : Node3D
 
     public override async void _Input(InputEvent @event)
     {
+        var focusedControl = GetViewport().GuiGetFocusOwner();
+        if (focusedControl is not null)
+        {
+            return;
+        }
+
         if (@event.IsAction(InputActions.ToggleMode) && @event.IsPressed())
         {
             ControlMode = (ControlMode)(((int)ControlMode + 1) % ((int)ControlMode.Max + 1));
