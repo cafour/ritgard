@@ -228,13 +228,13 @@ public partial class TopicIsland : Node3D
 
         if (ShowOnlyWhenPopulated && isCompletelySubmerged)
         {
-            _.Body.Get().Visible = false;
+            Visible = false;
             return;
         }
 
         if (_.Body.Get() is not null)
         {
-            _.Body.Get().Visible = true;
+            Visible = true;
         }
 
         if (_.Body.Collider is not null)
