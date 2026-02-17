@@ -104,6 +104,8 @@ public partial class Overlord : Node
 
     public ConversationScope CurrentScope { get; private set; } = ConversationScope.All;
 
+    public float CurrentHeightScale { get; private set; } = 1.0f;
+
     public SlidingWindowPreset SlidingWindowPreset { get; private set; } = SlidingWindowPreset.Year;
 
     public TimeSpan SlidingWindowLength { get; private set; }
@@ -347,7 +349,7 @@ public partial class Overlord : Node
             v => v.Events.GetRange(now - SlidingWindowLength, now, true).Count()
         );
         var maxEventCount = slidingEvents.Values.Max();
-        var scale = ShouldNormalizeHeights && maxEventCount > 0 ? MaxNormalizedHeight / maxEventCount : 1f;
+        CurrentHeightScale = ShouldNormalizeHeights && maxEventCount > 0 ? MaxNormalizedHeight / maxEventCount : 1f;
         foreach (var item in Repo.Items.Values)
         {
             if (!item.Conversation.IsInScope(CurrentScope))
@@ -356,7 +358,7 @@ public partial class Overlord : Node
             }
             else
             {
-                Heights[item.Id] = slidingEvents[item.Id] * scale;
+                Heights[item.Id] = slidingEvents[item.Id];
             }
 
             var itemStructure = itemStructures.GetValueOrDefault(item.Id);
@@ -379,7 +381,7 @@ public partial class Overlord : Node
 
         foreach (var topicIsland in topicIslands.Values)
         {
-            topicIsland.UpdatePlane(step, scale);
+            topicIsland.UpdatePlane(step, CurrentHeightScale);
         }
 
         // if (lastHeightmapTask is not null && !lastHeightmapTask.IsCompleted)
@@ -492,7 +494,7 @@ public partial class Overlord : Node
                     structure.ToggleHighlight(true);
                     currentStructure = structure;
 
-                    UI.ItemDescriptionLabel.Text = $"{item} (h={Heights[item.Id]})";
+                    UI.ItemDescriptionLabel.Text = $"{item} (activity={Heights[item.Id]})";
 
                     Input.SetDefaultCursorShape(Input.CursorShape.PointingHand);
                 }
@@ -587,6 +589,11 @@ public partial class Overlord : Node
         UI.CurrentStepSpinBox.SetValueNoSignal(step);
         UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
         UI.MaxStepLabel.Text = $"/ {StepCount - 1}";
+
+        if (currentIsland is null && currentStructure is null)
+        {
+            OnHoverChanged(null);
+        }
     }
 
     private async Task OnScopeCheck(CheckButton button, ConversationScope scope)

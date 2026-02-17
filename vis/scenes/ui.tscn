@@ -152,12 +152,19 @@ layout_mode = 2
 layout_mode = 2
 text = "Step length"
 
-[node name="StepLength" type="SpinBox" parent="Controls/Container" unique_id=466310664]
+[node name="StepLengthContainer" type="HBoxContainer" parent="Controls/Container" unique_id=330156116]
+layout_mode = 2
+
+[node name="StepLength" type="SpinBox" parent="Controls/Container/StepLengthContainer" unique_id=466310664]
 layout_mode = 2
 size_flags_horizontal = 3
 min_value = 1.0
 value = 1.0
 allow_greater = true
+
+[node name="DaysLabel" type="Label" parent="Controls/Container/StepLengthContainer" unique_id=196832640]
+layout_mode = 2
+text = "day(s)"
 
 [node name="Filler3" type="Control" parent="Controls/Container" unique_id=341568777]
 custom_minimum_size = Vector2(0, 10)

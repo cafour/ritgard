@@ -13,7 +13,7 @@ public partial class UIWrapper : Control
 
     public SpinBox CurrentStepSpinBox => _.Controls.Container.CurrentStepContainer.CurrentStep;
 
-    public SpinBox StepLengthSpinBox => _.Controls.Container.StepLength;
+    public SpinBox StepLengthSpinBox => _.Controls.Container.StepLengthContainer.StepLength;
 
     public Label MaxStepLabel => _.Controls.Container.CurrentStepContainer.MaxStep;
 

@@ -25,7 +25,7 @@ public partial class OutlierRock : Node3D, IWithVoxelLibrary
 
     public void OnShowStep(int step)
     {
-        var height = Mathf.RoundToInt(Overlord.Instance.Heights[Item.Id]);
+        var height = Mathf.RoundToInt(Overlord.Instance.Heights[Item.Id] * Overlord.Instance.CurrentHeightScale);
         if (height == Height)
         {
             return;
