@@ -16,6 +16,10 @@ corner_detail = 1
 font = ExtResource("1_nt7q6")
 font_size = 20
 
+[sub_resource type="LabelSettings" id="LabelSettings_yev5y"]
+font = ExtResource("1_nt7q6")
+font_size = 18
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i2pvy"]
 content_margin_left = 10.0
 content_margin_top = 10.0
@@ -50,7 +54,6 @@ clip_text = true
 text_overrun_behavior = 3
 
 [node name="LoadingContainer" type="CenterContainer" parent="." unique_id=1333904277]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -60,15 +63,16 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="HoverBar" type="PanelContainer" parent="LoadingContainer" unique_id=1869967008]
-custom_minimum_size = Vector2(120, 0)
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_kigm6")
 
 [node name="ItemDescriptionLabel" type="Label" parent="LoadingContainer/HoverBar" unique_id=1135699962]
 layout_mode = 2
+size_flags_vertical = 1
 text = "Loading..."
-label_settings = SubResource("LabelSettings_a7em7")
+label_settings = SubResource("LabelSettings_yev5y")
 clip_text = true
 text_overrun_behavior = 3
 
