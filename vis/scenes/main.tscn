@@ -80,6 +80,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
 script = ExtResource("5_tbgi4")
 LookaroundSpeed = 0.004
 MoveSpeed = 20.0
+PanSpeed = 0.8
+ZoomStep = 0.02
+ZoomSpeed = 8.0
 
 [node name="Camera" type="Camera3D" parent="Player" unique_id=2140119823]
 environment = ExtResource("6_tipki")
