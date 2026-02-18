@@ -66,7 +66,7 @@ public class IslandHeightmapGenerator(
         if (items.Length == 0)
         {
             logger.LogWarning(
-                "Topic '{TopicName}' is empty. An invalid heightmap will be generated. This is probably a bug.",
+                "Topic '{TopicName}' is empty. An empty heightmap will be generated.",
                 topic.GetPreferredTitle()
             );
             min = (0, 0);
@@ -122,6 +122,11 @@ public class IslandHeightmapGenerator(
         {
             var startDate = Repo.MinDate + startStep * stepLength;
             stepCount = Math.Max(1, (int)Math.Ceiling((Repo.MaxDate - startDate) / stepLength));
+        }
+
+        if (items.Length == 0)
+        {
+            return IslandHeightmap.CreateEmpty(0, 0, startStep, stepCount, 0, 0, 1);
         }
 
         logger.LogInformation("Computing heights for each step and item in topic '{TopicName}'.", topicName);

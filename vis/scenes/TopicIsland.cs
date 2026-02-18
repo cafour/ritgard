@@ -109,7 +109,8 @@ public partial class TopicIsland : Node3D
         var heightmap = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
         if (heightmap.SizeX < 1 || heightmap.SizeY < 1)
         {
-            GD.PushWarning($"Island for topic '{Topic?.Id}' has a heightmap that is too small to be turned into mesh.");
+            Visible = false;
+            // GD.PushWarning($"Island for topic '{Topic?.Id}' has a heightmap that is too small to be turned into mesh.");
             return;
         }
 
@@ -207,6 +208,13 @@ public partial class TopicIsland : Node3D
         var heightmap = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
         var hh = heightmap.SizeY;
         var hw = heightmap.SizeX;
+
+        if (hh < 1 || hw < 1)
+        {
+            Visible = false;
+            return;
+        }
+
         for (int y = 0; y < hh; ++y)
         {
             for (int x = 0; x < hw; ++x)
