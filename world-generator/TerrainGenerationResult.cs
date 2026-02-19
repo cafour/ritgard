@@ -8,11 +8,13 @@ public record TerrainGenerationResult(
     string RepositoryName,
     DateTimeOffset StartedAt,
     DateTimeOffset CompletedAt,
-    ImmutableArray<TerrainPreset> Terrains
+    ImmutableArray<TerrainPreset> Terrains,
+    TimeSpan StepLength,
+    int BatchSize = -1
 );
 
 public record TerrainPreset(
     SlidingWindowPreset SlidingWindow,
     ConversationScope Scope,
-    ImmutableDictionary<int, IslandHeightmap> IslandHeightmaps
+    ImmutableDictionary<int, ImmutableArray<IslandHeightmap>> IslandHeightmaps
 );

@@ -143,6 +143,8 @@ internal class Commands
         [Argument] string datasetPath,
         [Argument] string positionsPath,
         string? output = null,
+        int stepLengthMultiplier = 1,
+        int batchSize = -1,
         CancellationToken cancellationToken = default
     )
     {
@@ -169,9 +171,13 @@ internal class Commands
         );
 
         var generator = new TerrainGenerator(repo, LoggerFactory);
-        var terrainResult = generator.Generate(ct: cancellationToken);
+        var terrainResult = generator.Generate(
+            stepLength: TerrainGenerator.DefaultStepLength * stepLengthMultiplier,
+            batchSize: batchSize,
+            ct: cancellationToken
+        );
 
-        output = $"{terrainResult.RepositoryName.ToLower()}_{terrainResult.CompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
+        output ??= $"{terrainResult.RepositoryName.ToLower()}_{terrainResult.CompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
         Log.LogInformation("Saving to '{OutputPath}'.", output);
 
         await Utils.WriteJson(terrainResult, output, cancellationToken);

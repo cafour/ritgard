@@ -15,7 +15,8 @@ public class TerrainGenerator(
     ILoggerFactory loggerFactory
 )
 {
-    public static readonly TimeSpan StepLength = TimeSpan.FromDays(1);
+    public static readonly TimeSpan DefaultStepLength = TimeSpan.FromDays(1);
+    public const int DefaultBatchSize = -1;
 
     private readonly ILogger<TerrainGenerator> logger = loggerFactory.CreateLogger<TerrainGenerator>();
     private readonly IMemoryCache cache = new MemoryCache(new MemoryCacheOptions(), loggerFactory);
@@ -23,6 +24,8 @@ public class TerrainGenerator(
     public TerrainGenerationResult Generate(
         ConversationScope scope = ConversationScope.All,
         SlidingWindowPreset slidingWindowPresets = SlidingWindowPreset.AllPresets,
+        TimeSpan? stepLength = null,
+        int batchSize = DefaultBatchSize,
         int startStep = 0,
         int stepCount = -1,
         CancellationToken ct = default
@@ -30,13 +33,17 @@ public class TerrainGenerator(
     {
         var startedAt = DateTimeOffset.UtcNow;
 
+        stepLength ??= DefaultStepLength;
+
         if (scope == ConversationScope.None)
         {
             return new TerrainGenerationResult(
                 RepositoryName: repo.Mining.Repository.Name,
                 StartedAt: startedAt,
                 CompletedAt: DateTimeOffset.UtcNow,
-                Terrains: []
+                Terrains: [],
+                StepLength: stepLength.Value,
+                BatchSize: batchSize
             );
         }
 
@@ -67,8 +74,13 @@ public class TerrainGenerator(
             }
         );
 
-        var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
+        if (stepCount == -1)
+        {
+            var startDate = repo.MinDate + startStep * stepLength.Value;
+            stepCount = Math.Max(1, (int)Math.Ceiling((repo.MaxDate - startDate) / stepLength.Value));
+        }
 
+        var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
         for (int slidingWindow = 1; slidingWindow <= (int)SlidingWindowPreset.MaxValue; slidingWindow <<= 1)
         {
             if (!slidingWindowPresets.HasFlag((SlidingWindowPreset)slidingWindow))
@@ -76,28 +88,47 @@ public class TerrainGenerator(
                 continue;
             }
 
-            var heightmaps = new ConcurrentDictionary<int, IslandHeightmap>();
+            var topics = new ConcurrentDictionary<int, ImmutableArray<IslandHeightmap>>();
             var window = slidingWindow;
             Parallel.ForEach(
                 islandGenerators.Keys,
                 topicId =>
                 {
                     var generator = islandGenerators[topicId];
+                    var heightmaps = ImmutableArray.CreateBuilder<IslandHeightmap>();
                     logger.LogInformation(
                         "Generating heightmap for topic '{TopicId}', the '{SlidingWindow}', and '{Scope}' scope.",
                         topicId,
                         (SlidingWindowPreset)window,
                         scope
                     );
-                    heightmaps.TryAdd(
-                        topicId,
-                        generator.Generate(
-                            ((SlidingWindowPreset)window).ToTimeSpan(),
-                            StepLength,
+                    if (batchSize == -1)
+                    {
+                        heightmaps.Add(generator.Generate(
+                            slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
+                            stepLength: stepLength.Value,
                             startStep: startStep,
                             stepCount: stepCount,
                             ct: ct
-                        )
+                        ));
+                    }
+                    else
+                    {
+                        for (int s = startStep; s < startStep + stepCount; s += batchSize)
+                        {
+                            var currentSize = Math.Min(batchSize, (startStep + stepCount) - s);
+                            heightmaps.Add(generator.Generate(
+                                slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
+                                stepLength: stepLength.Value,
+                                startStep: s,
+                                stepCount: currentSize,
+                                ct: ct
+                            ));
+                        }
+                    }
+                    topics.TryAdd(
+                        topicId,
+                        heightmaps.ToImmutable()
                     );
                 }
             );
@@ -106,7 +137,7 @@ public class TerrainGenerator(
                 new TerrainPreset(
                     SlidingWindow: (SlidingWindowPreset)slidingWindow,
                     Scope: scope,
-                    IslandHeightmaps: heightmaps.ToImmutableDictionary()
+                    IslandHeightmaps: topics.ToImmutableDictionary()
                 )
             );
         }
@@ -115,7 +146,9 @@ public class TerrainGenerator(
             RepositoryName: repo.Mining.Repository.Name,
             StartedAt: startedAt,
             CompletedAt: DateTimeOffset.UtcNow,
-            Terrains: terrains.ToImmutable()
+            Terrains: terrains.ToImmutable(),
+            StepLength: stepLength.Value,
+            BatchSize: batchSize
         );
     }
 
