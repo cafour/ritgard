@@ -98,9 +98,11 @@ public partial class Overlord : Node
         : throw new InvalidOperationException("Now is only available when a repo is loaded.");
 
     // NB: Currently not configurable at runtime.
-    public TimeSpan SingleStepLength => TerrainGenerator.StepLength;
+    public TimeSpan SingleStepLength => Repo?.Terrain?.StepLength ?? TerrainGenerator.DefaultStepLength;
 
     public int StepLength { get; set; } = 1;
+
+    public int StepLengthMultiplier { get; private set; } = 1;
 
     public ConversationScope CurrentScope { get; private set; } = ConversationScope.All;
 
@@ -202,14 +204,14 @@ public partial class Overlord : Node
         if (Input.IsActionPressed(InputActions.LargeStepNext))
         {
             await ShowStep(
-                CurrentStep + Mathf.RoundToInt(SlidingWindowLength / TerrainGenerator.StepLength),
+                CurrentStep + Mathf.RoundToInt(SlidingWindowLength / SingleStepLength),
                 checkCooldown: !justStarted
             );
         }
         else if (Input.IsActionPressed(InputActions.LargeStepPrev))
         {
             await ShowStep(
-                CurrentStep - Mathf.RoundToInt(SlidingWindowLength / TerrainGenerator.StepLength),
+                CurrentStep - Mathf.RoundToInt(SlidingWindowLength / SingleStepLength),
                 checkCooldown: !justStarted
             );
         }
@@ -263,12 +265,14 @@ public partial class Overlord : Node
 
         var dataset = datasets[index];
         Repo = await dataset.Load(ct);
+        StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / SingleStepLength));
+        CurrentStep = Math.Min(CurrentStep, StepCount - 1);
+
         generator = new TerrainGenerator(Repo, Utils.LoggerFactory);
         await PrepareTerrain(CurrentStep, ct);
 
         CameraDistance = Mathf.Sqrt(Repo.BBoxSize.X * Repo.BBoxSize.X + Repo.BBoxSize.Y * Repo.BBoxSize.Y);
         Player.MovementMode.ResetCamera();
-        StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / TerrainGenerator.StepLength));
         Heights.Clear();
 
         // NB: if preset is All, we have to recompute it
@@ -276,6 +280,21 @@ public partial class Overlord : Node
             ? Math.Ceiling((Repo.MaxDate - Repo.MinDate) / SingleStepLength) * SingleStepLength
             : SlidingWindowPreset.ToTimeSpan();
         UI.CurrentStepSpinBox.MaxValue = StepCount - 1;
+
+        var stepLengthMultiplier = SingleStepLength / TimeSpan.FromDays(1);
+        if (stepLengthMultiplier % 1 > double.Epsilon)
+        {
+            throw new InvalidOperationException("Step length must be a multiple of one day!");
+        }
+
+        stepLengthMultiplier = Math.Floor(stepLengthMultiplier);
+        StepLengthMultiplier = (int)stepLengthMultiplier;
+        UI.StepLengthSpinBox.Step = stepLengthMultiplier;
+        UI.StepLengthSpinBox.MinValue = stepLengthMultiplier;
+        UI.StepLengthSpinBox.Value = Math.Min(
+            stepLengthMultiplier,
+            Math.Round(UI.StepLengthSpinBox.Value / stepLengthMultiplier) * stepLengthMultiplier
+        );
 
         ((PlaneMesh)Ocean.Mesh).Size = Repo.BBoxSize.ToGodot();
         ((PlaneMesh)DeepOcean.Mesh).Size = Repo.BBoxSize.ToGodot() + new Vector2(BorderWidth, BorderWidth);
@@ -343,7 +362,7 @@ public partial class Overlord : Node
 
         await PrepareTerrain(step);
 
-        var now = Repo.MinDate + TerrainGenerator.StepLength * step;
+        var now = Repo.MinDate + SingleStepLength * step;
         var slidingEvents = Repo.Items.Values.ToImmutableDictionary(
             v => v.Id,
             v => v.Events.GetRange(now - SlidingWindowLength, now, true).Count()
@@ -568,7 +587,7 @@ public partial class Overlord : Node
                     }
                 }
 
-                var now = Repo.MinDate + CurrentStep * TerrainGenerator.StepLength;
+                var now = Repo.MinDate + CurrentStep * SingleStepLength;
                 UI.ItemDescriptionLabel.Text =
                     $"[{now:yyyy-MM-dd}] {Repo.Mining.Repository.Name}, {issueCount} Issues, {prCount} PRs, {discussionCount} Discussions";
                 break;
@@ -584,7 +603,7 @@ public partial class Overlord : Node
             return;
         }
 
-        var now = Repo.MinDate + TerrainGenerator.StepLength * step;
+        var now = Repo.MinDate + SingleStepLength * step;
         CurrentStep = step;
         UI.CurrentStepSpinBox.SetValueNoSignal(step);
         UI.CurrentDateTime.Text = now.ToString(DateTimeFormat);
@@ -684,7 +703,7 @@ public partial class Overlord : Node
             {
                 var step = dateTime < Repo.MinDate ? 0
                     : dateTime >= Repo.MaxDate ? StepCount - 1
-                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / TerrainGenerator.StepLength);
+                    : Mathf.FloorToInt((dateTime - Repo.MinDate) / SingleStepLength);
                 await ShowStep(step);
             }
             else
@@ -724,10 +743,7 @@ public partial class Overlord : Node
         };
 
         UI.StepLengthSpinBox.Value = StepLength;
-        UI.StepLengthSpinBox.ValueChanged += value =>
-        {
-            StepLength = Mathf.RoundToInt(value);
-        };
+        UI.StepLengthSpinBox.ValueChanged += value => { StepLength = Mathf.RoundToInt(value) / StepLengthMultiplier; };
     }
 
     private async Task PrepareTerrain(int step, CancellationToken ct = default)
@@ -743,7 +759,10 @@ public partial class Overlord : Node
             Repo.Terrain?.Terrains.SingleOrDefault(p =>
                 p.Scope == CurrentScope && p.SlidingWindow == SlidingWindowPreset
             );
-        var anyHeightmap = foundTerrain?.IslandHeightmaps.FirstOrDefault().Value;
+        var anyHeightmapSet = foundTerrain?.IslandHeightmaps.FirstOrDefault().Value;
+        IslandHeightmap? anyHeightmap = anyHeightmapSet is { IsDefaultOrEmpty: false }
+            ? anyHeightmapSet.Value.FirstOrDefault()
+            : null;
         if (foundTerrain is not null && step >= anyHeightmap?.StartStep
             && step < anyHeightmap?.StartStep + anyHeightmap?.StepCount
            )
@@ -763,7 +782,15 @@ public partial class Overlord : Node
         await WithLoading(() => Task.Run(
                 () =>
                 {
-                    CurrentTerrain = generator.Generate(CurrentScope, SlidingWindowPreset, step, 1, ct).Terrains
+                    CurrentTerrain = generator.Generate(
+                            scope: CurrentScope,
+                            slidingWindowPresets: SlidingWindowPreset,
+                            batchSize: -1,
+                            startStep: step,
+                            stepCount: 1,
+                            ct: ct
+                        )
+                        .Terrains
                         .SingleOrDefault();
                 },
                 ct

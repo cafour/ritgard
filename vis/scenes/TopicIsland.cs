@@ -106,7 +106,13 @@ public partial class TopicIsland : Node3D
         Visible = true;
         arrayMesh.ClearSurfaces();
 
-        var heightmap = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
+        var heightmapList = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
+        if (heightmapList.Length > 1)
+        {
+            throw new NotImplementedException("Batching is not implemented yet.");
+        }
+
+        var heightmap = heightmapList.Single();
         if (heightmap.SizeX < 1 || heightmap.SizeY < 1)
         {
             Visible = false;
@@ -205,7 +211,13 @@ public partial class TopicIsland : Node3D
         }
 
         Visible = true;
-        var heightmap = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
+        var heightmapList = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
+        if (heightmapList.Length > 1)
+        {
+            throw new NotImplementedException("Batching is not implemented yet.");
+        }
+
+        var heightmap = heightmapList.Single();
         var hh = heightmap.SizeY;
         var hw = heightmap.SizeX;
 
@@ -247,9 +259,18 @@ public partial class TopicIsland : Node3D
 
         if (_.Body.Collider is not null)
         {
-            var shape = new ConcavePolygonShape3D();
-            shape.SetFaces(arrayMesh.GetFaces());
-            _.Body.Collider.Shape = shape;
+            if (Overlord.Instance.Repo?.Mining.Repository.Name == "dotvvm")
+            {
+                var shape = new ConvexPolygonShape3D();
+                shape.SetPoints(vertices);
+                _.Body.Collider.Shape = shape;
+            }
+            else
+            {
+                var shape = new ConcavePolygonShape3D();
+                shape.SetFaces(arrayMesh.GetFaces());
+                _.Body.Collider.Shape = shape;
+            }
         }
 
         _.Label.Position = _.Label.Position with { Y = (isCompletelySubmerged ? 0 : LabelVerticalOffset) + maxHeight };
