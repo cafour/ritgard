@@ -39,7 +39,7 @@ public partial class DatasetInfo : Resource
         TerrainGenerationResult? terrain = null;
         if (TerrainFilePath is not null)
         {
-            terrain = await Utils.ReadGodotJsonAsync<TerrainGenerationResult>(TerrainFilePath, ct);
+            terrain = Utils.ReadGodotJson<TerrainGenerationResult>(TerrainFilePath);
         }
 
         return ActiveRepository.Create(
