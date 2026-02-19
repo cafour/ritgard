@@ -264,9 +264,15 @@ public partial class Overlord : Node
         itemStructures.Clear();
 
         var dataset = datasets[index];
-        Repo = await dataset.Load(ct);
+        await WithLoading(async () => { Repo = await dataset.Load(ct); });
+        if (Repo is null)
+        {
+            throw new InvalidOperationException($"Failed to load repo at index '{index}'.");
+        }
+
         StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / SingleStepLength));
         CurrentStep = Math.Min(CurrentStep, StepCount - 1);
+        CurrentScope = ConversationScope.All;
 
         generator = new TerrainGenerator(Repo, Utils.LoggerFactory);
         await PrepareTerrain(CurrentStep, ct);
@@ -806,7 +812,11 @@ public partial class Overlord : Node
     {
         var originalValue = UI.LoadingBox.Visible;
         UI.LoadingBox.Visible = true;
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
         await action().ConfigureAwait(true);
+
         if (UI.LoadingBox.Visible)
         {
             UI.LoadingBox.Visible = originalValue;
