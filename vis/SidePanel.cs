@@ -20,7 +20,7 @@ public partial class SidePanel : Control
 
         if (e is InputEventMouseButton mbe)
         {
-            if (MakeInputLocal(mbe) is InputEventMouseButton local)
+            if (MakeInputLocal(mbe) is InputEventMouseButton { Pressed: true } local)
             {
                 var rect = new Rect2(Vector2.Zero, Size);
                 if (!rect.HasPoint(local.Position))
