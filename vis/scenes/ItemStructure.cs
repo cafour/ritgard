@@ -4,6 +4,7 @@ using Ritgard.Mining;
 using Ritgard.Structures;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Ritgard.Voxel;
 using Ritgard.WorldGenerator;
@@ -16,6 +17,39 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
     public const int TrunkHeight = 2;
     public const int Radius = ActiveRepository.StructureRadius;
     public const int MaxConeHeight = 20;
+
+    public static readonly Conifer IssueStructure = new Conifer
+    {
+        TrunkHeight = TrunkHeight,
+        CrownBreadth = Radius
+    };
+
+    public static Mesh? IssueMesh { get; private set; }
+    public static ConcavePolygonShape3D? IssueCollider { get; private set; }
+    public static Vector3? IssueOffset { get; private set; }
+
+    public static readonly Broadleaf PrStructure = new Broadleaf
+    {
+        TrunkHeight = TrunkHeight,
+        CrownBreadth = Radius
+    };
+    public static Mesh? PrMesh { get; private set; }
+    public static ConcavePolygonShape3D? PrCollider { get; private set; }
+    public static Vector3? PrOffset { get; private set; }
+
+    public static readonly CubeTree DiscussionStructure = new CubeTree()
+    {
+        TrunkHeight = TrunkHeight,
+        CrownBreadth = Radius
+    };
+    public static Mesh? DiscussionMesh { get; private set; }
+    public static ConcavePolygonShape3D? DiscussionCollider { get; private set; }
+    public static Vector3? DiscussionOffset { get; private set; }
+
+    public static readonly Stub ClosedStructure = new Stub { TrunkHeight = TrunkHeight };
+    public static Mesh? ClosedMesh { get; private set; }
+    public static ConcavePolygonShape3D? ClosedCollider { get; private set; }
+    public static Vector3? ClosedOffset { get; private set; }
 
     [Export]
     public VoxelBlockLibrary Library { get; set; } = null!;
@@ -118,37 +152,22 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
             return;
         }
 
-        IStructure structure = Overlord.Instance.ShowClosedAsStubs
+        EnsureMeshes();
+        var (mesh, collider, offset) = Overlord.Instance.ShowClosedAsStubs
             && Item.Conversation.IsClosed(Overlord.Instance.Now, Overlord.Instance.SingleStepLength)
-                ? new Stub { TrunkHeight = TrunkHeight }
+                ? (ClosedMesh, ClosedCollider, ClosedOffset)
                 : Item.Conversation switch
                 {
-                    Issue => new Conifer
-                    {
-                        TrunkHeight = TrunkHeight,
-                        CrownBreadth = Radius
-                    },
-                    PullRequest => new Broadleaf
-                    {
-                        TrunkHeight = TrunkHeight,
-                        CrownBreadth = Radius
-                    },
-                    Discussion => new CubeTree()
-                    {
-                        TrunkHeight = TrunkHeight,
-                        CrownBreadth = Radius
-                    },
+                    Issue => (IssueMesh, IssueCollider, IssueOffset),
+                    PullRequest => (PrMesh, PrCollider, PrOffset),
+                    Discussion => (DiscussionMesh, DiscussionCollider, DiscussionOffset),
                     _ => throw new NotSupportedException()
                 };
 
-
-        var (min, max) = structure.Measure();
-        var size = max - min;
-        var buffer = new StructureBuffer(size, Library);
-        structure.Build(buffer);
-        var mesher = new VoxelMesher();
-        _.Mesh.Mesh = mesher.BuildMesh(buffer.Data, Library, Material);
-        _.Mesh.Position = new Vector3(-buffer.OriginOffset.X + 0.5f, 0, -buffer.OriginOffset.Z + 0.5f);
+        _.Mesh.Mesh = (Mesh)mesh!.Duplicate(true);
+        _.Mesh.Position = offset!.Value;
+        _.Body.CollisionShape3D.Shape = collider;
+        _.Body.CollisionShape3D.Position = offset!.Value;
         Visible = true;
         Position = new Vector3(
             Position.X,
@@ -189,4 +208,38 @@ public partial class ItemStructure : Node3D, IWithVoxelLibrary
     //     mesh.Position = new Vector3(-Radius + 0.5f, 0, -Radius + 0.5f);
     //     body.Position = new Vector3(0, Radius - 0.5f, 0);
     // }
+
+    private void EnsureMeshes()
+    {
+        if (IssueMesh is null)
+        {
+            (IssueMesh, IssueCollider, IssueOffset) = GetMesh(IssueStructure);
+        }
+        if (PrMesh is null)
+        {
+            (PrMesh, PrCollider, PrOffset) = GetMesh(PrStructure);
+        }
+        if (DiscussionMesh is null)
+        {
+            (DiscussionMesh, DiscussionCollider, DiscussionOffset) = GetMesh(DiscussionStructure);
+        }
+        if (ClosedMesh is null)
+        {
+            (ClosedMesh, ClosedCollider, ClosedOffset) = GetMesh(ClosedStructure);
+        }
+    }
+
+    private (Mesh, ConcavePolygonShape3D, Vector3) GetMesh(IStructure structure)
+    {
+        var (min, max) = structure.Measure();
+        var size = max - min;
+        var buffer = new StructureBuffer(size, Library);
+        structure.Build(buffer);
+        var mesher = new VoxelMesher();
+        var mesh = (ArrayMesh)mesher.BuildMesh(buffer.Data, Library, Material);
+        var vertices = (Vector3[])mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex];
+        var collider = new ConcavePolygonShape3D();
+        collider.SetFaces(mesh.GetFaces());
+        return (mesh, collider, new Vector3(-buffer.OriginOffset.X + 0.5f, 0, -buffer.OriginOffset.Z + 0.5f));
+    }
 }
