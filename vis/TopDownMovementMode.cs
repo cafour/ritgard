@@ -73,6 +73,10 @@ public class TopDownMovementMode(Player player) : IMovementMode
     {
         var windowFactor = Player.Camera.Size / Player.Camera.GetWindow().Size.Y;
         var pitchFactor = -1f / Mathf.Sin(Pitch);
+        if (float.IsNaN(pitchFactor) || Mathf.Abs(pitchFactor) > 100.0f)
+        {
+            pitchFactor = 0f;
+        }
         var diff = new Vector2(x, y * pitchFactor);
         diff = diff.Rotated(-Yaw) * windowFactor;
         Player.Position += new Vector3(-diff.X, 0, -diff.Y);
