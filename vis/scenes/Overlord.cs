@@ -765,43 +765,40 @@ public partial class Overlord : Node
             Repo.Terrain?.Terrains.SingleOrDefault(p =>
                 p.Scope == CurrentScope && p.SlidingWindow == SlidingWindowPreset
             );
-        var anyHeightmapSet = foundTerrain?.IslandHeightmaps.FirstOrDefault().Value;
-        IslandHeightmap? anyHeightmap = anyHeightmapSet is { IsDefaultOrEmpty: false }
-            ? anyHeightmapSet.Value.FirstOrDefault()
-            : null;
-        if (foundTerrain is not null && step >= anyHeightmap?.StartStep
-            && step < anyHeightmap?.StartStep + anyHeightmap?.StepCount
+        if (Repo.Terrain is not null
+            && foundTerrain is not null
+            && step >= Repo.Terrain.StartStep
+            && step < Repo.Terrain.StartStep + Repo.Terrain.StepCount
            )
         {
-            if (CurrentTerrain != foundTerrain)
+            if (CurrentTerrain == foundTerrain)
             {
-                CurrentTerrain = foundTerrain;
-                foreach (var island in topicIslands.Values)
-                {
-                    island.InitializePlane();
-                }
+                return;
             }
 
-            return;
+            CurrentTerrain = foundTerrain;
+        }
+        else
+        {
+            await WithLoading(() => Task.Run(
+                    () =>
+                    {
+                        CurrentTerrain = generator.Generate(
+                                scope: CurrentScope,
+                                slidingWindowPresets: SlidingWindowPreset,
+                                batchSize: -1,
+                                startStep: step,
+                                stepCount: 1,
+                                ct: ct
+                            )
+                            .Terrains
+                            .SingleOrDefault();
+                    },
+                    ct
+                )
+            );
         }
 
-        await WithLoading(() => Task.Run(
-                () =>
-                {
-                    CurrentTerrain = generator.Generate(
-                            scope: CurrentScope,
-                            slidingWindowPresets: SlidingWindowPreset,
-                            batchSize: -1,
-                            startStep: step,
-                            stepCount: 1,
-                            ct: ct
-                        )
-                        .Terrains
-                        .SingleOrDefault();
-                },
-                ct
-            )
-        );
         foreach (var island in topicIslands.Values)
         {
             island.InitializePlane();
@@ -821,5 +818,41 @@ public partial class Overlord : Node
         {
             UI.LoadingBox.Visible = originalValue;
         }
+    }
+
+    public IslandHeightmap GetHeightmap(int topicId, int? step = null)
+    {
+        if (CurrentTerrain is null || Repo is null)
+        {
+            throw new InvalidOperationException("No terrain is currently available.");
+        }
+
+        if (!CurrentTerrain.IslandHeightmaps.TryGetValue(topicId, out var heightmaps))
+        {
+            throw new ArgumentException($"Topic id '{topicId}' does not exist.");
+        }
+
+        if (heightmaps.Length == 0)
+        {
+            throw new ArgumentException($"Topic id '{topicId}' has no heightmaps.");
+        }
+
+        if (Repo.Terrain is null || Repo.Terrain.BatchSize == -1)
+        {
+            return heightmaps.Single();
+        }
+
+        if (step is null)
+        {
+            return heightmaps.First();
+        }
+
+        var index = (step.Value - Repo.Terrain.StartStep) / Repo.Terrain.BatchSize;
+        if (index >= heightmaps.Length)
+        {
+            throw new ArgumentException($"Step '{step}' is outside the bounds of the available batch of heightmaps.");
+        }
+
+        return heightmaps[index];
     }
 }

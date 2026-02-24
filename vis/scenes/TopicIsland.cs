@@ -106,13 +106,7 @@ public partial class TopicIsland : Node3D
         Visible = true;
         arrayMesh.ClearSurfaces();
 
-        var heightmapList = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
-        if (heightmapList.Length > 1)
-        {
-            throw new NotImplementedException("Batching is not implemented yet.");
-        }
-
-        var heightmap = heightmapList.Single();
+        var heightmap = Overlord.Instance.GetHeightmap(Topic.Id);
         if (heightmap.SizeX < 1 || heightmap.SizeY < 1)
         {
             Visible = false;
@@ -211,13 +205,7 @@ public partial class TopicIsland : Node3D
         }
 
         Visible = true;
-        var heightmapList = Overlord.Instance.CurrentTerrain.IslandHeightmaps[Topic.Id];
-        if (heightmapList.Length > 1)
-        {
-            throw new NotImplementedException("Batching is not implemented yet.");
-        }
-
-        var heightmap = heightmapList.Single();
+        var heightmap = Overlord.Instance.GetHeightmap(Topic.Id, step);
         var hh = heightmap.SizeY;
         var hw = heightmap.SizeX;
 

@@ -10,6 +10,8 @@ public record TerrainGenerationResult(
     DateTimeOffset CompletedAt,
     ImmutableArray<TerrainPreset> Terrains,
     TimeSpan StepLength,
+    int StartStep,
+    int StepCount,
     int BatchSize = -1
 );
 

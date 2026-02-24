@@ -35,6 +35,12 @@ public class TerrainGenerator(
 
         stepLength ??= DefaultStepLength;
 
+        if (stepCount == -1)
+        {
+            var startDate = repo.MinDate + startStep * stepLength.Value;
+            stepCount = Math.Max(1, (int)Math.Ceiling((repo.MaxDate - startDate) / stepLength.Value));
+        }
+
         if (scope == ConversationScope.None)
         {
             return new TerrainGenerationResult(
@@ -43,6 +49,8 @@ public class TerrainGenerator(
                 CompletedAt: DateTimeOffset.UtcNow,
                 Terrains: [],
                 StepLength: stepLength.Value,
+                StartStep: startStep,
+                StepCount: stepCount,
                 BatchSize: batchSize
             );
         }
@@ -73,12 +81,6 @@ public class TerrainGenerator(
                 generator.Initialize(ct);
             }
         );
-
-        if (stepCount == -1)
-        {
-            var startDate = repo.MinDate + startStep * stepLength.Value;
-            stepCount = Math.Max(1, (int)Math.Ceiling((repo.MaxDate - startDate) / stepLength.Value));
-        }
 
         var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
         for (int slidingWindow = 1; slidingWindow <= (int)SlidingWindowPreset.MaxValue; slidingWindow <<= 1)
@@ -148,6 +150,8 @@ public class TerrainGenerator(
             CompletedAt: DateTimeOffset.UtcNow,
             Terrains: terrains.ToImmutable(),
             StepLength: stepLength.Value,
+            StartStep: startStep,
+            StepCount: stepCount,
             BatchSize: batchSize
         );
     }
