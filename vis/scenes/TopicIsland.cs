@@ -236,6 +236,7 @@ public partial class TopicIsland : Node3D
                 {
                     height *= scale;
                 }
+
                 vertices[y * hw + x].Y = height;
             }
         }
@@ -273,7 +274,10 @@ public partial class TopicIsland : Node3D
             }
         }
 
-        _.Label.Position = _.Label.Position with { Y = (isCompletelySubmerged ? 0 : LabelVerticalOffset) + maxHeight };
+        _.Label.Position = _.Label.Position with
+        {
+            Y = (isCompletelySubmerged ? 0 : LabelVerticalOffset) + maxHeight * scale
+        };
     }
 
     public static byte ToByteHeight(float height)
