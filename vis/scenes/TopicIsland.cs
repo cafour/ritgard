@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using Godot;
 using Ritgard.Mining;
 using Ritgard.Voxel;
-using Ritgard.WorldGenerator;
 
 namespace Ritgard.Structures;
 

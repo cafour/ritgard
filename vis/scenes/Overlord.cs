@@ -9,8 +9,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
 using Ritgard.Voxel;
 using Ritgard.WorldGenerator;
 
@@ -142,10 +142,17 @@ public partial class Overlord : Node
     private Node generatedNodesContainer = null!;
     private TerrainGenerator? generator;
 
+    private IMemoryCache heightmapCache = new MemoryCache(
+        new MemoryCacheOptions
+        {
+            SizeLimit = 4_000_000_000
+        }
+    );
+
     // private Texture2D topicIdTexture;
     // private Texture2D itemIdTexture;
     // private CancellationTokenSource? lastHeightmapCts = null;
-    // private Task? lastHeightmapTask = null;
+    private Task? lastHeightmapTask = null;
     private double steppingStartedAt = -1;
 
     public override void _EnterTree()
@@ -274,6 +281,11 @@ public partial class Overlord : Node
         CurrentStep = Math.Min(CurrentStep, StepCount - 1);
         CurrentScope = ConversationScope.All;
 
+        if (generator is not null)
+        {
+            generator.Dispose();
+        }
+
         generator = new TerrainGenerator(Repo, Utils.LoggerFactory);
         await PrepareTerrain(CurrentStep, ct);
 
@@ -366,7 +378,8 @@ public partial class Overlord : Node
 
         step = Math.Clamp(step, 0, StepCount - 1);
 
-        await PrepareTerrain(step);
+        await PrepareTerrain(step)
+            .ConfigureAwait(continueOnCapturedContext: true);
 
         var now = Repo.MinDate + SingleStepLength * step;
         var slidingEvents = Repo.Items.Values.ToImmutableDictionary(
@@ -805,19 +818,31 @@ public partial class Overlord : Node
         }
     }
 
-    private async Task WithLoading(Func<Task> action)
+    private async Task<T> WithLoading<T>(Func<Task<T>> action)
     {
         var originalValue = UI.LoadingBox.Visible;
         UI.LoadingBox.Visible = true;
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
-        await action().ConfigureAwait(true);
+        var result = await action().ConfigureAwait(continueOnCapturedContext: true);
 
         if (UI.LoadingBox.Visible)
         {
             UI.LoadingBox.Visible = originalValue;
         }
+
+        return result;
+    }
+
+    private async Task WithLoading(Func<Task> action)
+    {
+        _ = await WithLoading(async () =>
+            {
+                await action().ConfigureAwait(continueOnCapturedContext: true);
+                return 0;
+            }
+        ).ConfigureAwait(continueOnCapturedContext: true);
     }
 
     public IslandHeightmap GetHeightmap(int topicId, int? step = null)
@@ -825,6 +850,35 @@ public partial class Overlord : Node
         if (CurrentTerrain is null || Repo is null)
         {
             throw new InvalidOperationException("No terrain is currently available.");
+        }
+
+        if (Repo.Terrain is null || Repo.Terrain.BatchSize == -1 || step is null)
+        {
+            return GetOrDecompressHeightmap(topicId, 0);
+        }
+
+        var index = (step.Value - Repo.Terrain.StartStep) / Repo.Terrain.BatchSize;
+        return GetOrDecompressHeightmap(topicId, index);
+    }
+
+    private IslandHeightmap GetOrDecompressHeightmap(int topicId, int heightmapIndex)
+    {
+        if (CurrentTerrain is null)
+        {
+            throw new InvalidOperationException("No terrain is available.");
+        }
+
+        var cacheKey = new HeightmapCacheKey(
+            DatasetIndex: CurrentDataset,
+            SlidingWindow: CurrentTerrain.SlidingWindow,
+            Scope: CurrentTerrain.Scope,
+            TopicId: topicId,
+            HeightmapIndex: heightmapIndex
+        );
+
+        if (heightmapCache.TryGetValue<IslandHeightmap>(cacheKey, out var heightmap))
+        {
+            return heightmap;
         }
 
         if (!CurrentTerrain.IslandHeightmaps.TryGetValue(topicId, out var heightmaps))
@@ -837,22 +891,29 @@ public partial class Overlord : Node
             throw new ArgumentException($"Topic id '{topicId}' has no heightmaps.");
         }
 
-        if (Repo.Terrain is null || Repo.Terrain.BatchSize == -1)
+        if (heightmapIndex >= heightmaps.Length)
         {
-            return heightmaps.Single();
+            throw new ArgumentException(
+                $"Index '{heightmapIndex}' is outside the bounds of the available batch of heightmaps."
+            );
         }
 
-        if (step is null)
-        {
-            return heightmaps.First();
-        }
-
-        var index = (step.Value - Repo.Terrain.StartStep) / Repo.Terrain.BatchSize;
-        if (index >= heightmaps.Length)
-        {
-            throw new ArgumentException($"Step '{step}' is outside the bounds of the available batch of heightmaps.");
-        }
-
-        return heightmaps[index];
+        return heightmapCache.GetOrCreate(
+            cacheKey,
+            entry =>
+            {
+                var islandHeightmap = IslandHeightmap.ReadFromString(heightmaps[heightmapIndex]);
+                entry.Size = islandHeightmap.SizeX * islandHeightmap.SizeY * islandHeightmap.StepCount;
+                return islandHeightmap;
+            }
+        );
     }
+
+    private record HeightmapCacheKey(
+        int DatasetIndex,
+        SlidingWindowPreset SlidingWindow,
+        ConversationScope Scope,
+        int TopicId,
+        int HeightmapIndex
+    );
 }

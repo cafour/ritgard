@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory;
@@ -13,13 +15,20 @@ namespace Ritgard.WorldGenerator;
 public class TerrainGenerator(
     ActiveRepository repo,
     ILoggerFactory loggerFactory
-)
+) : IDisposable
 {
     public static readonly TimeSpan DefaultStepLength = TimeSpan.FromDays(1);
     public const int DefaultBatchSize = -1;
 
     private readonly ILogger<TerrainGenerator> logger = loggerFactory.CreateLogger<TerrainGenerator>();
-    private readonly IMemoryCache cache = new MemoryCache(new MemoryCacheOptions(), loggerFactory);
+
+    private readonly IMemoryCache cache = new MemoryCache(
+        new MemoryCacheOptions
+        {
+            SizeLimit = 2_000_000_000
+        },
+        loggerFactory
+    );
 
     public TerrainGenerationResult Generate(
         ConversationScope scope = ConversationScope.All,
@@ -28,6 +37,7 @@ public class TerrainGenerator(
         int batchSize = DefaultBatchSize,
         int startStep = 0,
         int stepCount = -1,
+        bool shouldGenerateScopePermutations = false,
         CancellationToken ct = default
     )
     {
@@ -55,6 +65,61 @@ public class TerrainGenerator(
             );
         }
 
+        var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
+        if (!shouldGenerateScopePermutations)
+        {
+            terrains.AddRange(
+                GenerateSingleScope(
+                    scope,
+                    slidingWindowPresets,
+                    stepLength.Value,
+                    batchSize,
+                    startStep,
+                    stepCount,
+                    ct
+                )
+            );
+        }
+        else
+        {
+            foreach (var subScope in GetScopePermutations(scope))
+            {
+                terrains.AddRange(
+                    GenerateSingleScope(
+                        subScope,
+                        slidingWindowPresets,
+                        stepLength.Value,
+                        batchSize,
+                        startStep,
+                        stepCount,
+                        ct
+                    )
+                );
+            }
+        }
+
+        return new TerrainGenerationResult(
+            RepositoryName: repo.Mining.Repository.Name,
+            StartedAt: startedAt,
+            CompletedAt: DateTimeOffset.UtcNow,
+            Terrains: terrains.ToImmutable(),
+            StepLength: stepLength.Value,
+            StartStep: startStep,
+            StepCount: stepCount,
+            BatchSize: batchSize
+        );
+    }
+
+    private ImmutableArray<TerrainPreset> GenerateSingleScope(
+        ConversationScope scope,
+        SlidingWindowPreset slidingWindowPresets,
+        TimeSpan stepLength,
+        int batchSize,
+        int startStep,
+        int stepCount,
+        CancellationToken ct = default
+    )
+    {
         var islandGenerators = repo.TopicModelling.Topics
             .Where(p => p.Key != -1)
             .ToImmutableDictionary(
@@ -63,13 +128,14 @@ public class TerrainGenerator(
                     new CacheKey(scope, p.Key),
                     entry =>
                     {
-                        // TODO: entry size
-                        return new IslandHeightmapGenerator(
+                        var generator = new IslandHeightmapGenerator(
                             repo,
                             p.Key,
                             scope,
                             loggerFactory.CreateLogger<IslandHeightmapGenerator>()
                         );
+                        entry.Size = generator.Size.x * generator.Size.y;
+                        return generator;
                     }
                 )!
             );
@@ -106,28 +172,33 @@ public class TerrainGenerator(
                     );
                     if (batchSize == -1)
                     {
-                        heightmaps.Add(generator.Generate(
-                            slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
-                            stepLength: stepLength.Value,
-                            startStep: startStep,
-                            stepCount: stepCount,
-                            ct: ct
-                        ));
+                        heightmaps.Add(
+                            generator.Generate(
+                                slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
+                                stepLength: stepLength,
+                                startStep: startStep,
+                                stepCount: stepCount,
+                                ct: ct
+                            )
+                        );
                     }
                     else
                     {
                         for (int s = startStep; s < startStep + stepCount; s += batchSize)
                         {
                             var currentSize = Math.Min(batchSize, (startStep + stepCount) - s);
-                            heightmaps.Add(generator.Generate(
-                                slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
-                                stepLength: stepLength.Value,
-                                startStep: s,
-                                stepCount: currentSize,
-                                ct: ct
-                            ));
+                            heightmaps.Add(
+                                generator.Generate(
+                                    slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
+                                    stepLength: stepLength,
+                                    startStep: s,
+                                    stepCount: currentSize,
+                                    ct: ct
+                                )
+                            );
                         }
                     }
+
                     topics.TryAdd(
                         topicId,
                         heightmaps.ToImmutable()
@@ -139,25 +210,41 @@ public class TerrainGenerator(
                 new TerrainPreset(
                     SlidingWindow: (SlidingWindowPreset)slidingWindow,
                     Scope: scope,
-                    IslandHeightmaps: topics.ToImmutableDictionary()
+                    IslandHeightmaps: topics.ToImmutableDictionary(
+                        p => p.Key,
+                        p => p.Value.Select(IslandHeightmap.WriteToString).ToImmutableArray()
+                    )
                 )
             );
         }
 
-        return new TerrainGenerationResult(
-            RepositoryName: repo.Mining.Repository.Name,
-            StartedAt: startedAt,
-            CompletedAt: DateTimeOffset.UtcNow,
-            Terrains: terrains.ToImmutable(),
-            StepLength: stepLength.Value,
-            StartStep: startStep,
-            StepCount: stepCount,
-            BatchSize: batchSize
-        );
+        return terrains.ToImmutable();
     }
 
     private record CacheKey(
         ConversationScope Scope,
         int TopicId
     );
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        cache.Dispose();
+    }
+
+    private static IEnumerable<ConversationScope> GetScopePermutations(ConversationScope scope)
+    {
+        if (scope == ConversationScope.None)
+        {
+            yield break;
+        }
+
+        var highestBit = BitOperations.Log2((uint)scope);
+        var withoutHighest = (uint)scope ^ (1u << highestBit);
+        foreach (var result in GetScopePermutations((ConversationScope)withoutHighest))
+        {
+            yield return result;
+            yield return (ConversationScope)((uint)result | (1u << highestBit));
+        }
+    }
 }

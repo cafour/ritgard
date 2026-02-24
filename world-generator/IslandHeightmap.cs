@@ -2,12 +2,9 @@
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Ritgard.WorldGenerator;
 
-[JsonConverter(typeof(IslandHeightmapConverter))]
 public readonly record struct IslandHeightmap(
     int SizeX,
     int SizeY,
@@ -120,15 +117,10 @@ public readonly record struct IslandHeightmap(
             throw new ArgumentException($"Step '{step}' is invalid.");
         }
     }
-}
 
-public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
-{
-    public override IslandHeightmap Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public static IslandHeightmap Read(Stream stream)
     {
-        var bytes = reader.GetBytesFromBase64();
-        using var memoryStream = new MemoryStream(bytes);
-        using var brotliStream = new BrotliStream(memoryStream, CompressionMode.Decompress);
+        using var brotliStream = new BrotliStream(stream, CompressionMode.Decompress);
         using var binaryReader = new BinaryReader(brotliStream);
         var width = binaryReader.ReadInt32();
         var height = binaryReader.ReadInt32();
@@ -142,11 +134,16 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         return new IslandHeightmap(width, height, startStep, stepCount, posX, posY, scale, maxHeight, rawData);
     }
 
-    public override void Write(Utf8JsonWriter writer, IslandHeightmap value, JsonSerializerOptions options)
+    public static IslandHeightmap ReadFromString(string value)
     {
-        using var memoryStream = new MemoryStream();
-        using var brotliStream = new BrotliStream(memoryStream, CompressionMode.Compress);
-        using var binaryWriter = new BinaryWriter(brotliStream);
+        using var stream = new MemoryStream(Convert.FromBase64String(value));
+        return Read(stream);
+    }
+
+    public static void Write(IslandHeightmap value, Stream stream)
+    {
+        var brotliStream = new BrotliStream(stream, CompressionMode.Compress);
+        var binaryWriter = new BinaryWriter(brotliStream);
         binaryWriter.Write(value.SizeX);
         binaryWriter.Write(value.SizeY);
         binaryWriter.Write(value.StartStep);
@@ -157,7 +154,13 @@ public class IslandHeightmapConverter : JsonConverter<IslandHeightmap>
         binaryWriter.Write(value.MaxHeight);
         binaryWriter.Write(value.RawData);
         binaryWriter.Flush();
-        var span = memoryStream.GetBuffer().AsSpan(0, (int)memoryStream.Length);
-        writer.WriteBase64StringValue(span);
+    }
+
+    public static string WriteToString(IslandHeightmap value)
+    {
+        using var stream = new MemoryStream();
+        Write(value, stream);
+        var span = stream.GetBuffer().AsSpan(0, (int)stream.Length);
+        return Convert.ToBase64String(span);
     }
 }

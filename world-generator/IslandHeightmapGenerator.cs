@@ -40,6 +40,8 @@ public class IslandHeightmapGenerator(
     private (int x, int y) size;
     private MaskElement[,] mask = null!;
 
+    public (int x, int y) Size => size;
+
     public ActiveRepository Repo { get; } = repo;
     public int TopicId { get; } = topicId;
     public ConversationScope Scope { get; } = scope;

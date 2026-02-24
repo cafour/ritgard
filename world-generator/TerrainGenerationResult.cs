@@ -18,5 +18,5 @@ public record TerrainGenerationResult(
 public record TerrainPreset(
     SlidingWindowPreset SlidingWindow,
     ConversationScope Scope,
-    ImmutableDictionary<int, ImmutableArray<IslandHeightmap>> IslandHeightmaps
+    ImmutableDictionary<int, ImmutableArray<string>> IslandHeightmaps
 );
