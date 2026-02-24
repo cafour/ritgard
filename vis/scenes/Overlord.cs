@@ -152,7 +152,6 @@ public partial class Overlord : Node
     // private Texture2D topicIdTexture;
     // private Texture2D itemIdTexture;
     // private CancellationTokenSource? lastHeightmapCts = null;
-    private Task? lastHeightmapTask = null;
     private double steppingStartedAt = -1;
 
     public override void _EnterTree()

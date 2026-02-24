@@ -37,7 +37,7 @@ public class TerrainGenerator(
         int batchSize = DefaultBatchSize,
         int startStep = 0,
         int stepCount = -1,
-        bool shouldGenerateScopePermutations = false,
+        bool shouldGenerateScopePermutations = true,
         CancellationToken ct = default
     )
     {
@@ -84,6 +84,11 @@ public class TerrainGenerator(
         {
             foreach (var subScope in GetScopePermutations(scope))
             {
+                if (subScope == ConversationScope.None)
+                {
+                    continue;
+                }
+
                 terrains.AddRange(
                     GenerateSingleScope(
                         subScope,
@@ -236,6 +241,7 @@ public class TerrainGenerator(
     {
         if (scope == ConversationScope.None)
         {
+            yield return ConversationScope.None;
             yield break;
         }
 
