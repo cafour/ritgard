@@ -25,7 +25,7 @@ HighlightMaterial = SubResource("ShaderMaterial_pnkat")
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1852387868]
 
 [node name="Body" type="StaticBody3D" parent="." unique_id=189659]
-collision_layer = 2
+collision_layer = 4
 collision_mask = 0
 
 [node name="Collider" type="CollisionShape3D" parent="Body" unique_id=499926556]

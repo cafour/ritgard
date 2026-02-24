@@ -143,7 +143,8 @@ print_islands={
 [layer_names]
 
 3d_physics/layer_1="Ground"
-3d_physics/layer_2="Items"
+3d_physics/layer_2="ItemStructures"
+3d_physics/layer_3="TopicIslands"
 
 [rendering]
 

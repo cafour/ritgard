@@ -136,6 +136,16 @@ public partial class Player : Node3D
 
     public void Hover(Vector2? viewportPos)
     {
+        var collider = CastRay(viewportPos, 1 << 1 | 1 << 2); // ItemStructures
+        if (collider != Hoveree)
+        {
+            Hoveree = collider;
+            EmitSignalHoverChanged(Hoveree);
+        }
+    }
+
+    private CollisionObject3D? CastRay(Vector2? viewportPos, uint collisionMask)
+    {
         var space = GetWorld3D().DirectSpaceState;
         var from = viewportPos is not null
             ? Camera.ProjectRayOrigin(viewportPos.Value)
@@ -146,15 +156,10 @@ public partial class Player : Node3D
         var query = PhysicsRayQueryParameters3D.Create(
             from,
             to,
-            1 << 1 // Items
+            collisionMask
         );
         query.CollideWithAreas = true;
         var result = space.IntersectRay(query);
-        var collider = result.GetValueOrDefault("collider").As<CollisionObject3D>();
-        if (collider != Hoveree)
-        {
-            Hoveree = collider;
-            EmitSignalHoverChanged(Hoveree);
-        }
+        return result.GetValueOrDefault("collider").As<CollisionObject3D>();
     }
 }
