@@ -136,7 +136,8 @@ public partial class Player : Node3D
 
     public void Hover(Vector2? viewportPos)
     {
-        var collider = CastRay(viewportPos, 1 << 1 | 1 << 2); // ItemStructures
+        var collider = CastRay(viewportPos, 1 << 1); // ItemStructures
+        collider ??= CastRay(viewportPos, 1 << 2); // TopicIslands
         if (collider != Hoveree)
         {
             Hoveree = collider;
