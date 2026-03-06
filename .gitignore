@@ -8,3 +8,4 @@ tmp/
 .vs/
 /out/
 builds/
+*.user
