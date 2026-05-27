@@ -40,7 +40,7 @@
 
     <Message Importance="high" Text="Generating the GitHub REST API client" />
 
-    <Exec Command="dotnet kiota generate -l CSharp -c GitHubRestClient -n Ritgard.Mining -d $(GitHubApiDescriptionPath) -o ./GitHub --co --ll error --include-path '/repos/**'" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="dotnet kiota generate -l CSharp -c GitHubRestClient -n Ritgard.Mining -d $(GitHubApiDescriptionPath) -o ./GitHub --co --ll error --include-path '/repos/**' --include-path '/rate_limit'" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
 
     <ItemGroup>
       <Compile Include="GitHub/**/*.cs" Exclude="@(Compile)" />

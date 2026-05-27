@@ -5,9 +5,14 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Globalization;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Octokit;
+using Microsoft.Kiota.Abstractions;
+using Microsoft.Kiota.Abstractions.Authentication;
+using Microsoft.Kiota.Http.HttpClientLibrary;
 using Ritgard.Mining.GitHub;
 using StrawberryShake;
 
@@ -15,6 +20,8 @@ namespace Ritgard.Mining;
 
 public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoName, RepoMinerScope scope)
 {
+    public const string GitHubApiVersion = "2026-03-10";
+
     private readonly ConcurrentDictionary<string, Issue> issues = [];
     private readonly ConcurrentDictionary<string, PullRequest> pullRequests = [];
     private readonly ConcurrentDictionary<string, Discussion> discussions = [];
@@ -31,14 +38,14 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
     private readonly SemaphoreSlim httpLock = new(1, 1);
     private readonly SemaphoreSlim graphQlLock = new(1, 1);
 
-    private ImmutableDictionary<string, GitHubClient> githubClients =
-        ImmutableDictionary<string, GitHubClient>.Empty;
+    private ImmutableDictionary<string, GitHubRestClient> githubClients =
+        ImmutableDictionary<string, GitHubRestClient>.Empty;
 
     public string RepoOwner { get; } = repoOwner;
     public string RepoName { get; } = repoName;
     public RepoMinerScope Scope { get; } = scope;
     public IConfiguration Configuration { get; private set; } = new ConfigurationBuilder().Build();
-    public GitHubClient? Http { get; private set; }
+    public GitHubRestClient? Http { get; private set; }
     public GitHubGraphQLClient? GraphQl { get; private set; }
 
     public async Task<MiningResult?> MineRepo(CancellationToken cancellationToken = default)
@@ -53,15 +60,17 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         var startedAt = DateTimeOffset.UtcNow;
 
         logger.LogInformation("Started mining '{RepoOwner}/{RepoName}'.", RepoOwner, RepoName);
-        var octoRepo = await QueryHttp(
-            _ => Http.Repository.Get(RepoOwner, RepoName),
+        var repo = await QueryHttp(
+            ct => Http.Repos[RepoOwner][RepoName].GetAsync(cancellationToken: ct),
             cancellationToken: cancellationToken
         );
-        if (octoRepo is null)
+        if (repo is null)
         {
             logger.LogInformation("Repo '{RepoOwner}/{RepoName}' could not be found.", RepoOwner, RepoName);
             return null;
         }
+
+        var cloneUrl = repo.CloneUrl ?? $"https://github.com/{RepoOwner}/{RepoName}.git";
 
         var tasks = new List<Task>(6);
 
@@ -70,7 +79,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             Task.Run(
                 async () =>
                 {
-                    cloc = await Utils.GetCloc(octoRepo.CloneUrl, logger, cancellationToken);
+                    cloc = await Utils.GetCloc(cloneUrl, logger, cancellationToken);
                     if (cloc is null)
                     {
                         logger.LogError(
@@ -98,7 +107,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             Task.Run(
                 async () =>
                 {
-                    gitLoc = await Utils.GetGitLoc(octoRepo.CloneUrl, logger, cancellationToken);
+                    gitLoc = await Utils.GetGitLoc(cloneUrl, logger, cancellationToken);
                     if (gitLoc is null)
                     {
                         logger.LogError(
@@ -126,12 +135,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         if (Scope.HasFlag(RepoMinerScope.Issues))
         {
-            tasks.Add(MineIssues(octoRepo.Id));
+            tasks.Add(MineIssues(cancellationToken));
         }
 
         if (Scope.HasFlag(RepoMinerScope.PullRequests))
         {
-            tasks.Add(MinePullRequests(octoRepo.Id));
+            tasks.Add(MinePullRequests(cancellationToken));
         }
 
         if (Scope.HasFlag(RepoMinerScope.Discussions))
@@ -141,7 +150,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         if (Scope.HasFlag(RepoMinerScope.Milestones))
         {
-            tasks.Add(MineMilestones(octoRepo.Id));
+            tasks.Add(MineMilestones(cancellationToken));
         }
 
         if (tasks.Count > 0)
@@ -158,7 +167,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return new MiningResult(
             MiningStartedAt: startedAt,
             MiningCompletedAt: completedAt,
-            Repository: OctokitMapping.MapRepository(octoRepo) with { Cloc = cloc, GitLoc = gitLoc},
+            Repository: GitHubRestMapping.MapRepository(repo) with { Cloc = cloc, GitLoc = gitLoc},
             Issues: issues.ToImmutableDictionary(),
             PullRequests: pullRequests.ToImmutableDictionary(),
             Discussions: discussions.ToImmutableDictionary(),
@@ -189,10 +198,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         githubClients = githubTokens.ToImmutableDictionary(
             p => p.Key,
-            p => new GitHubClient(new ProductHeaderValue($"ritgard-{p.Key}"))
-            {
-                Credentials = new Credentials(p.Value.Token)
-            }
+            p => CreateGitHubRestClient(p.Key, p.Value.Token)
         );
 
         foreach (var token in githubTokens.Values)
@@ -206,7 +212,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         logger.LogInformation("Initialized");
     }
 
-    private async Task MineIssues(long repoId)
+    private async Task MineIssues(CancellationToken cancellationToken = default)
     {
         if (Http is null)
         {
@@ -219,46 +225,56 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var octoIssues = await QueryHttp(_ => Http.Issue.GetAllForRepository(
-                    repoId,
-                    new RepositoryIssueRequest
+            var ghIssues = await QueryHttp(
+                ct => Http.Repos[RepoOwner][RepoName].Issues.GetAsync(
+                    config =>
                     {
-                        State = ItemStateFilter.All
+                        config.QueryParameters.Page = pageIndex;
+                        config.QueryParameters.PerPage = 100;
+                        config.QueryParameters.StateAsGetStateQueryParameterType =
+                            Repos.Item.Item.Issues.GetStateQueryParameterType.All;
                     },
-                    new ApiOptions
-                    {
-                        PageCount = 1,
-                        PageSize = 100,
-                        StartPage = pageIndex
-                    }
-                )
-            );
-            if (octoIssues.Count == 0)
+                    ct
+                ),
+                cancellationToken: cancellationToken
+            ) ?? [];
+            if (ghIssues.Count == 0)
             {
                 break;
             }
 
-            foreach (var octoIssue in octoIssues)
+            foreach (var ghIssue in ghIssues)
             {
-                var issue = OctokitMapping.MapIssue(octoIssue);
-                if (octoIssue.PullRequest is not null)
+                var issue = GitHubRestMapping.MapIssue(ghIssue);
+                if (ghIssue.PullRequest is not null)
                 {
                     continue;
                 }
 
-                issues.TryAdd(octoIssue.NodeId, issue);
+                issues.TryAdd(issue.Id, issue);
             }
 
             if (Scope.HasFlag(RepoMinerScope.IssueComments))
             {
                 await Task.WhenAll(
-                    octoIssues
+                    ghIssues
                         .Where(i => i.PullRequest is null)
-                        .Select(async octoIssue =>
+                        .Select(async ghIssue =>
                             {
-                                var comments = await MineComments(repoId, octoIssue.Number);
+                                if (ghIssue.Number is null)
+                                {
+                                    return;
+                                }
+
+                                var comments = await MineComments(ghIssue.Number.Value, cancellationToken);
+                                var issueId = ghIssue.NodeId ?? ghIssue.Id?.ToString(CultureInfo.InvariantCulture);
+                                if (issueId is null)
+                                {
+                                    return;
+                                }
+
                                 issues.AddOrUpdate(
-                                    octoIssue.NodeId,
+                                    issueId,
                                     _ => throw new InvalidOperationException(),
                                     (_, issue) => issue with { Comments = comments }
                                 );
@@ -270,13 +286,24 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             if (Scope.HasFlag(RepoMinerScope.IssueEvents))
             {
                 await Task.WhenAll(
-                    octoIssues
+                    ghIssues
                         .Where(i => i.PullRequest is null)
-                        .Select(async octoIssue =>
+                        .Select(async ghIssue =>
                             {
-                                var events = await MineIssueEvents(repoId, octoIssue.Number);
+                                if (ghIssue.Number is null)
+                                {
+                                    return;
+                                }
+
+                                var events = await MineIssueEvents(ghIssue.Number.Value, cancellationToken);
+                                var issueId = ghIssue.NodeId ?? ghIssue.Id?.ToString(CultureInfo.InvariantCulture);
+                                if (issueId is null)
+                                {
+                                    return;
+                                }
+
                                 issues.AddOrUpdate(
-                                    octoIssue.NodeId,
+                                    issueId,
                                     _ => throw new InvalidOperationException(),
                                     (_, issue) => issue with { Events = events }
                                 );
@@ -287,7 +314,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         }
     }
 
-    private async Task MinePullRequests(long repoId)
+    private async Task MinePullRequests(CancellationToken cancellationToken = default)
     {
         if (Http is null)
         {
@@ -300,39 +327,63 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var octoPrs = await QueryHttp(_ => Http.PullRequest.GetAllForRepository(
-                    repoId,
-                    new PullRequestRequest
+            var ghPrs = await QueryHttp(
+                ct => Http.Repos[RepoOwner][RepoName].Pulls.GetAsync(
+                    config =>
                     {
-                        State = ItemStateFilter.All
+                        config.QueryParameters.Page = pageIndex;
+                        config.QueryParameters.PerPage = 100;
+                        config.QueryParameters.StateAsGetStateQueryParameterType =
+                            Repos.Item.Item.Pulls.GetStateQueryParameterType.All;
                     },
-                    new ApiOptions
-                    {
-                        PageCount = 1,
-                        PageSize = 100,
-                        StartPage = pageIndex
-                    }
-                )
-            );
-            if (octoPrs is null || octoPrs.Count == 0)
+                    ct
+                ),
+                cancellationToken: cancellationToken
+            ) ?? [];
+            if (ghPrs.Count == 0)
             {
                 break;
             }
 
-            foreach (var octoPr in octoPrs)
+            foreach (var ghPr in ghPrs)
             {
-                var pr = OctokitMapping.MapPullRequest(octoPr);
-                pullRequests.TryAdd(octoPr.NodeId, pr);
+                if (ghPr.Number is null)
+                {
+                    continue;
+                }
+
+                var ghPrDetails = await QueryHttp(
+                    ct => Http.Repos[RepoOwner][RepoName].Pulls[ghPr.Number.Value].GetAsync(cancellationToken: ct),
+                    cancellationToken: cancellationToken
+                );
+                if (ghPrDetails is null)
+                {
+                    continue;
+                }
+
+                var pr = GitHubRestMapping.MapPullRequest(ghPrDetails);
+                pullRequests.TryAdd(pr.Id, pr);
             }
 
             if (Scope.HasFlag(RepoMinerScope.PullRequestComments))
             {
                 await Task.WhenAll(
-                    octoPrs.Select(async octoPr =>
+                    ghPrs.Select(async ghPr =>
                         {
-                            var comments = await MineComments(repoId, octoPr.Number);
+                            if (ghPr.Number is null)
+                            {
+                                return;
+                            }
+
+                            var comments = await MineComments(ghPr.Number.Value, cancellationToken);
+                            var prId = ghPr.NodeId ?? ghPr.Id?.ToString(CultureInfo.InvariantCulture);
+                            if (prId is null)
+                            {
+                                return;
+                            }
+
                             pullRequests.AddOrUpdate(
-                                octoPr.NodeId,
+                                prId,
                                 _ => throw new InvalidOperationException(),
                                 (_, pr) => pr with { Comments = comments }
                             );
@@ -344,11 +395,22 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             if (Scope.HasFlag(RepoMinerScope.PullRequestEvents))
             {
                 await Task.WhenAll(
-                    octoPrs.Select(async octoPr =>
+                    ghPrs.Select(async ghPr =>
                         {
-                            var events = await MineIssueEvents(repoId, octoPr.Number);
+                            if (ghPr.Number is null)
+                            {
+                                return;
+                            }
+
+                            var events = await MineIssueEvents(ghPr.Number.Value, cancellationToken);
+                            var prId = ghPr.NodeId ?? ghPr.Id?.ToString(CultureInfo.InvariantCulture);
+                            if (prId is null)
+                            {
+                                return;
+                            }
+
                             pullRequests.AddOrUpdate(
-                                octoPr.NodeId,
+                                prId,
                                 _ => throw new InvalidOperationException(),
                                 (_, pr) => pr with { Events = events }
                             );
@@ -451,7 +513,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         } while (cursor is not null);
     }
 
-    private async Task MineMilestones(long repoId)
+    private async Task MineMilestones(CancellationToken cancellationToken = default)
     {
         if (Http is null)
         {
@@ -464,33 +526,33 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var octoMilestones = await QueryHttp(_ => Http.Issue.Milestone.GetAllForRepository(
-                    repoId,
-                    new MilestoneRequest
+            var ghMilestones = await QueryHttp(
+                ct => Http.Repos[RepoOwner][RepoName].Milestones.GetAsync(
+                    config =>
                     {
-                        State = ItemStateFilter.All
+                        config.QueryParameters.Page = pageIndex;
+                        config.QueryParameters.PerPage = 100;
+                        config.QueryParameters.StateAsGetStateQueryParameterType =
+                            Repos.Item.Item.Milestones.GetStateQueryParameterType.All;
                     },
-                    new ApiOptions
-                    {
-                        PageCount = 1,
-                        PageSize = 100,
-                        StartPage = pageIndex
-                    }
-                )
-            );
-            if (octoMilestones is null || octoMilestones.Count == 0)
+                    ct
+                ),
+                cancellationToken: cancellationToken
+            ) ?? [];
+            if (ghMilestones.Count == 0)
             {
                 break;
             }
 
-            foreach (var octoMilestone in octoMilestones)
+            foreach (var ghMilestone in ghMilestones)
             {
-                milestones.TryAdd(octoMilestone.NodeId, OctokitMapping.MapMilestone(octoMilestone));
+                var milestone = GitHubRestMapping.MapMilestone(ghMilestone);
+                milestones.TryAdd(milestone.Id, milestone);
             }
         }
     }
 
-    private async Task<ImmutableArray<Comment>> MineComments(long repoId, int number)
+    private async Task<ImmutableArray<Comment>> MineComments(int number, CancellationToken cancellationToken = default)
     {
         if (Http is null)
         {
@@ -504,23 +566,23 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var comments = await QueryHttp(_ => Http.Issue.Comment.GetAllForIssue(
-                    repoId,
-                    number,
-                    new ApiOptions
+            var comments = await QueryHttp(
+                ct => Http.Repos[RepoOwner][RepoName].Issues[number].Comments.GetAsync(
+                    config =>
                     {
-                        PageCount = 1,
-                        PageSize = 100,
-                        StartPage = pageIndex
-                    }
-                )
-            );
-            if (comments is null || comments.Count == 0)
+                        config.QueryParameters.Page = pageIndex;
+                        config.QueryParameters.PerPage = 100;
+                    },
+                    ct
+                ),
+                cancellationToken: cancellationToken
+            ) ?? [];
+            if (comments.Count == 0)
             {
                 break;
             }
 
-            builder.AddRange(comments.Select(c => OctokitMapping.MapIssueComment(c)));
+            builder.AddRange(comments.Select(c => GitHubRestMapping.MapIssueComment(c)));
         }
 
         return builder.ToImmutable();
@@ -585,7 +647,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return builder.ToImmutable();
     }
 
-    private async Task<ImmutableArray<IssueEvent>> MineIssueEvents(long repoId, int number)
+    private async Task<ImmutableArray<IssueEvent>> MineIssueEvents(int number, CancellationToken cancellationToken = default)
     {
         if (Http is null)
         {
@@ -600,23 +662,23 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         {
             pageIndex++;
 
-            var events = await QueryHttp(_ => Http.Issue.Timeline.GetAllForIssue(
-                    repoId,
-                    number,
-                    new ApiOptions
+            var events = await QueryHttp(
+                ct => Http.Repos[RepoOwner][RepoName].Issues[number].Timeline.GetAsync(
+                    config =>
                     {
-                        PageCount = 1,
-                        PageSize = 100,
-                        StartPage = pageIndex
-                    }
-                )
-            );
-            if (events is null || events.Count == 0)
+                        config.QueryParameters.Page = pageIndex;
+                        config.QueryParameters.PerPage = 100;
+                    },
+                    ct
+                ),
+                cancellationToken: cancellationToken
+            ) ?? [];
+            if (events.Count == 0)
             {
                 break;
             }
 
-            builder.AddRange(events.Select(e => OctokitMapping.MapTimelineEventInfo(e)));
+            builder.AddRange(events.Select(e => GitHubRestMapping.MapTimelineEventInfo(e)));
         }
 
         return builder.ToImmutable();
@@ -625,42 +687,60 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
     private async Task SetCooldownsFor(GhToken token)
     {
         var gh = githubClients[token.Name];
-        var limits = await gh.RateLimit.GetRateLimits();
+        var limits = await gh.Rate_limit.GetAsync();
+        var core = limits?.Resources?.Core;
+        var graphql = limits?.Resources?.Graphql;
 
-        var httpThreshold = token.HttpLimit == -1 ? 0 : limits.Resources.Core.Limit - token.HttpLimit;
-        if (limits.Resources.Core.Remaining <= httpThreshold)
+        if (core is not null)
         {
-            logger.LogInformation(
-                "Reached {Remaining} remaining HTTP requests, which is below the {Threshold} threshold of '{TokenName}'.",
-                limits.Resources.Core.Remaining,
-                httpThreshold,
-                token.Name
-            );
-            httpCooldowns.AddOrUpdate(
-                token.Name,
-                _ => limits.Resources.Core.Reset,
-                (_, existing) => Utils.Max(existing, limits.Resources.Core.Reset)
-            );
+            var httpThreshold = token.HttpLimit == -1 ? 0 : (core.Limit ?? 0) - token.HttpLimit;
+            if ((core.Remaining ?? 0) <= httpThreshold)
+            {
+                var resetAt = DateTimeOffset.FromUnixTimeSeconds(core.Reset ?? 0);
+                logger.LogInformation(
+                    "Reached {Remaining} remaining HTTP requests, which is below the {Threshold} threshold of '{TokenName}'.",
+                    core.Remaining ?? 0,
+                    httpThreshold,
+                    token.Name
+                );
+                httpCooldowns.AddOrUpdate(
+                    token.Name,
+                    _ => resetAt,
+                    (_, existing) => Utils.Max(existing, resetAt)
+                );
+            }
+            else
+            {
+                httpCooldowns.TryAdd(token.Name, default);
+            }
         }
         else
         {
             httpCooldowns.TryAdd(token.Name, default);
         }
 
-        var graphQlThreshold = token.GraphQlLimit == -1 ? 0 : limits.Resources.Graphql.Limit - token.GraphQlLimit;
-        if (limits.Resources.Graphql.Remaining <= graphQlThreshold)
+        if (graphql is not null)
         {
-            logger.LogInformation(
-                "Reached {Remaining} remaining GraphQL requests, which is below the {Threshold} threshold of '{TokenName}'.",
-                limits.Resources.Graphql.Remaining,
-                graphQlThreshold,
-                token.Name
-            );
-            graphQlCooldowns.AddOrUpdate(
-                token.Name,
-                _ => limits.Resources.Graphql.Reset,
-                (_, existing) => Utils.Max(existing, limits.Resources.Graphql.Reset)
-            );
+            var graphQlThreshold = token.GraphQlLimit == -1 ? 0 : (graphql.Limit ?? 0) - token.GraphQlLimit;
+            if ((graphql.Remaining ?? 0) <= graphQlThreshold)
+            {
+                var resetAt = DateTimeOffset.FromUnixTimeSeconds(graphql.Reset ?? 0);
+                logger.LogInformation(
+                    "Reached {Remaining} remaining GraphQL requests, which is below the {Threshold} threshold of '{TokenName}'.",
+                    graphql.Remaining ?? 0,
+                    graphQlThreshold,
+                    token.Name
+                );
+                graphQlCooldowns.AddOrUpdate(
+                    token.Name,
+                    _ => resetAt,
+                    (_, existing) => Utils.Max(existing, resetAt)
+                );
+            }
+            else
+            {
+                graphQlCooldowns.TryAdd(token.Name, default);
+            }
         }
         else
         {
@@ -819,11 +899,34 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 Interlocked.Add(ref httpSpent, cost);
                 return await execute(cancellationToken);
             }
-            catch (ApiException ex) when(ex is RateLimitExceededException or SecondaryRateLimitExceededException)
+            catch (ApiException ex) when (IsRateLimitException(ex))
             {
                 await EnsureHttpAvailable(cancellationToken);
             }
         }
+    }
+
+    private static bool IsRateLimitException(ApiException exception)
+    {
+        if (exception.ResponseStatusCode == 429)
+        {
+            return true;
+        }
+
+        return exception.ResponseStatusCode == 403
+               && exception.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static GitHubRestClient CreateGitHubRestClient(string tokenName, string token)
+    {
+        var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        // httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"ritgard-{tokenName}");
+        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        httpClient.DefaultRequestHeaders.Add("X-GitHub-Api-Version", GitHubApiVersion);
+
+        var adapter = new HttpClientRequestAdapter(new AnonymousAuthenticationProvider(), httpClient: httpClient);
+        return new GitHubRestClient(adapter);
     }
 
     private record GhToken(
