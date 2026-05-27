@@ -167,7 +167,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return new MiningResult(
             MiningStartedAt: startedAt,
             MiningCompletedAt: completedAt,
-            Repository: GitHubRestMapping.MapRepository(repo) with { Cloc = cloc, GitLoc = gitLoc},
+            Repository: GitHubRestMapping.MapRepository(repo) with { Cloc = cloc, GitLoc = gitLoc },
             Issues: issues.ToImmutableDictionary(),
             PullRequests: pullRequests.ToImmutableDictionary(),
             Discussions: discussions.ToImmutableDictionary(),
@@ -196,10 +196,14 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 p => new GhToken(p.Key, p.Value.Token, p.Value.HttpLimit, p.Value.GraphQlLimit)
             );
 
-        githubClients = githubTokens.ToImmutableDictionary(
-            p => p.Key,
-            p => CreateGitHubRestClient(p.Key, p.Value.Token)
-        );
+        var githubClientBuilder = ImmutableDictionary.CreateBuilder<string, GitHubRestClient>();
+        foreach (var token in githubTokens)
+        {
+            var tokenClient = await CreateGitHubRestClient(token.Key, token.Value.Token, cancellationToken);
+            githubClientBuilder[token.Key] = tokenClient;
+        }
+
+        githubClients = githubClientBuilder.ToImmutable();
 
         foreach (var token in githubTokens.Values)
         {
@@ -647,7 +651,10 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         return builder.ToImmutable();
     }
 
-    private async Task<ImmutableArray<IssueEvent>> MineIssueEvents(int number, CancellationToken cancellationToken = default)
+    private async Task<ImmutableArray<IssueEvent>> MineIssueEvents(
+        int number,
+        CancellationToken cancellationToken = default
+    )
     {
         if (Http is null)
         {
@@ -678,7 +685,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 break;
             }
 
-            builder.AddRange(events.Select(e => GitHubRestMapping.MapTimelineEventInfo(e)));
+            builder.AddRange(events.Select(GitHubRestMapping.MapTimelineEventInfo));
         }
 
         return builder.ToImmutable();
@@ -693,6 +700,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         if (core is not null)
         {
+            logger.LogInformation(
+                "Token '{Token}' has currently {Remaining} remaining requests.",
+                token.Name,
+                core.Remaining
+            );
+
             var httpThreshold = token.HttpLimit == -1 ? 0 : (core.Limit ?? 0) - token.HttpLimit;
             if ((core.Remaining ?? 0) <= httpThreshold)
             {
@@ -914,19 +927,31 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         }
 
         return exception.ResponseStatusCode == 403
-               && exception.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase);
+            && exception.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static GitHubRestClient CreateGitHubRestClient(string tokenName, string token)
+    private async Task<GitHubRestClient> CreateGitHubRestClient(
+        string tokenName,
+        string token,
+        CancellationToken ct = default
+    )
     {
         var httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        // httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"ritgard-{tokenName}");
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"ritgard-{tokenName}");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         httpClient.DefaultRequestHeaders.Add("X-GitHub-Api-Version", GitHubApiVersion);
 
-        var adapter = new HttpClientRequestAdapter(new AnonymousAuthenticationProvider(), httpClient: httpClient);
-        return new GitHubRestClient(adapter);
+        var authProvider = new AnonymousAuthenticationProvider();
+        var adapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
+        var client = new GitHubRestClient(adapter);
+        var currentUser = await client.User.GetAsUserGetResponseAsync(cancellationToken: ct);
+        logger.LogInformation(
+            "Created a client for token '{Token}', belonging to '{User}'.",
+            tokenName,
+            currentUser?.PublicUser?.Login
+        );
+        return client;
     }
 
     private record GhToken(
