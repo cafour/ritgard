@@ -1,3 +1,7 @@
 [submodule "submodules/NetTopologySuite"]
 	path = submodules/NetTopologySuite
 	url = git@github.com:cafour/NetTopologySuite.git
+[submodule "github-rest-api"]
+	path = submodules/github-rest-api
+	url = https://github.com/github/rest-api-description.git
+	shallow = true
