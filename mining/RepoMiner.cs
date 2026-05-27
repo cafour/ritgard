@@ -819,7 +819,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 Interlocked.Add(ref httpSpent, cost);
                 return await execute(cancellationToken);
             }
-            catch (RateLimitExceededException)
+            catch (ApiException ex) when(ex is RateLimitExceededException or SecondaryRateLimitExceededException)
             {
                 await EnsureHttpAvailable(cancellationToken);
             }
