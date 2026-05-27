@@ -18,7 +18,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
-    <PackageReference Include="Octokit" Version="14.0.0" />
+    <PackageReference Include="Microsoft.Kiota.Bundle" Version="2.0.0" />
     <PackageReference Include="StrawberryShake.Server" Version="15.1.10" />
     <PackageReference Include="TupleAsJsonArray" Version="1.0.2" />
   </ItemGroup>
@@ -26,5 +26,24 @@
   <ItemGroup>
     <ProjectReference Include="..\submodules\NetTopologySuite\src\NetTopologySuite\NetTopologySuite.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <GitHubApiDescriptionPath>..\submodules\github-rest-api\descriptions\api.github.com\api.github.com.2026-03-10.json</GitHubApiDescriptionPath>
+  </PropertyGroup>
+
+  <Target Name="GenerateGitHubClient"
+          BeforeTargets="BeforeCompile"
+          Inputs="$(GitHubApiDescriptionPath)"
+          Outputs="GitHub/**.cs"
+          Condition="'$(DesignTimeBuild)' != 'true' AND '$(BuildingProject)' == 'true'" >
+
+    <Message Importance="high" Text="Generating the GitHub REST API client" />
+
+    <Exec Command="dotnet kiota generate -l CSharp -c GitHubRestClient -n Ritgard.Mining -d $(GitHubApiDescriptionPath) -o ./GitHub --co --ll error" />
+
+    <ItemGroup>
+      <Compile Include="GitHub/**/*.cs" Exclude="@(Compile)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

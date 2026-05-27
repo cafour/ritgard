@@ -10,3 +10,4 @@ tmp/
 /out/
 builds/
 *.user
+.kiota.log
