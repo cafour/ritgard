@@ -5,6 +5,7 @@ tmp/
 /data/**/*.json
 .DS_store
 /datasets/
+/vis/datasets/
 .vs/
 /out/
 builds/
