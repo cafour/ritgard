@@ -6,7 +6,8 @@ query DiscussionCommentQuery(
     rateLimit {
         remaining
         resetAt
-        cost
+        used
+        limit
     }
 
     node(id: $discussionId) {

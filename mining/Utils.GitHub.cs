@@ -3,39 +3,19 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Medallion.Shell;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Ritgard.Mining.GitHub;
 
 namespace Ritgard.Mining;
 
 public static partial class Utils
 {
     public const int GitCleanupAttemptCount = 5;
-
-    public static (GitHubGraphQLClient client, IAsyncDisposable clientDisposable) CreateGitHubGraphQLClient(
-        string authToken
-    )
-    {
-        var services = new ServiceCollection();
-        services.AddGitHubGraphQLClient()
-            .ConfigureHttpClient(c =>
-                {
-                    c.BaseAddress = new Uri("https://api.github.com/graphql");
-                    c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authToken);
-                }
-            );
-        var provider = services.BuildServiceProvider();
-        return (provider.GetRequiredService<GitHubGraphQLClient>(), provider);
-    }
 
     public static Task<int?> GetFileCount(
         string cloneUrl,

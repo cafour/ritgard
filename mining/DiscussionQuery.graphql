@@ -6,7 +6,8 @@ query DiscussionQuery (
     rateLimit {
         remaining
         resetAt
-        cost
+        used
+        limit
     }
 
     repository(owner: $repoOwner, name: $repoName) {

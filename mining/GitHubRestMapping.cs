@@ -22,7 +22,7 @@ public static class GitHubRestMapping
     {
         return new Issue(
             Id: value.NodeId ?? value.Id?.ToString(CultureInfo.InvariantCulture) ?? $"issue-{value.Number}",
-            Number: value.Number ?? 0,
+            Number: (int)(value.Number ?? 0),
             Url: value.HtmlUrl ?? string.Empty,
             Title: value.Title ?? string.Empty,
             Author: value.User?.Login ?? string.Empty,
@@ -45,7 +45,7 @@ public static class GitHubRestMapping
             LockReason: MapLockReason(value.ActiveLockReason),
             MilestoneId: value.Milestone?.Id,
             PullRequestId: null,
-            CommentCount: value.Comments ?? 0,
+            CommentCount: (int)(value.Comments ?? 0),
             Comments: [],
             Events: []
         );
@@ -55,7 +55,7 @@ public static class GitHubRestMapping
     {
         return new PullRequest(
             Id: value.NodeId ?? value.Id?.ToString(CultureInfo.InvariantCulture) ?? $"pr-{value.Number}",
-            Number: value.Number ?? 0,
+            Number: (int)(value.Number ?? 0),
             Url: value.HtmlUrl ?? string.Empty,
             State: value.State == GhPullRequestState.Closed ? IssueState.Closed : IssueState.Open,
             Title: value.Title ?? string.Empty,
@@ -81,11 +81,11 @@ public static class GitHubRestMapping
             MergeableState: MapMergeableState(value.MergeableState),
             MergedBy: value.MergedBy?.Login,
             MergeCommitSha: string.Empty,
-            CommentCount: value.Comments ?? 0,
-            CommitCount: value.Commits ?? 0,
-            AdditionCount: value.Additions ?? 0,
-            DeletionCount: value.Deletions ?? 0,
-            ChangedFileCount: value.ChangedFiles ?? 0,
+            CommentCount: (int)(value.Comments ?? 0),
+            CommitCount: (int)(value.Commits ?? 0),
+            AdditionCount: (int)(value.Additions ?? 0),
+            DeletionCount: (int)(value.Deletions ?? 0),
+            ChangedFileCount: (int)(value.ChangedFiles ?? 0),
             IsLocked: value.Locked ?? false,
             LockReason: MapLockReason(value.ActiveLockReason),
             RequestedReviewers:
@@ -118,7 +118,7 @@ public static class GitHubRestMapping
     {
         return new Milestone(
             Id: value.NodeId ?? value.Id?.ToString(CultureInfo.InvariantCulture) ?? $"milestone-{value.Number}",
-            Number: value.Number ?? 0,
+            Number: (int)(value.Number ?? 0),
             Url: value.HtmlUrl ?? string.Empty,
             Title: value.Title ?? string.Empty,
             Description: value.Description,
@@ -157,9 +157,9 @@ public static class GitHubRestMapping
             IsPrivate: value.Private ?? false,
             IsFork: value.Fork ?? false,
             IsArchived: value.Archived ?? false,
-            ForkCount: value.ForksCount ?? 0,
-            StargazerCount: value.StargazersCount ?? 0,
-            OpenIssuesCount: value.OpenIssuesCount ?? 0,
+            ForkCount: (int)(value.ForksCount ?? 0),
+            StargazerCount: (int)(value.StargazersCount ?? 0),
+            OpenIssuesCount: (int)(value.OpenIssuesCount ?? 0),
             DefaultBranch: value.DefaultBranch ?? string.Empty,
             CreatedAt: value.CreatedAt ?? default,
             UpdatedAt: value.UpdatedAt,
@@ -169,7 +169,7 @@ public static class GitHubRestMapping
             HasWiki: value.HasWiki ?? false,
             HasDownloads: true,
             HasPages: value.HasPages ?? false,
-            SubscribersCount: value.SubscribersCount ?? 0,
+            SubscribersCount: (int)(value.SubscribersCount ?? 0),
             Size: value.Size ?? 0,
             Cloc: null,
             GitLoc: null,

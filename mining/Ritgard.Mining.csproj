@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
     <PackageReference Include="Octokit" Version="14.0.0" />
     <PackageReference Include="Microsoft.Kiota.Bundle" Version="2.0.0" />
@@ -28,21 +29,108 @@
     <ProjectReference Include="..\submodules\NetTopologySuite\src\NetTopologySuite\NetTopologySuite.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <GraphQL Update="RateLimitQuery.graphql">
+      <Generator>MSBuild:GenerateGraphQLCode</Generator>
+    </GraphQL>
+  </ItemGroup>
+
   <PropertyGroup>
     <GitHubApiDescriptionPath>..\submodules\github-rest-api\descriptions\api.github.com\api.github.com.2026-03-10.json</GitHubApiDescriptionPath>
+    <PatchedGitHubApiDescriptionPath>$(BaseIntermediateOutputPath)api.github.com.patched.json</PatchedGitHubApiDescriptionPath>
   </PropertyGroup>
 
-  <Target Name="GenerateGitHubClient"
-          BeforeTargets="BeforeCompile"
-          Inputs="$(GitHubApiDescriptionPath)"
-          Outputs="GitHub/**.cs"
-          Condition="'$(DesignTimeBuild)' != 'true' AND '$(BuildingProject)' == 'true'" >
+  <UsingTask TaskName="PatchOpenApiIntegerFormats" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <InputFile ParameterType="System.String" Required="true" />
+      <OutputFile ParameterType="System.String" Required="true" />
+      <PatchedCount ParameterType="System.Int32" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="$(MSBuildSDKsPath)/Microsoft.NET.Sdk/tools/net472/System.Text.Json.dll" />
+      <Reference Include="$(MSBuildSDKsPath)/Microsoft.NET.Sdk/tools/net472/System.Memory.dll" />
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text.Json" />
+      <Using Namespace="System.Text.Json.Nodes" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        #pragma warning disable 0162
+        if (!File.Exists(InputFile)) {
+            Log.LogError($"OpenAPI input file not found: {InputFile}");
+            return false;
+        }
+
+        var json = File.ReadAllText(InputFile);
+        JsonNode root;
+        try {
+            root = JsonNode.Parse(json);
+        }
+        catch (Exception ex) {
+            Log.LogErrorFromException(ex, true);
+            return false;
+        }
+
+        if (root == null) {
+            Log.LogError($"OpenAPI input file is empty or invalid: {InputFile}");
+            return false;
+        }
+
+        var patched = 0;
+
+        void Visit(JsonNode node) {
+            if (node is JsonObject obj) {
+                if (obj.TryGetPropertyValue("type", out var typeNode) &&
+                    typeNode is JsonValue typeValue &&
+                    typeValue.TryGetValue<string>(out var type) &&
+                    string.Equals(type, "integer", StringComparison.Ordinal) &&
+                    !obj.ContainsKey("format")) {
+                    obj["format"] = "int64";
+                    patched++;
+                }
+
+                foreach (var kv in obj) {
+                    if (kv.Value != null) {
+                        Visit(kv.Value);
+                    }
+                }
+            }
+            else if (node is JsonArray arr) {
+                foreach (var item in arr) {
+                    if (item != null) {
+                        Visit(item);
+                    }
+                }
+            }
+        }
+
+        Visit(root);
+        var outputDirectory = Path.GetDirectoryName(OutputFile);
+        if (!string.IsNullOrEmpty(outputDirectory)) {
+            Directory.CreateDirectory(outputDirectory);
+        }
+
+        var output = root.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+        File.WriteAllText(OutputFile, output);
+
+        PatchedCount = patched;
+        Log.LogMessage(MessageImportance.High, $"Patched {patched} OpenAPI integer schema nodes without format to int64.");
+        return true;
+        #pragma warning restore 0162
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="PatchGitHubOpenApiSpec" BeforeTargets="GenerateGitHubClient" Inputs="$(GitHubApiDescriptionPath)" Outputs="$(PatchedGitHubApiDescriptionPath)" Condition="'$(DesignTimeBuild)' != 'true' AND '$(BuildingProject)' == 'true'">
+    <PatchOpenApiIntegerFormats InputFile="$(GitHubApiDescriptionPath)" OutputFile="$(PatchedGitHubApiDescriptionPath)">
+      <Output TaskParameter="PatchedCount" PropertyName="PatchedIntegerFormatCount" />
+    </PatchOpenApiIntegerFormats>
+  </Target>
+
+  <Target Name="GenerateGitHubClient" BeforeTargets="BeforeCompile" Inputs="$(PatchedGitHubApiDescriptionPath)" Outputs="GitHub/**.cs" DependsOnTargets="PatchGitHubOpenApiSpec" Condition="'$(DesignTimeBuild)' != 'true' AND '$(BuildingProject)' == 'true'">
 
     <Message Importance="high" Text="Generating the GitHub REST API client" />
 
-    <Exec Command="dotnet kiota generate -l CSharp -c GitHubRestClient -n Ritgard.Mining -d $(GitHubApiDescriptionPath) -o ./GitHub --co --ll error --include-path '/repos/**' --include-path '/rate_limit' --include-path '/user'" 
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="dotnet kiota generate -l CSharp -c GitHubRestClient -n Ritgard.Mining -d $(PatchedGitHubApiDescriptionPath) -o ./GitHub --co --ll error --include-path '/repos/**' --include-path '/rate_limit' --include-path '/user'" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" />
 
     <ItemGroup>
       <Compile Include="GitHub/**/*.cs" Exclude="@(Compile)" />
