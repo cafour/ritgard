@@ -37,9 +37,9 @@ public static class GitHubRestMapping
             Assignees:
             [
                 ..(value.Assignees ?? [])
-                    .Select(a => a.Login)
-                    .Where(a => !string.IsNullOrWhiteSpace(a))
-                    .Select(a => a!)
+                .Select(a => a.Login)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => a!)
             ],
             IsLocked: value.Locked ?? false,
             LockReason: MapLockReason(value.ActiveLockReason),
@@ -70,9 +70,9 @@ public static class GitHubRestMapping
             Assignees:
             [
                 ..(value.Assignees ?? [])
-                    .Select(a => a.Login)
-                    .Where(a => !string.IsNullOrWhiteSpace(a))
-                    .Select(a => a!)
+                .Select(a => a.Login)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => a!)
             ],
             MilestoneId: value.Milestone?.Id,
             IsDraft: value.Draft ?? false,
@@ -91,23 +91,23 @@ public static class GitHubRestMapping
             RequestedReviewers:
             [
                 ..(value.RequestedReviewers ?? [])
-                    .Select(r => r.Login)
-                    .Where(r => !string.IsNullOrWhiteSpace(r))
-                    .Select(r => r!)
+                .Select(r => r.Login)
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Select(r => r!)
             ],
             RequestedTeams:
             [
                 ..(value.RequestedTeams ?? [])
-                    .Select(t => t.Slug)
-                    .Where(t => !string.IsNullOrWhiteSpace(t))
-                    .Select(t => t!)
+                .Select(t => t.Slug)
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t!)
             ],
             Labels:
             [
                 ..(value.Labels ?? [])
-                    .Select(l => l.Name)
-                    .Where(l => !string.IsNullOrWhiteSpace(l))
-                    .Select(l => l!)
+                .Select(l => l.Name)
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .Select(l => l!)
             ],
             Comments: [],
             Events: []
@@ -326,7 +326,7 @@ public static class GitHubRestMapping
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return IssueEventKind.Commented;
+            return IssueEventKind.Unknown;
         }
 
         var pascal = string.Concat(
@@ -337,7 +337,7 @@ public static class GitHubRestMapping
 
         return Enum.TryParse<IssueEventKind>(pascal, out var kind)
             ? kind
-            : IssueEventKind.Commented;
+            : IssueEventKind.Unknown;
     }
 
     private static object? GetObject(object? source, string propertyName)
