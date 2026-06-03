@@ -20,5 +20,8 @@ public enum RepoMinerScope
     Conversations = Issues | PullRequests | Discussions,
     ConversationsWithComments = Conversations | IssueComments | PullRequestComments | DiscussionComments,
     ConversationsWithEvents = Conversations | IssueEvents | PullRequestEvents,
+    ConversationsFull = ConversationsWithComments | ConversationsWithEvents,
+    LoCStats = 1 << 10,
+    GitLoCStats = 1 << 11,
     All = int.MaxValue
 }

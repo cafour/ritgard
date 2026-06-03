@@ -20,7 +20,7 @@ using StrawberryShake;
 
 namespace Ritgard.Mining;
 
-public class RepoMiner
+public class RepoMiner : IAsyncDisposable
 {
     private readonly ILogger<RepoMiner> logger;
 
@@ -30,10 +30,10 @@ public class RepoMiner
     private readonly ConcurrentDictionary<string, Milestone> milestones = [];
     private readonly MiningOptions options = new();
     private ImmutableDictionary<string, GitHubToken> gitHubTokens = [];
-    private ImmutableDictionary<string, GitHubGraphQLClientWrapper> graphQlClients = [];
-    private ImmutableDictionary<string, GitHubRestClientWrapper> restClients = [];
+    private ImmutableDictionary<string, GitHubGraphQlClientWrapper> graphQlClients = [];
+    private readonly ConcurrentDictionary<string, GitHubRestClientWrapper> restClients = [];
 
-    private readonly SemaphoreSlim httpLock = new(1, 1);
+    private readonly SemaphoreSlim restLock = new(1, 1);
     private readonly SemaphoreSlim graphQlLock = new(1, 1);
 
     public RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoName, RepoMinerScope scope)
@@ -53,7 +53,7 @@ public class RepoMiner
     public RepoMinerScope Scope { get; }
     public IConfiguration Configuration { get; private set; } = new ConfigurationBuilder().Build();
     public GitHubRestClientWrapper? Rest { get; private set; }
-    public GitHubGraphQLClientWrapper? GraphQl { get; private set; }
+    public GitHubGraphQlClientWrapper? GraphQl { get; private set; }
 
     public async Task<MiningResult?> MineRepo(CancellationToken cancellationToken = default)
     {
@@ -68,7 +68,7 @@ public class RepoMiner
 
         logger.LogInformation("Started mining '{RepoOwner}/{RepoName}'.", RepoOwner, RepoName);
         var repo = await ExecuteRest(
-            (rest, ct) => Rest.Client.Repos[RepoOwner][RepoName].GetAsync(cancellationToken: ct),
+            (rest, ct) => rest.Client.Repos[RepoOwner][RepoName].GetAsync(cancellationToken: ct),
             ct: cancellationToken
         );
         if (repo is null)
@@ -82,63 +82,69 @@ public class RepoMiner
         var tasks = new List<Task>(6);
 
         ClocInfo? cloc = null;
-        tasks.Add(
-            Task.Run(
-                async () =>
-                {
-                    cloc = await Utils.GetCloc(cloneUrl, logger, cancellationToken);
-                    if (cloc is null)
+        if (Scope.HasFlag(RepoMinerScope.LoCStats))
+        {
+            tasks.Add(
+                Task.Run(
+                    async () =>
                     {
-                        logger.LogError(
-                            "Failed to cloc '{RepoOwner}/{RepoName}'. No file and line count data will be available.",
-                            RepoOwner,
-                            RepoName
-                        );
-                    }
-                    else
-                    {
-                        logger.LogInformation(
-                            "Repository '{RepoOwner}/{RepoName}' has {FileCount} files.",
-                            RepoOwner,
-                            RepoName,
-                            cloc.Header.FileCount
-                        );
-                    }
-                },
-                cancellationToken
-            )
-        );
+                        cloc = await Utils.GetCloc(cloneUrl, logger, cancellationToken);
+                        if (cloc is null)
+                        {
+                            logger.LogError(
+                                "Failed to cloc '{RepoOwner}/{RepoName}'. No file and line count data will be available.",
+                                RepoOwner,
+                                RepoName
+                            );
+                        }
+                        else
+                        {
+                            logger.LogInformation(
+                                "Repository '{RepoOwner}/{RepoName}' has {FileCount} files.",
+                                RepoOwner,
+                                RepoName,
+                                cloc.Header.FileCount
+                            );
+                        }
+                    },
+                    cancellationToken
+                )
+            );
+        }
 
         GitLocInfo? gitLoc = null;
-        tasks.Add(
-            Task.Run(
-                async () =>
-                {
-                    gitLoc = await Utils.GetGitLoc(cloneUrl, logger, cancellationToken);
-                    if (gitLoc is null)
+        if (Scope.HasFlag(RepoMinerScope.GitLoCStats))
+        {
+            tasks.Add(
+                Task.Run(
+                    async () =>
                     {
-                        logger.LogError(
-                            "Failed to count LoC '{RepoOwner}/{RepoName}' across its history. "
-                            + "No file and line count data will be available.",
-                            RepoOwner,
-                            RepoName
-                        );
-                    }
-                    else
-                    {
-                        logger.LogInformation(
-                            "Repository '{RepoOwner}/{RepoName}' has {AddedLineCount} added lines "
-                            + "and {DeletedLineCount} deleted lines.",
-                            RepoOwner,
-                            RepoName,
-                            gitLoc.AddedLineCount,
-                            gitLoc.DeletedLineCount
-                        );
-                    }
-                },
-                cancellationToken
-            )
-        );
+                        gitLoc = await Utils.GetGitLoc(cloneUrl, logger, cancellationToken);
+                        if (gitLoc is null)
+                        {
+                            logger.LogError(
+                                "Failed to count LoC '{RepoOwner}/{RepoName}' across its history. "
+                                + "No file and line count data will be available.",
+                                RepoOwner,
+                                RepoName
+                            );
+                        }
+                        else
+                        {
+                            logger.LogInformation(
+                                "Repository '{RepoOwner}/{RepoName}' has {AddedLineCount} added lines "
+                                + "and {DeletedLineCount} deleted lines.",
+                                RepoOwner,
+                                RepoName,
+                                gitLoc.AddedLineCount,
+                                gitLoc.DeletedLineCount
+                            );
+                        }
+                    },
+                    cancellationToken
+                )
+            );
+        }
 
         if (Scope.HasFlag(RepoMinerScope.Issues))
         {
@@ -182,7 +188,7 @@ public class RepoMiner
         );
     }
 
-    private async Task Initialize(CancellationToken cancellationToken = default)
+    private async Task Initialize(CancellationToken ct = default)
     {
         issues.Clear();
         pullRequests.Clear();
@@ -202,17 +208,39 @@ public class RepoMiner
                 p => p.Key,
                 p => new GitHubToken(p.Key, p.Value.Token, p.Value.HttpLimit, p.Value.GraphQlLimit)
             );
-        restClients = gitHubTokens.ToImmutableDictionary(
-            t => t.Key,
-            t => GitHubRestClientWrapper.Create(t.Value)
-        );
+
+        foreach (var token in gitHubTokens.Values)
+        {
+            await CreateRestClient(token, ct: ct);
+        }
+
         graphQlClients = gitHubTokens.ToImmutableDictionary(
             t => t.Key,
-            t => GitHubGraphQLClientWrapper.Create(t.Value)
+            t => GitHubGraphQlClientWrapper.Create(t.Value)
         );
+        foreach (var client in graphQlClients.Values)
+        {
+            var isBlocked = await client.CheckBlocked(ct);
+            if (isBlocked)
+            {
+                logger.LogWarning(
+                    "GraphQL client '{TokenName}' is blocked till '{ResetAt}'.",
+                    client.Token.Name,
+                    client.RateReset
+                );
+            }
+            else
+            {
+                logger.LogInformation(
+                    "GraphQL client '{TokenName}' is available with '{Remaining}' remaining.",
+                    client.Token.Name,
+                    client.RateRemaining
+                );
+            }
+        }
 
-        await RefreshRestApi(cancellationToken);
-        await RefreshGraphQlApi(cancellationToken);
+        await RefreshRestApi(ct);
+        await RefreshGraphQlApi(ct);
 
         logger.LogInformation("Initialized");
     }
@@ -224,23 +252,31 @@ public class RepoMiner
             throw new InvalidOperationException("Cannot mine issues without the GitHub HTTP API client.");
         }
 
-        logger.LogInformation("Mining issues");
         var pageIndex = 0;
         while (true)
         {
             pageIndex++;
 
             var ghIssues = await ExecuteRest(
-                (rest, ct) => rest.Repos[RepoOwner][RepoName].Issues.GetAsync(
-                    config =>
-                    {
-                        config.QueryParameters.Page = pageIndex;
-                        config.QueryParameters.PerPage = 100;
-                        config.QueryParameters.StateAsGetStateQueryParameterType =
-                            Repos.Item.Item.Issues.GetStateQueryParameterType.All;
-                    },
-                    ct
-                ),
+                (rest, ct) =>
+                {
+                    logger.LogInformation(
+                        "Mining issues page {PageIndex} with REST client '{TokenName}' ({Remaining} remaining).",
+                        pageIndex,
+                        rest.Token.Name,
+                        rest.RateRemaining
+                    );
+                    return rest.Client.Repos[RepoOwner][RepoName].Issues.GetAsync(
+                        config =>
+                        {
+                            config.QueryParameters.Page = pageIndex;
+                            config.QueryParameters.PerPage = 100;
+                            config.QueryParameters.StateAsGetStateQueryParameterType =
+                                Repos.Item.Item.Issues.GetStateQueryParameterType.All;
+                        },
+                        ct
+                    );
+                },
                 ct: cancellationToken
             ) ?? [];
             if (ghIssues.Count == 0)
@@ -326,23 +362,31 @@ public class RepoMiner
             throw new InvalidOperationException("Cannot mine pull requests without the GitHub HTTP API client.");
         }
 
-        logger.LogInformation("Mining pull requests");
         var pageIndex = 0;
         while (true)
         {
             pageIndex++;
 
             var ghPrs = await ExecuteRest(
-                (rest, ct) => rest.Repos[RepoOwner][RepoName].Pulls.GetAsync(
-                    config =>
-                    {
-                        config.QueryParameters.Page = pageIndex;
-                        config.QueryParameters.PerPage = 100;
-                        config.QueryParameters.StateAsGetStateQueryParameterType =
-                            Repos.Item.Item.Pulls.GetStateQueryParameterType.All;
-                    },
-                    ct
-                ),
+                (rest, ct) =>
+                {
+                    logger.LogInformation(
+                        "Mining pull requests page {PageIndex} with REST client '{TokenName}' ({Remaining} remaining).",
+                        pageIndex,
+                        rest.Token.Name,
+                        rest.RateRemaining
+                    );
+                    return rest.Client.Repos[RepoOwner][RepoName].Pulls.GetAsync(
+                        config =>
+                        {
+                            config.QueryParameters.Page = pageIndex;
+                            config.QueryParameters.PerPage = 100;
+                            config.QueryParameters.StateAsGetStateQueryParameterType =
+                                Repos.Item.Item.Pulls.GetStateQueryParameterType.All;
+                        },
+                        ct
+                    );
+                },
                 ct: cancellationToken
             ) ?? [];
             if (ghPrs.Count == 0)
@@ -358,8 +402,17 @@ public class RepoMiner
                 }
 
                 var ghPrDetails = await ExecuteRest(
-                    (rest, ct) => rest.Repos[RepoOwner][RepoName].Pulls[ghPr.Number.Value]
-                        .GetAsync(cancellationToken: ct),
+                    (rest, ct) =>
+                    {
+                        logger.LogInformation(
+                            "Mining details of pull request #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
+                            ghPr.Number,
+                            rest.Token.Name,
+                            rest.RateRemaining
+                        );
+                        return rest.Client.Repos[RepoOwner][RepoName].Pulls[ghPr.Number.Value]
+                            .GetAsync(cancellationToken: ct);
+                    },
                     ct: cancellationToken
                 );
                 if (ghPrDetails is null)
@@ -446,8 +499,6 @@ public class RepoMiner
                     cancellationToken: ct
                 ),
                 errorsAccessor: r => r.Errors,
-                rateRemainingAccessor: r => r.Data?.RateLimit?.Remaining ?? -1,
-                rateResetAccessor: r => r.Data?.RateLimit?.ResetAt ?? default,
                 ct: cancellationToken
             );
 
@@ -527,23 +578,31 @@ public class RepoMiner
             throw new InvalidOperationException("Cannot mine milestones event without the GitHub HTTP API client.");
         }
 
-        logger.LogInformation("Mining milestones");
         var pageIndex = 0;
         while (true)
         {
             pageIndex++;
 
             var ghMilestones = await ExecuteRest(
-                (rest, ct) => rest.Repos[RepoOwner][RepoName].Milestones.GetAsync(
-                    config =>
-                    {
-                        config.QueryParameters.Page = pageIndex;
-                        config.QueryParameters.PerPage = 100;
-                        config.QueryParameters.StateAsGetStateQueryParameterType =
-                            Repos.Item.Item.Milestones.GetStateQueryParameterType.All;
-                    },
-                    ct
-                ),
+                (rest, ct) =>
+                {
+                    logger.LogInformation(
+                        "Mining milestones page {PageIndex} with REST client '{TokenName}' ({Remaining} remaining).",
+                        pageIndex,
+                        rest.Token.Name,
+                        rest.RateRemaining
+                    );
+                    return rest.Client.Repos[RepoOwner][RepoName].Milestones.GetAsync(
+                        config =>
+                        {
+                            config.QueryParameters.Page = pageIndex;
+                            config.QueryParameters.PerPage = 100;
+                            config.QueryParameters.StateAsGetStateQueryParameterType =
+                                Repos.Item.Item.Milestones.GetStateQueryParameterType.All;
+                        },
+                        ct
+                    );
+                },
                 ct: cancellationToken
             ) ?? [];
             if (ghMilestones.Count == 0)
@@ -566,7 +625,6 @@ public class RepoMiner
             throw new InvalidOperationException("Cannot issue comments without the GitHub HTTP API client.");
         }
 
-        logger.LogInformation("Mining comments for #{Number}", number);
         var pageIndex = 0;
         var builder = ImmutableArray.CreateBuilder<Comment>();
         while (true)
@@ -574,14 +632,24 @@ public class RepoMiner
             pageIndex++;
 
             var comments = await ExecuteRest(
-                (rest, ct) => rest.Repos[RepoOwner][RepoName].Issues[number].Comments.GetAsync(
-                    config =>
-                    {
-                        config.QueryParameters.Page = pageIndex;
-                        config.QueryParameters.PerPage = 100;
-                    },
-                    ct
-                ),
+                (rest, ct) =>
+                {
+                    logger.LogInformation(
+                        "Mining comments page {PageIndex} for #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
+                        pageIndex,
+                        number,
+                        rest.Token.Name,
+                        rest.RateRemaining
+                    );
+                    return rest.Client.Repos[RepoOwner][RepoName].Issues[number].Comments.GetAsync(
+                        config =>
+                        {
+                            config.QueryParameters.Page = pageIndex;
+                            config.QueryParameters.PerPage = 100;
+                        },
+                        ct
+                    );
+                },
                 ct: cancellationToken
             ) ?? [];
             if (comments.Count == 0)
@@ -613,8 +681,6 @@ public class RepoMiner
             var queryResult = await ExecuteGraphQl(
                 execute: (graphQl, ct) => graphQl.DiscussionCommentQuery.ExecuteAsync(nodeId, cursor, ct),
                 errorsAccessor: r => r.Errors,
-                rateRemainingAccessor: r => r.Data?.RateLimit?.Remaining ?? -1,
-                rateResetAccessor: r => r.Data?.RateLimit?.ResetAt ?? default,
                 ct: cancellationToken
             );
 
@@ -665,8 +731,6 @@ public class RepoMiner
             throw new InvalidOperationException("Cannot mine issue event without the GitHub HTTP API client.");
         }
 
-        logger.LogInformation("Mining issue events for #{Number}", number);
-        // var events = await GH.Issue.Events.GetAllForIssue(repoId, number);
         int pageIndex = 0;
         var builder = ImmutableArray.CreateBuilder<IssueEvent>();
         while (true)
@@ -674,14 +738,24 @@ public class RepoMiner
             pageIndex++;
 
             var events = await ExecuteRest(
-                (rest, ct) => rest.Repos[RepoOwner][RepoName].Issues[number].Timeline.GetAsync(
-                    config =>
-                    {
-                        config.QueryParameters.Page = pageIndex;
-                        config.QueryParameters.PerPage = 100;
-                    },
-                    ct
-                ),
+                (rest, ct) =>
+                {
+                    logger.LogInformation(
+                        "Mining issue events page {PageIndex} for #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
+                        pageIndex,
+                        number,
+                        rest.Token.Name,
+                        rest.RateRemaining
+                    );
+                    return rest.Client.Repos[RepoOwner][RepoName].Issues[number].Timeline.GetAsync(
+                        config =>
+                        {
+                            config.QueryParameters.Page = pageIndex;
+                            config.QueryParameters.PerPage = 100;
+                        },
+                        ct
+                    );
+                },
                 ct: cancellationToken
             ) ?? [];
             if (events.Count == 0)
@@ -695,13 +769,99 @@ public class RepoMiner
         return builder.ToImmutable();
     }
 
-    private async Task RefreshRestApi(CancellationToken ct = default)
+    private async Task CreateRestClient(GitHubToken token, int attempts = 3, CancellationToken ct = default)
     {
+        await restLock.WaitAsync(ct);
+        try
+        {
+            var isSuccess = false;
+            for (int attempt = 0; attempt < attempts; ++attempt)
+            {
+                var client = GitHubRestClientWrapper.Create(token);
+                try
+                {
+                    var isBlocked = await client.CheckBlocked(ct);
+                    if (isBlocked)
+                    {
+                        logger.LogWarning(
+                            "REST client '{TokenName}' is blocked till '{ResetAt}' (attempt {Attempt}).",
+                            client.Token.Name,
+                            client.RateReset,
+                            attempt
+                        );
+                    }
+                    else
+                    {
+                        logger.LogInformation(
+                            "REST client '{TokenName}' is available with '{Remaining}' remaining (attempt {Attempt}).",
+                            client.Token.Name,
+                            client.RateRemaining,
+                            attempt
+                        );
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    logger.LogError(
+                        ex,
+                        "Failed to create a REST client for '{TokenName}' (attempt {Attempt}).",
+                        token.Name,
+                        attempt
+                    );
+                    continue;
+                }
+
+                GitHubRestClientWrapper? existing = null;
+                restClients.AddOrUpdate(
+                    token.Name,
+                    client,
+                    (_, e) =>
+                    {
+                        existing = e;
+                        return client;
+                    }
+                );
+                isSuccess = true;
+
+                if (existing is not null)
+                {
+                    await existing.DisposeAsync();
+                }
+
+                if (Rest is not null && Rest.Token == token)
+                {
+                    Rest = client;
+                }
+            }
+
+            if (!isSuccess)
+            {
+                logger.LogError("Failed to create a REST client for token '{TokenName}.'", token.Name);
+                restClients.Remove(token.Name, out _);
+                if (Rest is not null && Rest.Token == token)
+                {
+                    Rest = null;
+                }
+            }
+        }
+        finally
+        {
+            restLock.Release();
+        }
+    }
+
+    private async Task<GitHubRestClientWrapper> RefreshRestApi(CancellationToken ct = default)
+    {
+        if (restClients.Count == 0)
+        {
+            throw new InvalidOperationException("There are no (more) REST clients available.");
+        }
+
         var newClient = restClients
-            .OrderBy(c => c.Value.RateReset)
-            .ThenByDescending(c => c.Value.AdjustedRateRemaining)
+            .OrderByDescending(c => c.Value.RateRemaining)
+            .ThenBy(c => c.Value.RateReset)
             .First().Value;
-        if (newClient.AdjustedRateRemaining == 0)
+        if (newClient.RateRemaining == 0)
         {
             var waitTime = newClient.RateReset > DateTimeOffset.UtcNow
                 ? newClient.RateReset - DateTimeOffset.UtcNow
@@ -716,6 +876,7 @@ public class RepoMiner
 
         logger.LogInformation("Switching GitHub REST API client to '{TokenName}'.", newClient.Token.Name);
         Rest = newClient;
+        return Rest;
     }
 
     private async Task RefreshGraphQlApi(CancellationToken ct = default)
@@ -741,23 +902,30 @@ public class RepoMiner
         GraphQl = newClient;
     }
 
-    private async Task EnsureRestAvailable(CancellationToken cancellationToken = default)
+    private async Task<GitHubRestClientWrapper> EnsureRestAvailable(
+        GitHubToken? currentToken,
+        CancellationToken ct = default
+    )
     {
-        var tmpToken = Rest!.Token;
-        await httpLock.WaitAsync(cancellationToken);
+        if (Rest is not null && Rest.Token != currentToken)
+        {
+            // some other thread switched the client first
+        }
+
+        await restLock.WaitAsync(ct);
         try
         {
-            if (Rest.Token != tmpToken)
+            if (Rest is not null && Rest!.Token != currentToken)
             {
-                // some other thread switched the token first
-                return;
+                // some other thread switched the client first
+                return Rest;
             }
 
-            await RefreshRestApi(cancellationToken);
+            return await RefreshRestApi(ct);
         }
         finally
         {
-            httpLock.Release();
+            restLock.Release();
         }
     }
 
@@ -784,8 +952,6 @@ public class RepoMiner
     private async Task<TResult> ExecuteGraphQl<TResult>(
         Func<GitHubGraphQLClient, CancellationToken, Task<TResult>> execute,
         Func<TResult, IReadOnlyList<IClientError>> errorsAccessor,
-        Func<TResult, int> rateRemainingAccessor,
-        Func<TResult, DateTimeOffset> rateResetAccessor,
         CancellationToken ct = default
     )
     {
@@ -796,7 +962,7 @@ public class RepoMiner
 
         while (true)
         {
-            var queryResult = await GraphQl.Query(execute, rateRemainingAccessor, rateResetAccessor, ct);
+            var queryResult = await execute(GraphQl.Client, ct);
             var errors = errorsAccessor(queryResult);
             if (errors.Count == 0)
             {
@@ -813,24 +979,52 @@ public class RepoMiner
     }
 
     private async Task<TResult> ExecuteRest<TResult>(
-        Func<GitHubRestClient, CancellationToken, Task<TResult>> execute,
+        Func<GitHubRestClientWrapper, CancellationToken, Task<TResult>> execute,
         CancellationToken ct = default
     )
     {
-        if (Rest!.IsBlocked)
-        {
-            await EnsureRestAvailable(ct);
-        }
-
+        int attempt = 0;
         while (true)
         {
+            attempt++;
+            var rest = Rest ?? await EnsureRestAvailable(null, ct);
+            if (rest.IsBlocked)
+            {
+                logger.LogError(
+                    "REST client '{TokenName}' has been depleted (attempt {Attempt}).",
+                    rest.Token.Name,
+                    attempt
+                );
+                await EnsureRestAvailable(rest.Token, ct);
+                continue;
+            }
+
             try
             {
-                return await execute(Rest!.Client, ct);
+                return await execute(rest, ct);
             }
             catch (ApiException ex) when (IsRateLimitException(ex))
             {
-                await EnsureRestAvailable(ct);
+                logger.LogError(
+                    "Encountered a REST rate limit error with client '{TokenName}' (attempt {Attempt}).",
+                    rest.Token.Name,
+                    attempt
+                );
+                await EnsureRestAvailable(rest.Token, ct);
+            }
+            catch (ApiException ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Encountered a REST API error with client '{TokenName}' (attempt {Attempt}).",
+                    rest.Token.Name,
+                    attempt
+                );
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.LogError(ex, "Encountered an unknown HTTP error. Re-creating client.");
+                await CreateRestClient(rest.Token, ct: ct);
             }
         }
     }
@@ -843,6 +1037,28 @@ public class RepoMiner
         }
 
         return exception.ResponseStatusCode == 403
-            && exception.ResponseHeaders["X-RateLimit-Remaining"]?.SingleOrDefault() == "0";
+            && exception.ResponseHeaders[GitHubConst.RateRemainingHeader].SingleOrDefault() == "0";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        restLock.Dispose();
+        graphQlLock.Dispose();
+
+        GraphQl = null;
+        foreach (var client in graphQlClients.Values)
+        {
+            await client.DisposeAsync();
+        }
+
+        graphQlClients = [];
+
+        Rest = null;
+        foreach (var client in restClients.Values)
+        {
+            await client.DisposeAsync();
+        }
+
+        restClients.Clear();
     }
 }

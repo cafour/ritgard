@@ -16,62 +16,41 @@ namespace Ritgard.Mining;
 public sealed class GitHubRestClientWrapper(
     GitHubToken token,
     GitHubRestClient client,
-    HeadersInspectionHandlerOption headerInspector,
+    GitHubRateLimitHeaders headerInspector,
     ServiceProvider serviceProvider
 ) : IAsyncDisposable
 {
     public const string GitHubRestApiVersion = "2026-03-10";
-    public const string RateLimitHeader = "x-ratelimit-limit";
-    public const string RateRemainingHeader = "x-ratelimit-remaining";
-    public const string RateUsedHeader = "x-ratelimit-used";
-    public const string RateResetHeader = "x-ratelimit-reset";
 
 
     public GitHubToken Token { get; } = token;
     public GitHubRestClient Client { get; } = client;
-    public HeadersInspectionHandlerOption HeaderInspector { get; } = headerInspector;
+    public GitHubRateLimitHeaders HeaderInspector { get; } = headerInspector;
     public ServiceProvider ServiceProvider { get; } = serviceProvider;
 
-    public int RateLimit =>
-        HeaderInspector.ResponseHeaders.TryGetValue(RateLimitHeader, out var strValue)
-        && int.TryParse(strValue.SingleOrDefault(), out var intValue)
-            ? intValue
-            : -1;
+    public int RateLimit => Math.Clamp(
+        Token.GraphQlLimit < 0 ? HeaderInspector.RateLimit : Token.GraphQlLimit,
+        0,
+        HeaderInspector.RateLimit
+    );
 
-    public int RateRemaining =>
-        HeaderInspector.ResponseHeaders.TryGetValue(RateRemainingHeader, out var strValue)
-        && int.TryParse(strValue.SingleOrDefault(), out var intValue)
-            ? intValue
-            : -1;
+    public int RateRemaining => RateLimit - RateUsed;
 
-    public int AdjustedRateRemaining => RateUsed - Math.Min(RateLimit, Math.Max(0, Token.HttpLimit));
+    public int RateUsed => HeaderInspector.RateUsed;
 
-    public int RateUsed =>
-        HeaderInspector.ResponseHeaders.TryGetValue(RateUsedHeader, out var strValue)
-        && int.TryParse(strValue.SingleOrDefault(), out var intValue)
-            ? intValue
-            : -1;
+    public DateTimeOffset RateReset => HeaderInspector.RateReset;
 
-    public DateTimeOffset RateReset =>
-        HeaderInspector.ResponseHeaders.TryGetValue(RateResetHeader, out var strValue)
-        && long.TryParse(strValue.SingleOrDefault(), out var longValue)
-            ? DateTimeOffset.FromUnixTimeSeconds(longValue)
-            : default;
-
-    public bool IsBlocked => RateRemaining <= 0 || RateRemaining < Token.HttpLimit;
+    public bool IsBlocked => RateRemaining <= 0 && RateReset > DateTimeOffset.UtcNow;
 
     public static GitHubRestClientWrapper Create(GitHubToken token)
     {
-        var headerInspector = new HeadersInspectionHandlerOption()
-        {
-            InspectRequestHeaders = false,
-            InspectResponseHeaders = true,
-        };
+        var headerInspector = new GitHubRateLimitHeaders();
         var services = new ServiceCollection();
         services.AddHttpClient(nameof(GitHubRestClient))
-            .AddHttpMessageHandler(() => new HeadersInspectionHandler(headerInspector));
+            .AddHttpMessageHandler(() => headerInspector);
         var provider = services.BuildServiceProvider();
-        var httpClient = provider.GetRequiredKeyedService<HttpClient>(nameof(GitHubRestClient));
+        var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
+        var httpClient = httpClientFactory.CreateClient(nameof(GitHubRestClient));
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
         httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("ritgard");
 
@@ -81,7 +60,7 @@ public sealed class GitHubRestClientWrapper(
         var authProvider = new AnonymousAuthenticationProvider();
         var adapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
         var client = new GitHubRestClient(adapter);
-        return new(token, client, headerInspector, provider);
+        return new GitHubRestClientWrapper(token, client, headerInspector, provider);
     }
 
     public async Task<bool> CheckBlocked(CancellationToken ct = default)

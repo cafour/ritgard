@@ -15,13 +15,17 @@ await app.RunAsync(args);
 internal class Commands
 {
     public static readonly ILoggerFactory LoggerFactory
-        = Microsoft.Extensions.Logging.LoggerFactory.Create(b => b.AddSimpleConsole(c =>
-                {
-                    c.SingleLine = true;
-                    c.TimestampFormat = "HH:mm:ss.fff ";
-                    c.UseUtcTimestamp = true;
-                }
-            )
+        = Microsoft.Extensions.Logging.LoggerFactory.Create(b =>
+            {
+                b.SetMinimumLevel(LogLevel.Debug);
+                b.AddSimpleConsole(c =>
+                    {
+                        c.SingleLine = true;
+                        c.TimestampFormat = "HH:mm:ss.fff ";
+                        c.UseUtcTimestamp = true;
+                    }
+                );
+            }
         );
 
     public static readonly ILogger Log
@@ -43,7 +47,7 @@ internal class Commands
     )
     {
         var (owner, repoName) = Utils.ParseRepoString(repo);
-        var miner = new RepoMiner(
+        await using var miner = new RepoMiner(
             logger: LoggerFactory.CreateLogger<RepoMiner>(),
             repoOwner: owner,
             repoName: repoName,
