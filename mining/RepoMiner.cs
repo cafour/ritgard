@@ -252,6 +252,8 @@ public class RepoMiner : IAsyncDisposable
             throw new InvalidOperationException("Cannot mine issues without the GitHub HTTP API client.");
         }
 
+        logger.LogInformation("Logging issues.");
+
         var pageIndex = 0;
         while (true)
         {
@@ -260,7 +262,7 @@ public class RepoMiner : IAsyncDisposable
             var ghIssues = await ExecuteRest(
                 (rest, ct) =>
                 {
-                    logger.LogInformation(
+                    logger.LogDebug(
                         "Mining issues page {PageIndex} with REST client '{TokenName}' ({Remaining} remaining).",
                         pageIndex,
                         rest.Token.Name,
@@ -362,6 +364,8 @@ public class RepoMiner : IAsyncDisposable
             throw new InvalidOperationException("Cannot mine pull requests without the GitHub HTTP API client.");
         }
 
+        logger.LogInformation("Mining pull requests.");
+
         var pageIndex = 0;
         while (true)
         {
@@ -370,7 +374,7 @@ public class RepoMiner : IAsyncDisposable
             var ghPrs = await ExecuteRest(
                 (rest, ct) =>
                 {
-                    logger.LogInformation(
+                    logger.LogDebug(
                         "Mining pull requests page {PageIndex} with REST client '{TokenName}' ({Remaining} remaining).",
                         pageIndex,
                         rest.Token.Name,
@@ -394,33 +398,33 @@ public class RepoMiner : IAsyncDisposable
                 break;
             }
 
-            foreach (var ghPr in ghPrs)
+            var ghPrDetails = await Task.WhenAll(
+                ghPrs.Where(pr => pr.Number.HasValue)
+                    .Select(ghPr => ExecuteRest(
+                            (rest, ct) =>
+                            {
+                                logger.LogDebug(
+                                    "Mining pull request details #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
+                                    ghPr.Number,
+                                    rest.Token.Name,
+                                    rest.RateRemaining
+                                );
+                                return rest.Client.Repos[RepoOwner][RepoName].Pulls[ghPr.Number!.Value]
+                                    .GetAsync(cancellationToken: ct);
+                            },
+                            ct: cancellationToken
+                        )
+                    )
+            );
+
+            foreach (var ghPrDetail in ghPrDetails)
             {
-                if (ghPr.Number is null)
+                if (ghPrDetail is null)
                 {
                     continue;
                 }
 
-                var ghPrDetails = await ExecuteRest(
-                    (rest, ct) =>
-                    {
-                        logger.LogInformation(
-                            "Mining details of pull request #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
-                            ghPr.Number,
-                            rest.Token.Name,
-                            rest.RateRemaining
-                        );
-                        return rest.Client.Repos[RepoOwner][RepoName].Pulls[ghPr.Number.Value]
-                            .GetAsync(cancellationToken: ct);
-                    },
-                    ct: cancellationToken
-                );
-                if (ghPrDetails is null)
-                {
-                    continue;
-                }
-
-                var pr = GitHubRestMapping.MapPullRequest(ghPrDetails);
+                var pr = GitHubRestMapping.MapPullRequest(ghPrDetail);
                 pullRequests.TryAdd(pr.Id, pr);
             }
 
@@ -487,7 +491,7 @@ public class RepoMiner : IAsyncDisposable
             throw new InvalidOperationException("Cannot mine discussions without the GraphQL client.");
         }
 
-        logger.LogInformation("Mining discussions");
+        logger.LogDebug("Mining discussions");
         string? cursor = null;
         do
         {
@@ -578,6 +582,8 @@ public class RepoMiner : IAsyncDisposable
             throw new InvalidOperationException("Cannot mine milestones event without the GitHub HTTP API client.");
         }
 
+        logger.LogInformation("Mining milestones.");
+
         var pageIndex = 0;
         while (true)
         {
@@ -586,7 +592,7 @@ public class RepoMiner : IAsyncDisposable
             var ghMilestones = await ExecuteRest(
                 (rest, ct) =>
                 {
-                    logger.LogInformation(
+                    logger.LogDebug(
                         "Mining milestones page {PageIndex} with REST client '{TokenName}' ({Remaining} remaining).",
                         pageIndex,
                         rest.Token.Name,
@@ -634,7 +640,7 @@ public class RepoMiner : IAsyncDisposable
             var comments = await ExecuteRest(
                 (rest, ct) =>
                 {
-                    logger.LogInformation(
+                    logger.LogDebug(
                         "Mining comments page {PageIndex} for #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
                         pageIndex,
                         number,
@@ -673,7 +679,7 @@ public class RepoMiner : IAsyncDisposable
             throw new InvalidOperationException("Cannot mine discussion comments without the GraphQL client.");
         }
 
-        logger.LogInformation("Mining discussion comments for {DiscussionId}.", nodeId);
+        logger.LogDebug("Mining discussion comments for {DiscussionId}.", nodeId);
         string? cursor = null;
         var builder = ImmutableArray.CreateBuilder<Comment>();
         do
@@ -740,7 +746,7 @@ public class RepoMiner : IAsyncDisposable
             var events = await ExecuteRest(
                 (rest, ct) =>
                 {
-                    logger.LogInformation(
+                    logger.LogDebug(
                         "Mining issue events page {PageIndex} for #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
                         pageIndex,
                         number,
