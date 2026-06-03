@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
+using HotChocolate.Language;
 using GhAuthorAssociation = Ritgard.Mining.Models.AuthorAssociation;
 using GhFullRepository = Ritgard.Mining.Models.FullRepository;
 using GhIssue = Ritgard.Mining.Models.Issue;
@@ -180,32 +181,15 @@ public static class GitHubRestMapping
 
     public static IssueEvent MapTimelineEventInfo(GhTimelineIssueEvents value)
     {
-        object? e = null;
-        e ??= value.AddedToProjectIssueEvent;
-        e ??= value.ConvertedNoteToIssueIssueEvent;
-        e ??= value.DemilestonedIssueEvent;
-        e ??= value.LabeledIssueEvent;
-        e ??= value.LockedIssueEvent;
-        e ??= value.MilestonedIssueEvent;
-        e ??= value.MovedColumnInProjectIssueEvent;
-        e ??= value.RemovedFromProjectIssueEvent;
-        e ??= value.RenamedIssueEvent;
-        e ??= value.ReviewDismissedIssueEvent;
-        e ??= value.ReviewRequestedIssueEvent;
-        e ??= value.ReviewRequestRemovedIssueEvent;
-        e ??= value.StateChangeIssueEvent;
-        e ??= value.TimelineAssignedIssueEvent;
-        e ??= value.TimelineCommentEvent;
-        e ??= value.TimelineCommitCommentedEvent;
-        e ??= value.TimelineCommittedEvent;
-        e ??= value.TimelineCrossReferencedEvent;
-        e ??= value.TimelineLineCommentedEvent;
-        e ??= value.TimelineReviewedEvent;
-        e ??= value.TimelineUnassignedIssueEvent;
-        e ??= value.UnlabeledIssueEvent;
+        var eventKind = value.AddedToProjectIssueEvent!.Event;
+        object? e = GetTimelineEventInfo(eventKind, value);
         if (e is null)
         {
-            throw new NotSupportedException("Unknown timeline event type.");
+            return IssueEvent.Invalid with
+            {
+                Id = value.AddedToProjectIssueEvent.Id ?? -1,
+                CreatedAt = DateTimeOffset.TryParse(value.AddedToProjectIssueEvent.CreatedAt, out var createdAt) ? createdAt : default
+            };
         }
 
         return new IssueEvent(
@@ -226,6 +210,36 @@ public static class GitHubRestMapping
             SourceActor: GetString(GetObject(GetObject(GetObject(e, "Source"), "Actor"), "Login")),
             SourceIssueId: GetLong(GetObject(GetObject(GetObject(e, "Source"), "Issue"), "Id"))
         );
+    }
+
+    private static object? GetTimelineEventInfo(string? eventKind, GhTimelineIssueEvents value)
+    {
+        return eventKind switch
+        {
+            "labeled" => value.LabeledIssueEvent,
+            "unlabeled" => value.UnlabeledIssueEvent,
+            "milestoned" => value.MilestonedIssueEvent,
+            "demilestoned" => value.DemilestonedIssueEvent,
+            "renamed" => value.RenamedIssueEvent,
+            "review_requested" => value.ReviewRequestedIssueEvent,
+            "review_request_removed" => value.ReviewRequestRemovedIssueEvent,
+            "review_dismissed" => value.ReviewDismissedIssueEvent,
+            "locked" => value.LockedIssueEvent,
+            "added_to_project" => value.AddedToProjectIssueEvent,
+            "moved_columns_in_project" => value.MovedColumnInProjectIssueEvent,
+            "removed_from_project" => value.RemovedFromProjectIssueEvent,
+            "converted_note_to_issue" => value.ConvertedNoteToIssueIssueEvent,
+            "commented" => value.TimelineCommentEvent,
+            "cross-referenced" => value.TimelineCrossReferencedEvent,
+            "committed" => value.TimelineCommittedEvent,
+            "reviewed" => value.TimelineReviewedEvent,
+            "line-commented" => value.TimelineLineCommentedEvent,
+            "commit-commented" => value.TimelineCommitCommentedEvent,
+            "assigned" => value.TimelineAssignedIssueEvent,
+            "unassigned" => value.TimelineUnassignedIssueEvent,
+            "closed" or "reopened" or "merged" => value.StateChangeIssueEvent,
+            _ => null
+        };
     }
 
     private static GitReference MapGitReference(GhPullRequestHead? value)
