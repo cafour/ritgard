@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Globalization;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Configuration;
@@ -20,10 +21,9 @@ using StrawberryShake;
 
 namespace Ritgard.Mining;
 
-public class RepoMiner : IAsyncDisposable
+public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoName, RepoMinerScope scope)
+    : IAsyncDisposable
 {
-    private readonly ILogger<RepoMiner> logger;
-
     private readonly ConcurrentDictionary<string, Issue> issues = [];
     private readonly ConcurrentDictionary<string, PullRequest> pullRequests = [];
     private readonly ConcurrentDictionary<string, Discussion> discussions = [];
@@ -36,21 +36,9 @@ public class RepoMiner : IAsyncDisposable
     private readonly SemaphoreSlim restLock = new(1, 1);
     private readonly SemaphoreSlim graphQlLock = new(1, 1);
 
-    public RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoName, RepoMinerScope scope)
-    {
-        RepoOwner = repoOwner;
-        RepoName = repoName;
-        Scope = scope;
-        this.logger = logger;
-
-        var services = new ServiceCollection();
-        services.AddHttpClient(nameof(GitHubRestClient))
-            .AddHttpMessageHandler(() => new HeadersInspectionHandler());
-    }
-
-    public string RepoOwner { get; }
-    public string RepoName { get; }
-    public RepoMinerScope Scope { get; }
+    public string RepoOwner { get; } = repoOwner;
+    public string RepoName { get; } = repoName;
+    public RepoMinerScope Scope { get; } = scope;
     public IConfiguration Configuration { get; private set; } = new ConfigurationBuilder().Build();
     public GitHubRestClientWrapper? Rest { get; private set; }
     public GitHubGraphQlClientWrapper? GraphQl { get; private set; }
@@ -734,7 +722,7 @@ public class RepoMiner : IAsyncDisposable
     {
         if (Rest is null)
         {
-            throw new InvalidOperationException("Cannot mine issue event without the GitHub HTTP API client.");
+            throw new InvalidOperationException("Cannot mine issue/PR events without the GitHub HTTP API client.");
         }
 
         int pageIndex = 0;
@@ -744,16 +732,29 @@ public class RepoMiner : IAsyncDisposable
             pageIndex++;
 
             var events = await ExecuteRest(
-                (rest, ct) =>
+                async (rest, ct) =>
                 {
                     logger.LogDebug(
-                        "Mining issue events page {PageIndex} for #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
+                        "Mining issue/PR events page {PageIndex} for #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
                         pageIndex,
                         number,
                         rest.Token.Name,
                         rest.RateRemaining
                     );
-                    return rest.Client.Repos[RepoOwner][RepoName].Issues[number].Timeline.GetAsync(
+                    // var timelineResponse = await rest.HttpClient.SendAsync(
+                    //     new HttpRequestMessage(
+                    //         HttpMethod.Get,
+                    //         $"/repos/{RepoOwner}/{RepoName}/issues/{number}/timeline?page={pageIndex}&per_page=100"
+                    //     ),
+                    //     ct
+                    // );
+                    // if (timelineResponse.StatusCode != HttpStatusCode.OK)
+                    // {
+                    //     throw new HttpRequestException();
+                    // }
+
+                    // timelineResponse.
+                    return await rest.Client.Repos[RepoOwner][RepoName].Issues[number].Timeline.GetAsync(
                         config =>
                         {
                             config.QueryParameters.Page = pageIndex;
@@ -838,6 +839,8 @@ public class RepoMiner : IAsyncDisposable
                 {
                     Rest = client;
                 }
+
+                break;
             }
 
             if (!isSuccess)
