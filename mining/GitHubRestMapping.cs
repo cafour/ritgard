@@ -29,7 +29,7 @@ public static class GitHubRestMapping
             ClosedAt: value.ClosedAt,
             Labels: [.. (value.Labels ?? []).Where(l => !string.IsNullOrWhiteSpace(l))],
             Body: value.Body ?? string.Empty,
-            State: MapIssueState(value.State),
+            State: MapIssueState(value.State) ?? IssueState.Unknown,
             StateReason: MapIssueStateReason(value.StateReason),
             ClosedBy: value.ClosedBy?.Login,
             Assignees:
@@ -78,7 +78,7 @@ public static class GitHubRestMapping
             IsMergeable: value.Mergeable,
             MergeableState: MapMergeableState(value.MergeableState),
             MergedBy: value.MergedBy?.Login,
-            MergeCommitSha: string.Empty,
+            MergeCommitSha: value.Head?.Sha ?? string.Empty,
             CommentCount: (int)(value.Comments ?? 0),
             CommitCount: (int)(value.Commits ?? 0),
             AdditionCount: (int)(value.Additions ?? 0),
@@ -228,20 +228,22 @@ public static class GitHubRestMapping
         );
     }
 
-    private static IssueState MapIssueState(string? value)
+    private static IssueState? MapIssueState(string? value)
     {
         return value?.ToLowerInvariant() switch
         {
+            null => null,
             "closed" => IssueState.Closed,
             "open" => IssueState.Open,
             _ => IssueState.Unknown
         };
     }
 
-    private static IssueStateReason MapIssueStateReason(GhIssueStateReason? value)
+    private static IssueStateReason? MapIssueStateReason(GhIssueStateReason? value)
     {
         return value switch
         {
+            null => null,
             GhIssueStateReason.Completed => IssueStateReason.Completed,
             GhIssueStateReason.Not_planned => IssueStateReason.NotPlanned,
             GhIssueStateReason.Reopened => IssueStateReason.Reopened,
@@ -249,10 +251,11 @@ public static class GitHubRestMapping
         };
     }
 
-    private static MergeableState MapMergeableState(string? value)
+    private static MergeableState? MapMergeableState(string? value)
     {
         return value?.ToLowerInvariant() switch
         {
+            null => null,
             "dirty" => MergeableState.Dirty,
             "unknown" => MergeableState.Unknown,
             "blocked" => MergeableState.Blocked,
@@ -265,10 +268,11 @@ public static class GitHubRestMapping
         };
     }
 
-    private static LockReason MapLockReason(string? value)
+    private static LockReason? MapLockReason(string? value)
     {
         return value?.ToLowerInvariant() switch
         {
+            null => null,
             "off-topic" => LockReason.OffTopic,
             "resolved" => LockReason.Resolved,
             "spam" => LockReason.Spam,

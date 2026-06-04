@@ -1010,13 +1010,16 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             {
                 return await execute(rest, ct);
             }
-            catch (GitHubRateLimitedException)
+            catch (GitHubRateLimitedException ex)
             {
-                logger.LogError(
-                    "Encountered a REST rate limit error with client '{TokenName}' (attempt {Attempt}).",
-                    rest.Token.Name,
-                    attempt
-                );
+                if (!ex.WasRequestBlocked)
+                {
+                    logger.LogError(
+                        "Encountered a REST rate limit error with client '{TokenName}' (attempt {Attempt}).",
+                        rest.Token.Name,
+                        attempt
+                    );
+                }
                 await EnsureRestAvailable(rest.Token, ct);
             }
             catch (ApiException ex)

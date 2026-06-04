@@ -21,4 +21,6 @@ public class GitHubRateLimitedException : Exception
     public int Remaining { get; set; }
 
     public int EffectiveRemaining { get; set; }
+
+    public bool WasRequestBlocked { get; set; }
 }

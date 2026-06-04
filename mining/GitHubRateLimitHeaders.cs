@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Ritgard.Mining;
 
-public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 4) : DelegatingHandler
+public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 8) : DelegatingHandler
 {
     private int rateLimit = int.MaxValue;
     private int rateRemaining = int.MaxValue;
@@ -66,7 +66,8 @@ public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 4) : Delega
             {
                 ResetAt = ResetAt ?? default,
                 Remaining = RateRemaining,
-                EffectiveRemaining = EffectiveRemaining
+                EffectiveRemaining = EffectiveRemaining,
+                WasRequestBlocked = true
             };
         }
 
