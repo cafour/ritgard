@@ -40,7 +40,7 @@
     <PatchedGitHubApiDescriptionPath>$(BaseIntermediateOutputPath)api.github.com.patched.json</PatchedGitHubApiDescriptionPath>
   </PropertyGroup>
 
-  <UsingTask TaskName="PatchOpenApiIntegerFormats" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+  <UsingTask TaskName="PatchOpenApiIntegerFormats" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <InputFile ParameterType="System.String" Required="true" />
       <OutputFile ParameterType="System.String" Required="true" />
