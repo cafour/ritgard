@@ -38,6 +38,7 @@ public sealed class GitHubRestClientWrapper(
     public static GitHubRestClientWrapper Create(GitHubToken token)
     {
         var headerInspector = new GitHubRateLimitHeaders();
+        headerInspector.CustomLimit = token.HttpLimit;
         var services = new ServiceCollection();
         services.AddHttpClient(nameof(GitHubRestClient))
             .AddHttpMessageHandler(() => headerInspector);

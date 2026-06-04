@@ -10,12 +10,13 @@ using System.Threading.Tasks;
 
 namespace Ritgard.Mining;
 
-public sealed class GitHubRateLimitHeaders : DelegatingHandler
+public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 4) : DelegatingHandler
 {
     private int rateLimit = int.MaxValue;
     private int rateRemaining = int.MaxValue;
     private int rateUsed = int.MinValue;
     private long rateReset = long.MinValue;
+    private readonly SemaphoreSlim throttler = new(initialCount: maxParallelRequests);
 
     public int RateLimit => rateLimit;
     public int RateRemaining => rateRemaining;
@@ -24,6 +25,7 @@ public sealed class GitHubRateLimitHeaders : DelegatingHandler
     public string? RateLimitResource { get; private set; }
     public RetryConditionHeaderValue? RetryAfter { get; private set; }
     public DateTimeOffset? ResetAt { get; private set; }
+    public int MaxParallelRequests { get; } = maxParallelRequests;
 
     public int CustomLimit { get; set; } = -1;
 
@@ -38,6 +40,22 @@ public sealed class GitHubRateLimitHeaders : DelegatingHandler
     public bool ShouldThrow { get; set; } = true;
 
     protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken ct
+    )
+    {
+        await throttler.WaitAsync(ct);
+        try
+        {
+            return await Handle(request, ct);
+        }
+        finally
+        {
+            throttler.Release();
+        }
+    }
+
+    private async Task<HttpResponseMessage> Handle(
         HttpRequestMessage request,
         CancellationToken ct
     )
