@@ -15,6 +15,7 @@ namespace Ritgard.Mining;
 
 public sealed class GitHubRestClientWrapper(
     GitHubToken token,
+    HttpClient httpClient,
     GitHubRestClient client,
     GitHubRateLimitHeaders headerInspector,
     ServiceProvider serviceProvider
@@ -24,6 +25,7 @@ public sealed class GitHubRestClientWrapper(
 
 
     public GitHubToken Token { get; } = token;
+    public HttpClient HttpClient { get; } = httpClient;
     public GitHubRestClient Client { get; } = client;
     public GitHubRateLimitHeaders HeaderInspector { get; } = headerInspector;
     public ServiceProvider ServiceProvider { get; } = serviceProvider;
@@ -60,7 +62,7 @@ public sealed class GitHubRestClientWrapper(
         var authProvider = new AnonymousAuthenticationProvider();
         var adapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
         var client = new GitHubRestClient(adapter);
-        return new GitHubRestClientWrapper(token, client, headerInspector, provider);
+        return new GitHubRestClientWrapper(token, httpClient, client, headerInspector, provider);
     }
 
     public async Task<bool> CheckBlocked(CancellationToken ct = default)
