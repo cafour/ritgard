@@ -1,0 +1,39 @@
+{
+  "profiles": {
+    "(repo: dotvvm)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo riganti/dotvvm --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: lume)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo lumeland/lume --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: jetuml)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo prmr/jetuml --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: gwf)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo git-for-windows/git --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(terrain: lume)": {
+      "commandName": "Project",
+      "commandLineArgs": "terrain ../datasets/lume.json ../datasets/lume-positions.json",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(terrain: jetuml)": {
+      "commandName": "Project",
+      "commandLineArgs": "terrain ../datasets/jetuml.json ../datasets/jetuml-positions.json",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(terrain: dotvvm)": {
+      "commandName": "Project",
+      "commandLineArgs": "terrain ../datasets/dotvvm.json ../datasets/dotvvm-positions.json --step-length-multiplier 7",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    }
+  }
+}

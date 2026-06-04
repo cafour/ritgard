@@ -11,3 +11,4 @@ tmp/
 builds/
 *.user
 .kiota.log
+!**/launchSettings.json

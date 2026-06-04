@@ -2,3 +2,4 @@
 *.json
 !appsettings.json
 out/
+!**/launchSettings.json
