@@ -21,6 +21,18 @@ public sealed class GitHubRateLimitHeaders : DelegatingHandler
     public int RateUsed => rateUsed;
     public DateTimeOffset RateReset => DateTimeOffset.FromUnixTimeSeconds(rateReset);
     public string? RateLimitResource { get; private set; }
+    public RetryConditionHeaderValue? RetryAfter { get; private set; }
+
+    public int CustomLimit { get; set; } = -1;
+    public int EffectiveLimit => Math.Clamp(
+        CustomLimit < 0 ? RateLimit : CustomLimit,
+        0,
+        RateLimit
+    );
+
+    public int EffectiveRemaining => EffectiveLimit - RateUsed;
+
+    public bool ShouldThrow { get; set; }
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -34,6 +46,7 @@ public sealed class GitHubRateLimitHeaders : DelegatingHandler
         SetField(ref rateUsed, GetNumericHeader(response.Headers, GitHubConst.RateUsedHeader, 0));
         SetField(ref rateReset, GetNumericHeader(response.Headers, GitHubConst.RateResetHeader, 0L));
         RateLimitResource = response.Headers.GetValues(GitHubConst.RateResourceHeader).FirstOrDefault();
+        RetryAfter = response.Headers.RetryAfter;
 
         return response;
     }

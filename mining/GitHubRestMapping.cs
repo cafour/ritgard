@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
-using HotChocolate.Language;
 using GhAuthorAssociation = Ritgard.Mining.Models.AuthorAssociation;
 using GhFullRepository = Ritgard.Mining.Models.FullRepository;
 using GhIssue = Ritgard.Mining.Models.Issue;
@@ -13,7 +11,6 @@ using GhPullRequest = Ritgard.Mining.Models.PullRequest;
 using GhPullRequestBase = Ritgard.Mining.Models.PullRequest_base;
 using GhPullRequestHead = Ritgard.Mining.Models.PullRequest_head;
 using GhPullRequestState = Ritgard.Mining.Models.PullRequest_state;
-using GhTimelineIssueEvents = Ritgard.Mining.Models.TimelineIssueEvents;
 
 namespace Ritgard.Mining;
 
@@ -179,67 +176,36 @@ public static class GitHubRestMapping
         );
     }
 
-    public static IssueEvent MapTimelineEventInfo(GhTimelineIssueEvents value)
+    public static IssueEvent MapTimelineEventInfo(GitHubTimelineEventJson value)
     {
-        var eventKind = value.AddedToProjectIssueEvent!.Event;
-        object? e = GetTimelineEventInfo(eventKind, value);
-        if (e is null)
+        var eventKind = value.Event;
+        if (eventKind is null)
         {
             return IssueEvent.Invalid with
             {
-                Id = value.AddedToProjectIssueEvent.Id ?? -1,
-                CreatedAt = DateTimeOffset.TryParse(value.AddedToProjectIssueEvent.CreatedAt, out var createdAt) ? createdAt : default
+                Id = value.Id,
+                CreatedAt = value.CreatedAt ?? default
             };
         }
 
         return new IssueEvent(
-            Id: GetLong(GetObject(e, "Id")) ?? 0,
-            Author: GetString(GetObject(GetObject(e, "Actor"), "Login")),
-            Assignee: GetString(GetObject(GetObject(e, "Assignee"), "Login")),
-            Label: GetString(GetObject(GetObject(e, "Label"), "Name")),
-            Kind: MapIssueEventKind(GetString(GetObject(e, "Event"))),
-            CommitId: GetString(GetObject(e, "CommitId")),
-            CreatedAt: GetDateTimeOffset(GetObject(e, "CreatedAt")),
-            RenamedFrom: GetString(GetObject(GetObject(e, "Rename"), "From")),
-            RenamedTo: GetString(GetObject(GetObject(e, "Rename"), "To")),
-            RequestedReviewer: GetString(GetObject(GetObject(e, "RequestedReviewer"), "Login")),
-            ReviewRequester: GetString(GetObject(GetObject(e, "ReviewRequester"), "Login")),
-            Assigner: GetString(GetObject(GetObject(e, "Assigner"), "Login")),
-            LockReason: MapLockReason(GetString(GetObject(e, "LockReason"))),
-            MilestoneId: GetLong(GetObject(GetObject(e, "Milestone"), "Id")),
-            SourceActor: GetString(GetObject(GetObject(GetObject(e, "Source"), "Actor"), "Login")),
-            SourceIssueId: GetLong(GetObject(GetObject(GetObject(e, "Source"), "Issue"), "Id"))
+            Id: value.Id,
+            Author: value.Actor?.Login,
+            Assignee: value.Assignee?.Login,
+            Label: value.Label?.Name,
+            Kind: MapIssueEventKind(eventKind),
+            CommitId: value.CommitId,
+            CreatedAt: value.CreatedAt ?? default,
+            RenamedFrom: value.Rename?.From,
+            RenamedTo: value.Rename?.To,
+            RequestedReviewer: value.RequestedReviewer?.Login,
+            ReviewRequester: value.ReviewRequester?.Login,
+            Assigner: value.Assigner?.Login,
+            LockReason: MapLockReason(value.LockReason),
+            MilestoneId: value.Milestone?.Id,
+            SourceActor: value.Source?.Actor?.Login,
+            SourceIssueId: value.Source?.Issue?.Id
         );
-    }
-
-    private static object? GetTimelineEventInfo(string? eventKind, GhTimelineIssueEvents value)
-    {
-        return eventKind switch
-        {
-            "labeled" => value.LabeledIssueEvent,
-            "unlabeled" => value.UnlabeledIssueEvent,
-            "milestoned" => value.MilestonedIssueEvent,
-            "demilestoned" => value.DemilestonedIssueEvent,
-            "renamed" => value.RenamedIssueEvent,
-            "review_requested" => value.ReviewRequestedIssueEvent,
-            "review_request_removed" => value.ReviewRequestRemovedIssueEvent,
-            "review_dismissed" => value.ReviewDismissedIssueEvent,
-            "locked" => value.LockedIssueEvent,
-            "added_to_project" => value.AddedToProjectIssueEvent,
-            "moved_columns_in_project" => value.MovedColumnInProjectIssueEvent,
-            "removed_from_project" => value.RemovedFromProjectIssueEvent,
-            "converted_note_to_issue" => value.ConvertedNoteToIssueIssueEvent,
-            "commented" => value.TimelineCommentEvent,
-            "cross-referenced" => value.TimelineCrossReferencedEvent,
-            "committed" => value.TimelineCommittedEvent,
-            "reviewed" => value.TimelineReviewedEvent,
-            "line-commented" => value.TimelineLineCommentedEvent,
-            "commit-commented" => value.TimelineCommitCommentedEvent,
-            "assigned" => value.TimelineAssignedIssueEvent,
-            "unassigned" => value.TimelineUnassignedIssueEvent,
-            "closed" or "reopened" or "merged" => value.StateChangeIssueEvent,
-            _ => null
-        };
     }
 
     private static GitReference MapGitReference(GhPullRequestHead? value)
@@ -264,24 +230,26 @@ public static class GitHubRestMapping
 
     private static IssueState MapIssueState(string? value)
     {
-        return string.Equals(value, "closed", StringComparison.OrdinalIgnoreCase)
-            ? IssueState.Closed
-            : IssueState.Open;
-    }
-
-    private static IssueStateReason? MapIssueStateReason(GhIssueStateReason? value)
-    {
-        return value switch
+        return value?.ToLowerInvariant() switch
         {
-            null => null,
-            GhIssueStateReason.Completed => IssueStateReason.Completed,
-            GhIssueStateReason.Not_planned => IssueStateReason.NotPlanned,
-            GhIssueStateReason.Reopened => IssueStateReason.Reopened,
-            _ => null
+            "closed" => IssueState.Closed,
+            "open" => IssueState.Open,
+            _ => IssueState.Unknown
         };
     }
 
-    private static MergeableState? MapMergeableState(string? value)
+    private static IssueStateReason MapIssueStateReason(GhIssueStateReason? value)
+    {
+        return value switch
+        {
+            GhIssueStateReason.Completed => IssueStateReason.Completed,
+            GhIssueStateReason.Not_planned => IssueStateReason.NotPlanned,
+            GhIssueStateReason.Reopened => IssueStateReason.Reopened,
+            _ => IssueStateReason.Unknown
+        };
+    }
+
+    private static MergeableState MapMergeableState(string? value)
     {
         return value?.ToLowerInvariant() switch
         {
@@ -293,11 +261,11 @@ public static class GitHubRestMapping
             "has_hooks" => MergeableState.HasHooks,
             "clean" => MergeableState.Clean,
             "draft" => MergeableState.Draft,
-            _ => null
+            _ => MergeableState.Unknown
         };
     }
 
-    private static LockReason? MapLockReason(string? value)
+    private static LockReason MapLockReason(string? value)
     {
         return value?.ToLowerInvariant() switch
         {
@@ -305,7 +273,7 @@ public static class GitHubRestMapping
             "resolved" => LockReason.Resolved,
             "spam" => LockReason.Spam,
             "too heated" => LockReason.TooHeated,
-            _ => null
+            _ => LockReason.Unknown
         };
     }
 
@@ -352,50 +320,5 @@ public static class GitHubRestMapping
         return Enum.TryParse<IssueEventKind>(pascal, out var kind)
             ? kind
             : IssueEventKind.Unknown;
-    }
-
-    private static object? GetObject(object? source, string propertyName)
-    {
-        return source?.GetType().GetProperty(propertyName)?.GetValue(source);
-    }
-
-    private static string? GetString(object? source)
-    {
-        return source as string;
-    }
-
-    private static long? GetLong(object? source)
-    {
-        if (source is null)
-        {
-            return null;
-        }
-
-        if (source is int i)
-        {
-            return i;
-        }
-
-        if (source is long l)
-        {
-            return l;
-        }
-
-        return null;
-    }
-
-    private static DateTimeOffset GetDateTimeOffset(object? source)
-    {
-        if (source is DateTimeOffset dto)
-        {
-            return dto;
-        }
-
-        if (source is string s && DateTimeOffset.TryParse(s, out var parsed))
-        {
-            return parsed;
-        }
-
-        return default;
     }
 }

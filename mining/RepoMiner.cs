@@ -9,6 +9,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -741,27 +742,24 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                         rest.Token.Name,
                         rest.RateRemaining
                     );
-                    // var timelineResponse = await rest.HttpClient.SendAsync(
-                    //     new HttpRequestMessage(
-                    //         HttpMethod.Get,
-                    //         $"/repos/{RepoOwner}/{RepoName}/issues/{number}/timeline?page={pageIndex}&per_page=100"
-                    //     ),
-                    //     ct
-                    // );
-                    // if (timelineResponse.StatusCode != HttpStatusCode.OK)
-                    // {
-                    //     throw new HttpRequestException();
-                    // }
-
-                    // timelineResponse.
-                    return await rest.Client.Repos[RepoOwner][RepoName].Issues[number].Timeline.GetAsync(
-                        config =>
-                        {
-                            config.QueryParameters.Page = pageIndex;
-                            config.QueryParameters.PerPage = 100;
-                        },
+                    using var timelineResponse = await rest.HttpClient.SendAsync(
+                        new HttpRequestMessage(
+                            HttpMethod.Get,
+                            $"/repos/{RepoOwner}/{RepoName}/issues/{number}/timeline?page={pageIndex}&per_page=100"
+                        ),
                         ct
                     );
+                    timelineResponse.EnsureSuccessStatusCode();
+                    return await timelineResponse.Content.ReadFromJsonAsync<List<GitHubTimelineEventJson>>(ct);
+
+                    // return await rest.Client.Repos[RepoOwner][RepoName].Issues[number].Timeline.GetAsync(
+                    //     config =>
+                    //     {
+                    //         config.QueryParameters.Page = pageIndex;
+                    //         config.QueryParameters.PerPage = 100;
+                    //     },
+                    //     ct
+                    // );
                 },
                 ct: cancellationToken
             ) ?? [];

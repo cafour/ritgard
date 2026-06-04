@@ -55,6 +55,7 @@ public sealed class GitHubRestClientWrapper(
         var httpClient = httpClientFactory.CreateClient(nameof(GitHubRestClient));
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
         httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("ritgard");
+        httpClient.BaseAddress = new Uri("https://api.github.com/");
 
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         httpClient.DefaultRequestHeaders.Add("X-GitHub-Api-Version", GitHubRestApiVersion);
