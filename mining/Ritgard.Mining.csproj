@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
@@ -6,6 +6,9 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>26efcdaa-ab55-4c0e-86bb-a4e3cdb375d3</UserSecretsId>
+    <OpenApiGenerateCodeOnBuild>true</OpenApiGenerateCodeOnBuild>
+    <NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>
+    <NSwagWrapResponses>true</NSwagWrapResponses>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,16 +26,16 @@
     <PackageReference Include="Microsoft.Kiota.Bundle" Version="2.0.0" />
     <PackageReference Include="StrawberryShake.Server" Version="15.1.10" />
     <PackageReference Include="TupleAsJsonArray" Version="1.0.2" />
+    <PackageReference Include="System.Memory" Version="4.6.*" GeneratePathProperty="true" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json" Version="9.0.*" GeneratePathProperty="true" PrivateAssets="all" />
+    <PackageReference Include="NSwag.ApiDescription.Client" Version="14.7.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\submodules\NetTopologySuite\src\NetTopologySuite\NetTopologySuite.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <GraphQL Update="RateLimitQuery.graphql">
-      <Generator>MSBuild:GenerateGraphQLCode</Generator>
-    </GraphQL>
   </ItemGroup>
 
   <PropertyGroup>
@@ -47,8 +50,9 @@
       <PatchedCount ParameterType="System.Int32" Output="true" />
     </ParameterGroup>
     <Task>
-      <Reference Include="$(MSBuildSDKsPath)/Microsoft.NET.Sdk/tools/net472/System.Text.Json.dll" />
-      <Reference Include="$(MSBuildSDKsPath)/Microsoft.NET.Sdk/tools/net472/System.Memory.dll" />
+      <Reference Include="$(PkgSystem_Text_Json)\lib\netstandard2.0\System.Text.Json.dll" />
+      <Reference Include="$(PkgSystem_Memory)\lib\netstandard2.0\System.Memory.dll" />
+      <!-- <Reference Include="$(MSBuildBinPath)/System.Memory.dll" /> -->
       <Using Namespace="System" />
       <Using Namespace="System.IO" />
       <Using Namespace="System.Text.Json" />
@@ -136,5 +140,13 @@
       <Compile Include="GitHub/**/*.cs" Exclude="@(Compile)" />
     </ItemGroup>
   </Target>
+  
+  <ItemGroup>
+    <OpenApiReference Include="$(PatchedGitHubApiDescriptionPath)" >
+      <CodeGenerator>NSwagCSharp</CodeGenerator>
+      <ClassName>GitHubRestClient</ClassName>
+      <Namespace>Ritgard.Mining.GitHub.Generated</Namespace>
+    </OpenApiReference>
+  </ItemGroup>
 
 </Project>
