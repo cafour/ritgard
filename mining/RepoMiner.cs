@@ -791,7 +791,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                         logger.LogWarning(
                             "REST client '{TokenName}' is blocked till '{ResetAt}' (attempt {Attempt}).",
                             client.Token.Name,
-                            client.RateReset,
+                            client.ResetAt,
                             attempt
                         );
                     }
@@ -866,12 +866,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
 
         var newClient = restClients
             .OrderByDescending(c => c.Value.RateRemaining)
-            .ThenBy(c => c.Value.RateReset)
+            .ThenBy(c => c.Value.ResetAt)
             .First().Value;
         if (newClient.RateRemaining == 0)
         {
-            var waitTime = newClient.RateReset > DateTimeOffset.UtcNow
-                ? newClient.RateReset - DateTimeOffset.UtcNow
+            var waitTime = newClient.ResetAt > DateTimeOffset.UtcNow
+                ? newClient.ResetAt.Value - DateTimeOffset.UtcNow
                 : TimeSpan.FromMinutes(5);
             logger.LogInformation(
                 "REST API is waiting for token '{TokenName}' to cool down for {CooldownTime}.",
@@ -1010,7 +1010,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             {
                 return await execute(rest, ct);
             }
-            catch (ApiException ex) when (IsRateLimitException(ex))
+            catch (GitHubRateLimitedException)
             {
                 logger.LogError(
                     "Encountered a REST rate limit error with client '{TokenName}' (attempt {Attempt}).",
@@ -1030,21 +1030,15 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             }
             catch (HttpRequestException ex)
             {
-                logger.LogError(ex, "Encountered an unknown HTTP error. Re-creating client.");
+                logger.LogError(
+                    ex,
+                    "Encountered an unknown HTTP error. Re-creating client '{TokenName}' (attempt {Attempt}).",
+                    rest.Token.Name,
+                    attempt
+                );
                 await CreateRestClient(rest.Token, ct: ct);
             }
         }
-    }
-
-    private static bool IsRateLimitException(ApiException exception)
-    {
-        if (exception.ResponseStatusCode == 429)
-        {
-            return true;
-        }
-
-        return exception.ResponseStatusCode == 403
-            && exception.ResponseHeaders[GitHubConst.RateRemainingHeader].SingleOrDefault() == "0";
     }
 
     public async ValueTask DisposeAsync()

@@ -16,5 +16,9 @@ public class GitHubRateLimitedException : Exception
     {
     }
 
-    public DateTimeOffset Reset { get; set; }
+    public DateTimeOffset ResetAt { get; set; }
+
+    public int Remaining { get; set; }
+
+    public int EffectiveRemaining { get; set; }
 }

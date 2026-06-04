@@ -23,26 +23,17 @@ public sealed class GitHubRestClientWrapper(
 {
     public const string GitHubRestApiVersion = "2026-03-10";
 
-
     public GitHubToken Token { get; } = token;
     public HttpClient HttpClient { get; } = httpClient;
     public GitHubRestClient Client { get; } = client;
     public GitHubRateLimitHeaders HeaderInspector { get; } = headerInspector;
     public ServiceProvider ServiceProvider { get; } = serviceProvider;
 
-    public int RateLimit => Math.Clamp(
-        Token.GraphQlLimit < 0 ? HeaderInspector.RateLimit : Token.GraphQlLimit,
-        0,
-        HeaderInspector.RateLimit
-    );
+    public int RateRemaining => HeaderInspector.EffectiveRemaining;
 
-    public int RateRemaining => RateLimit - RateUsed;
+    public DateTimeOffset? ResetAt => HeaderInspector.ResetAt;
 
-    public int RateUsed => HeaderInspector.RateUsed;
-
-    public DateTimeOffset RateReset => HeaderInspector.RateReset;
-
-    public bool IsBlocked => RateRemaining <= 0 && RateReset > DateTimeOffset.UtcNow;
+    public bool IsBlocked => RateRemaining <= 0 && ResetAt > DateTimeOffset.UtcNow;
 
     public static GitHubRestClientWrapper Create(GitHubToken token)
     {
