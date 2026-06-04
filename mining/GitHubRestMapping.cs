@@ -16,7 +16,7 @@ namespace Ritgard.Mining;
 
 public static class GitHubRestMapping
 {
-    public static Issue MapIssue(GhIssue value)
+    public static Issue MapIssue(GitHubIssueJson value)
     {
         return new Issue(
             Id: value.NodeId ?? value.Id?.ToString(CultureInfo.InvariantCulture) ?? $"issue-{value.Number}",
@@ -27,7 +27,13 @@ public static class GitHubRestMapping
             CreatedAt: value.CreatedAt ?? default,
             UpdatedAt: value.UpdatedAt ?? value.CreatedAt ?? default,
             ClosedAt: value.ClosedAt,
-            Labels: [.. (value.Labels ?? []).Where(l => !string.IsNullOrWhiteSpace(l))],
+            Labels:
+            [
+                ..(value.Labels ?? [])
+                .Select(l => l.Name)
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .Select(l => l!)
+            ],
             Body: value.Body ?? string.Empty,
             State: MapIssueState(value.State) ?? IssueState.Unknown,
             StateReason: MapIssueStateReason(value.StateReason),
@@ -42,8 +48,8 @@ public static class GitHubRestMapping
             IsLocked: value.Locked ?? false,
             LockReason: MapLockReason(value.ActiveLockReason),
             MilestoneId: value.Milestone?.Id,
-            PullRequestId: null,
-            CommentCount: (int)(value.Comments ?? 0),
+            PullRequestId: value.PullRequest?.Id,
+            CommentCount: value.Comments ?? 0,
             Comments: [],
             Events: []
         );
@@ -239,14 +245,15 @@ public static class GitHubRestMapping
         };
     }
 
-    private static IssueStateReason? MapIssueStateReason(GhIssueStateReason? value)
+    private static IssueStateReason? MapIssueStateReason(string? value)
     {
-        return value switch
+        return value?.ToLowerInvariant() switch
         {
             null => null,
-            GhIssueStateReason.Completed => IssueStateReason.Completed,
-            GhIssueStateReason.Not_planned => IssueStateReason.NotPlanned,
-            GhIssueStateReason.Reopened => IssueStateReason.Reopened,
+            "completed" => IssueStateReason.Completed,
+            "not_planned" => IssueStateReason.NotPlanned,
+            "reopened" => IssueStateReason.Reopened,
+            "duplicate" => IssueStateReason.Duplicate,
             _ => IssueStateReason.Unknown
         };
     }

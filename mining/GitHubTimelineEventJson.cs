@@ -61,15 +61,6 @@ public record GitHubSimpleUserJson
     public Dictionary<string, object> AdditionalProperties { get; init; } = [];
 }
 
-public record GitHubLabelJson
-{
-    [JsonPropertyName("name")]
-    public string Name { get; init; } = string.Empty;
-
-    [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; } = [];
-}
-
 public record GitHubRenameJson
 {
     [JsonPropertyName("from")]
@@ -98,15 +89,6 @@ public record GitHubTimelineEventSourceJson
 
     [JsonPropertyName("issue")]
     public GitHubIssueJson? Issue { get; init; }
-
-    [JsonExtensionData]
-    public Dictionary<string, object> AdditionalProperties { get; init; } = [];
-}
-
-public record GitHubIssueJson
-{
-    [JsonPropertyName("id")]
-    public long Id { get; init; }
 
     [JsonExtensionData]
     public Dictionary<string, object> AdditionalProperties { get; init; } = [];

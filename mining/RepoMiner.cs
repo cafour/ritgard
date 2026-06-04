@@ -249,7 +249,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             pageIndex++;
 
             var ghIssues = await ExecuteRest(
-                (rest, ct) =>
+                async (rest, ct) =>
                 {
                     logger.LogDebug(
                         "Mining issues page {PageIndex} with REST client '{TokenName}' ({Remaining} remaining).",
@@ -257,16 +257,15 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                         rest.Token.Name,
                         rest.RateRemaining
                     );
-                    return rest.Client.Repos[RepoOwner][RepoName].Issues.GetAsync(
-                        config =>
-                        {
-                            config.QueryParameters.Page = pageIndex;
-                            config.QueryParameters.PerPage = 100;
-                            config.QueryParameters.StateAsGetStateQueryParameterType =
-                                Repos.Item.Item.Issues.GetStateQueryParameterType.All;
-                        },
+                    var issuesResponse = await rest.HttpClient.SendAsync(
+                        new HttpRequestMessage(
+                            HttpMethod.Get,
+                            $"/repos/{RepoOwner}/{RepoName}/issues?page={pageIndex}&per_page=100&state=all"
+                        ),
                         ct
                     );
+                    issuesResponse.EnsureSuccessStatusCode();
+                    return await issuesResponse.Content.ReadFromJsonAsync<List<GitHubIssueJson>>(ct);
                 },
                 ct: cancellationToken
             ) ?? [];
@@ -1015,7 +1014,8 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                 if (!ex.WasRequestBlocked)
                 {
                     logger.LogError(
-                        "Encountered a REST rate limit error with client '{TokenName}' (attempt {Attempt}).",
+                        "Thread {ThreadId} encountered a REST rate limit error with client '{TokenName}' (attempt {Attempt}).",
+                        Environment.CurrentManagedThreadId,
                         rest.Token.Name,
                         attempt
                     );

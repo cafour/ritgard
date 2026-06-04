@@ -5,5 +5,6 @@ public enum IssueStateReason
     Unknown,
     Completed,
     NotPlanned,
-    Reopened
+    Reopened,
+    Duplicate
 }

@@ -6,9 +6,6 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>26efcdaa-ab55-4c0e-86bb-a4e3cdb375d3</UserSecretsId>
-    <OpenApiGenerateCodeOnBuild>true</OpenApiGenerateCodeOnBuild>
-    <NSwagJsonLibrary>SystemTextJson</NSwagJsonLibrary>
-    <NSwagWrapResponses>true</NSwagWrapResponses>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,10 +25,6 @@
     <PackageReference Include="TupleAsJsonArray" Version="1.0.2" />
     <PackageReference Include="System.Memory" Version="4.6.*" GeneratePathProperty="true" PrivateAssets="all" />
     <PackageReference Include="System.Text.Json" Version="9.0.*" GeneratePathProperty="true" PrivateAssets="all" />
-    <PackageReference Include="NSwag.ApiDescription.Client" Version="14.7.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -52,8 +45,6 @@
     <Task>
       <Reference Include="$(PkgSystem_Text_Json)\lib\netstandard2.0\System.Text.Json.dll" />
       <Reference Include="$(PkgSystem_Memory)\lib\netstandard2.0\System.Memory.dll" />
-      <!-- <Reference Include="$(MSBuildBinPath)/System.Memory.dll" /> -->
-      <Using Namespace="System" />
       <Using Namespace="System.IO" />
       <Using Namespace="System.Text.Json" />
       <Using Namespace="System.Text.Json.Nodes" />
@@ -140,13 +131,5 @@
       <Compile Include="GitHub/**/*.cs" Exclude="@(Compile)" />
     </ItemGroup>
   </Target>
-  
-  <ItemGroup>
-    <OpenApiReference Include="$(PatchedGitHubApiDescriptionPath)" >
-      <CodeGenerator>NSwagCSharp</CodeGenerator>
-      <ClassName>GitHubRestClient</ClassName>
-      <Namespace>Ritgard.Mining.GitHub.Generated</Namespace>
-    </OpenApiReference>
-  </ItemGroup>
 
 </Project>
