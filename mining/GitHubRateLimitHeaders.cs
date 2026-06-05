@@ -81,7 +81,9 @@ public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 8) : Delega
         SetField(ref rateUsed, newRateUsed);
         var newRateReset = GetNumericHeader(response.Headers, GitHubConst.RateResetHeader, 0L);
         SetField(ref rateReset, newRateReset);
-        RateLimitResource = response.Headers.GetValues(GitHubConst.RateResourceHeader).FirstOrDefault();
+        RateLimitResource = response.Headers.TryGetValues(GitHubConst.RateResourceHeader, out var rawResource)
+            ? rawResource.FirstOrDefault()
+            : null;
         var newRetryAfter = response.Headers.RetryAfter;
         RetryAfter = newRetryAfter;
         ResetAt = null;
