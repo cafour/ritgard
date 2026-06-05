@@ -864,14 +864,12 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         }
 
         var newClient = restClients
-            .OrderByDescending(c => c.Value.RateRemaining)
+            .OrderByDescending(c => c.Value.ResetAt > DateTimeOffset.UtcNow ? c.Value.RateRemaining : c.Value.RateLimit)
             .ThenBy(c => c.Value.ResetAt)
             .First().Value;
-        if (newClient.RateRemaining == 0)
+        if (newClient.ResetAt > DateTimeOffset.UtcNow && newClient.RateRemaining <= 0)
         {
-            var waitTime = newClient.ResetAt > DateTimeOffset.UtcNow
-                ? newClient.ResetAt.Value - DateTimeOffset.UtcNow
-                : TimeSpan.FromMinutes(5);
+            var waitTime = newClient.ResetAt.Value - DateTimeOffset.UtcNow;
             logger.LogInformation(
                 "REST API is waiting for token '{TokenName}' to cool down for {CooldownTime}.",
                 newClient.Token.Name,
@@ -1020,6 +1018,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                         attempt
                     );
                 }
+
                 await EnsureRestAvailable(rest.Token, ct);
             }
             catch (ApiException ex)

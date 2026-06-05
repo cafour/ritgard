@@ -20,6 +20,36 @@
       "commandLineArgs": "repo git-for-windows/git --scope All",
       "workingDirectory": "$(MSBuildProjectDirectory)"
     },
+    "(repo: ohmyzsh)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo ohmyzsh/ohmyzsh --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: stb)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo nothings/stb --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: d3)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo d3/d3 --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: axios)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo axios/axios --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: tailwindcss)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo tailwindlabs/tailwindcss --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(repo: puppeteer)": {
+      "commandName": "Project",
+      "commandLineArgs": "repo puppeteer/puppeteer --scope All",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
     "(terrain: lume)": {
       "commandName": "Project",
       "commandLineArgs": "terrain ../datasets/lume.json ../datasets/lume-positions.json",

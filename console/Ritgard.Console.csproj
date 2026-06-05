@@ -25,4 +25,8 @@
     <ProjectReference Include="..\world-generator\Ritgard.WorldGenerator.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
 </Project>

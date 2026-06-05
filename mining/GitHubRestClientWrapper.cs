@@ -29,6 +29,8 @@ public sealed class GitHubRestClientWrapper(
     public GitHubRateLimitHeaders HeaderInspector { get; } = headerInspector;
     public ServiceProvider ServiceProvider { get; } = serviceProvider;
 
+    public int RateLimit => HeaderInspector.EffectiveLimit;
+
     public int RateRemaining => HeaderInspector.EffectiveRemaining;
 
     public DateTimeOffset? ResetAt => HeaderInspector.ResetAt;
