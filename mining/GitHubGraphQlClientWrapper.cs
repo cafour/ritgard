@@ -12,7 +12,7 @@ public sealed class GitHubGraphQlClientWrapper(
     GitHubGraphQLClient client,
     GitHubRateLimiter limiter,
     ServiceProvider serviceProvider
-) : IAsyncDisposable
+) : IGitHubClientWrapper
 {
     public GitHubToken Token { get; } = token;
     public GitHubGraphQLClient Client { get; } = client;

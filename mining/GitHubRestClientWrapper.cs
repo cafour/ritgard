@@ -15,7 +15,7 @@ public sealed class GitHubRestClientWrapper(
     GitHubRestClient client,
     GitHubRateLimiter limiter,
     ServiceProvider serviceProvider
-) : IAsyncDisposable
+) : IGitHubClientWrapper
 {
     public const string GitHubRestApiVersion = "2026-03-10";
 
@@ -24,14 +24,6 @@ public sealed class GitHubRestClientWrapper(
     public GitHubRestClient Client { get; } = client;
     public GitHubRateLimiter Limiter { get; } = limiter;
     public ServiceProvider ServiceProvider { get; } = serviceProvider;
-
-    public int RateLimit => Limiter.EffectiveLimit;
-
-    public int RateRemaining => Limiter.EffectiveRemaining;
-
-    public DateTimeOffset? ResetAt => Limiter.ResetAt;
-
-    public bool IsBlocked => RateRemaining <= 0 && ResetAt > DateTimeOffset.UtcNow;
 
     public static GitHubRestClientWrapper Create(GitHubToken token)
     {
@@ -62,7 +54,7 @@ public sealed class GitHubRestClientWrapper(
     {
         _ = await Client.Rate_limit.GetAsync(cancellationToken: ct);
         // NB: We check the headers, because the info from the `rate_limit` endpoint is unreliable.
-        return IsBlocked;
+        return Limiter.IsBlocked;
     }
 
     public async ValueTask DisposeAsync()

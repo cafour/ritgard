@@ -37,6 +37,8 @@ public sealed class GitHubRateLimiter(int maxParallelRequests = 8)
 
     public int EffectiveRemaining => EffectiveLimit - RateUsed;
 
+    public bool IsBlocked => EffectiveRemaining <= 0 && ResetAt > DateTimeOffset.UtcNow;
+
     public bool ShouldThrow { get; set; } = true;
 
     public async Task<HttpResponseMessage> Handle(
