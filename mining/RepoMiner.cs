@@ -933,13 +933,20 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         }
     }
 
-    private async Task EnsureGraphQlAvailable(CancellationToken cancellationToken = default)
+    private async Task EnsureGraphQlAvailable(
+        GitHubToken? currentToken,
+        CancellationToken cancellationToken = default
+    )
     {
-        var tmpToken = GraphQl!.Token;
+        if (GraphQl is not null && GraphQl.Token != currentToken)
+        {
+            // some other thread switched the client first
+        }
+
         await graphQlLock.WaitAsync(cancellationToken);
         try
         {
-            if (GraphQl.Token != tmpToken)
+            if (GraphQl is not null && GraphQl.Token != currentToken)
             {
                 // some other thread switched the token first
                 return;
@@ -959,26 +966,65 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         CancellationToken ct = default
     )
     {
-        if (GraphQl!.IsBlocked)
-        {
-            await EnsureGraphQlAvailable(ct);
-        }
-
+        int attempt = 0;
         while (true)
         {
-            var queryResult = await execute(GraphQl.Client, ct);
-            var errors = errorsAccessor(queryResult);
-            if (errors.Count == 0)
+            attempt++;
+
+            var graphQl = GraphQl;
+            if (graphQl!.IsBlocked)
             {
+                logger.LogError(
+                    "GraphQL client '{TokenName}' has been depleted (attempt {Attempt}).",
+                    graphQl.Token.Name,
+                    attempt
+                );
+                await EnsureGraphQlAvailable(graphQl.Token, ct);
+                continue;
+            }
+
+            try
+            {
+                var queryResult = await execute(graphQl.Client, ct);
+                var errors = errorsAccessor(queryResult);
+
+                if (errors is [{ Code: "graphql_rate_limit" }])
+                {
+                    await EnsureGraphQlAvailable(graphQl.Token, ct);
+                    continue;
+                }
+
+                if (errors.Count > 0)
+                {
+                    throw new InvalidOperationException("Failed to execute a GraphQL request due to an unknown error.");
+                }
+
                 return queryResult;
             }
-
-            if (errors is [{ Code: "graphql_rate_limit" }])
+            catch (GitHubRateLimitedException ex)
             {
-                await EnsureGraphQlAvailable(ct);
-            }
+                if (!ex.WasRequestBlocked)
+                {
+                    logger.LogError(
+                        "Thread {ThreadId} encountered a GraphQL rate limit error with client '{TokenName}' (attempt {Attempt}).",
+                        Environment.CurrentManagedThreadId,
+                        graphQl.Token.Name,
+                        attempt
+                    );
+                }
 
-            return queryResult;
+                await EnsureGraphQlAvailable(graphQl.Token, ct);
+            }
+            catch (HttpRequestException ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Encountered an unknown HTTP error. Re-creating client '{TokenName}' (attempt {Attempt}).",
+                    graphQl.Token.Name,
+                    attempt
+                );
+                await CreateRestClient(graphQl.Token, ct: ct);
+            }
         }
     }
 
