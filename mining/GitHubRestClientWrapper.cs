@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Globalization;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -8,8 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary;
-using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
-using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 
 namespace Ritgard.Mining;
 
@@ -17,7 +13,7 @@ public sealed class GitHubRestClientWrapper(
     GitHubToken token,
     HttpClient httpClient,
     GitHubRestClient client,
-    GitHubRateLimitHeaders headerInspector,
+    GitHubRateLimiter limiter,
     ServiceProvider serviceProvider
 ) : IAsyncDisposable
 {
@@ -26,24 +22,26 @@ public sealed class GitHubRestClientWrapper(
     public GitHubToken Token { get; } = token;
     public HttpClient HttpClient { get; } = httpClient;
     public GitHubRestClient Client { get; } = client;
-    public GitHubRateLimitHeaders HeaderInspector { get; } = headerInspector;
+    public GitHubRateLimiter Limiter { get; } = limiter;
     public ServiceProvider ServiceProvider { get; } = serviceProvider;
 
-    public int RateLimit => HeaderInspector.EffectiveLimit;
+    public int RateLimit => Limiter.EffectiveLimit;
 
-    public int RateRemaining => HeaderInspector.EffectiveRemaining;
+    public int RateRemaining => Limiter.EffectiveRemaining;
 
-    public DateTimeOffset? ResetAt => HeaderInspector.ResetAt;
+    public DateTimeOffset? ResetAt => Limiter.ResetAt;
 
     public bool IsBlocked => RateRemaining <= 0 && ResetAt > DateTimeOffset.UtcNow;
 
     public static GitHubRestClientWrapper Create(GitHubToken token)
     {
-        var headerInspector = new GitHubRateLimitHeaders();
-        headerInspector.CustomLimit = token.HttpLimit;
+        var limiter = new GitHubRateLimiter
+        {
+            CustomLimit = token.HttpLimit
+        };
         var services = new ServiceCollection();
         services.AddHttpClient(nameof(GitHubRestClient))
-            .AddHttpMessageHandler(() => headerInspector);
+            .AddHttpMessageHandler(() => new GitHubRateLimitHandler(limiter));
         var provider = services.BuildServiceProvider();
         var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
         var httpClient = httpClientFactory.CreateClient(nameof(GitHubRestClient));
@@ -57,7 +55,7 @@ public sealed class GitHubRestClientWrapper(
         var authProvider = new AnonymousAuthenticationProvider();
         var adapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
         var client = new GitHubRestClient(adapter);
-        return new GitHubRestClientWrapper(token, httpClient, client, headerInspector, provider);
+        return new GitHubRestClientWrapper(token, httpClient, client, limiter, provider);
     }
 
     public async Task<bool> CheckBlocked(CancellationToken ct = default)

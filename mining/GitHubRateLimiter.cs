@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Ritgard.Mining;
 
-public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 8) : DelegatingHandler
+public sealed class GitHubRateLimiter(int maxParallelRequests = 8)
 {
     private int rateLimit = int.MaxValue;
     private int rateRemaining = int.MaxValue;
@@ -39,15 +39,16 @@ public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 8) : Delega
 
     public bool ShouldThrow { get; set; } = true;
 
-    protected override async Task<HttpResponseMessage> SendAsync(
+    public async Task<HttpResponseMessage> Handle(
         HttpRequestMessage request,
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send,
         CancellationToken ct
     )
     {
         await throttler.WaitAsync(ct);
         try
         {
-            return await Handle(request, ct);
+            return await HandleCore(request, send, ct);
         }
         finally
         {
@@ -55,8 +56,9 @@ public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 8) : Delega
         }
     }
 
-    private async Task<HttpResponseMessage> Handle(
+    private async Task<HttpResponseMessage> HandleCore(
         HttpRequestMessage request,
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send,
         CancellationToken ct
     )
     {
@@ -71,7 +73,7 @@ public sealed class GitHubRateLimitHeaders(int maxParallelRequests = 8) : Delega
             };
         }
 
-        var response = await base.SendAsync(request, ct).ConfigureAwait(false);
+        var response = await send(request, ct).ConfigureAwait(false);
 
         SetField(ref rateLimit, GetNumericHeader(response.Headers, GitHubConst.RateLimitHeader, 0));
         var newRateRemaining = GetNumericHeader(response.Headers, GitHubConst.RateRemainingHeader, 0);
