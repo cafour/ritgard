@@ -205,6 +205,15 @@ public partial class TopicIsland : Node3D
 
         Visible = true;
         var heightmap = Overlord.Instance.GetHeightmap(Topic.Id, step);
+        if (step < heightmap.StartStep || (step - heightmap.StartStep) > heightmap.StepCount)
+        {
+            GD.PushWarning(
+                $"Could not find a suitable heightmap for topic '{Topic.Id}'. Maybe it hasn't been loaded/generated yet."
+            );
+            Visible = false;
+            return;
+        }
+
         var hh = heightmap.SizeY;
         var hw = heightmap.SizeX;
 
