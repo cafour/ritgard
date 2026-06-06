@@ -259,15 +259,16 @@ public partial class Overlord : Node
 
         CurrentDataset = index;
 
+        topicIslands.Clear();
+        itemStructures.Clear();
+        outlierRocks.Clear();
+
         var oldNodes = generatedNodesContainer.GetChildren();
         foreach (var old in oldNodes)
         {
             old.QueueFree();
             generatedNodesContainer.RemoveChild(old);
         }
-
-        topicIslands.Clear();
-        itemStructures.Clear();
 
         var dataset = datasets[index];
         await WithLoading(async () => { Repo = await dataset.Load(ct); });
