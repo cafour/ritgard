@@ -78,6 +78,12 @@ public static partial class Utils
         CancellationToken token = default
     )
     {
+        var directory = Path.GetDirectoryName(path);
+        if (directory is not null && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
         await using var stream = new FileStream(path, FileMode.Create);
 
         await JsonSerializer.SerializeAsync(stream, value, JsonSerializerOptions, cancellationToken: token);
