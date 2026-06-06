@@ -13,6 +13,8 @@
     <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Markdig" Version="0.42.0" />
     <PackageReference Include="MedallionShell" Version="1.6.2" />
+    <PackageReference Include="Meziantou.Framework.Http.Caching" Version="1.0.2" />
+    <PackageReference Include="Meziantou.Framework.Http.Caching.Sqlite" Version="1.0.4" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.9" />

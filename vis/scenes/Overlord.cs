@@ -556,7 +556,7 @@ public partial class Overlord : Node
                 var prCount = 0;
                 var discussionCount = 0;
                 foreach (var visibleItem in Heights.Where(p => p.Value > 0).Select(p => Repo.Items[p.Key])
-                             .Where(i => i.TopicId == island.Topic.Id))
+                    .Where(i => i.TopicId == island.Topic.Id))
                 {
                     switch (visibleItem.Conversation)
                     {
@@ -781,7 +781,7 @@ public partial class Overlord : Node
             && foundTerrain is not null
             && step >= Repo.Terrain.StartStep
             && step < Repo.Terrain.StartStep + Repo.Terrain.StepCount
-           )
+        )
         {
             if (CurrentTerrain == foundTerrain)
             {
@@ -795,14 +795,16 @@ public partial class Overlord : Node
             await WithLoading(() => Task.Run(
                     () =>
                     {
-                        CurrentTerrain = generator.Generate(
-                                scope: CurrentScope,
-                                slidingWindowPresets: SlidingWindowPreset,
-                                batchSize: -1,
-                                startStep: step,
-                                stepCount: 1,
-                                ct: ct
-                            )
+                        var terrainResult = generator.Generate(
+                            scope: CurrentScope,
+                            slidingWindowPresets: SlidingWindowPreset,
+                            batchSize: -1,
+                            startStep: step,
+                            stepCount: 1,
+                            shouldGenerateScopePermutations: false,
+                            ct: ct
+                        );
+                        CurrentTerrain = terrainResult
                             .Terrains
                             .SingleOrDefault();
                     },
