@@ -335,6 +335,7 @@ public partial class Overlord : Node
             topicIsland.Name = $"Topic{topic.Id}";
             topicIsland.Topic = topic;
             generatedNodesContainer.AddChild(topicIsland);
+            topicIsland.InitializePlane();
             topicIslands[topicId] = topicIsland;
         }
 
