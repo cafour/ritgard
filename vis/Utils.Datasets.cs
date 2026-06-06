@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Ritgard;
 
@@ -22,21 +24,48 @@ public static partial class Utils
         foreach (var candidateFile in dataDir.EnumerateFiles("*.json"))
         {
             var datasetName = Path.GetFileNameWithoutExtension(candidateFile.Name);
-            var positionsFilename = $"{datasetName}{PositionsFileSuffix}.json";
-            var positionsPath = Path.Combine(dataDir.FullName, positionsFilename);
-            var terrainFilename = $"{datasetName}{TerrainFileSuffix}.json";
-            var terrainPath = Path.Combine(dataDir.FullName, terrainFilename);
-            if (!File.Exists(terrainPath))
-            {
-                terrainPath = null;
-            }
 
-            if (File.Exists(positionsPath))
+            ImmutableArray<string> positionsFilenames =
+            [
+                $"{datasetName}{PositionsFileSuffix}.json",
+                ..dataDir.EnumerateFiles($"{datasetName}{PositionsFileSuffix}.*.json").Select(f => f.Name)
+            ];
+            foreach (var positionsFilename in positionsFilenames)
             {
+                var positionsPath = Path.Combine(dataDir.FullName, positionsFilename);
+                if (!File.Exists(positionsPath))
+                {
+                    continue;
+                }
+
+                var subnameMatch = Regex.Match(
+                    positionsFilename,
+                    @$"^{datasetName}{PositionsFileSuffix}\.*([\w\d-_]*)\.json$"
+                );
+                if (!subnameMatch.Success)
+                {
+                    continue;
+                }
+
+                var subname = subnameMatch.Groups[1].Value;
+                if (string.IsNullOrWhiteSpace(subname))
+                {
+                    subname = null;
+                }
+
+                var terrainFilename = subname is null
+                    ? $"{datasetName}{TerrainFileSuffix}.json"
+                    : $"{datasetName}{TerrainFileSuffix}.{subname}.json";
+                var terrainPath = Path.Combine(dataDir.FullName, terrainFilename);
+                if (!File.Exists(terrainPath))
+                {
+                    terrainPath = null;
+                }
+
                 builder.Add(
                     new DatasetInfo
                     {
-                        Name = datasetName,
+                        Name = subname is null ? datasetName : $"{datasetName} ({subname})",
                         DataFilePath = candidateFile.FullName,
                         TopicFilePath = positionsPath,
                         TerrainFilePath = terrainPath
