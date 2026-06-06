@@ -79,7 +79,7 @@ public static partial class Utils
     )
     {
         var directory = Path.GetDirectoryName(path);
-        if (directory is not null && !Directory.Exists(directory))
+        if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
         }
