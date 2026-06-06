@@ -20,7 +20,7 @@ mkdir -p datasets
 export HF_HUB_DISABLE_XET=1
 export UV_HTTP_TIMEOUT=600
 
-uv sync --preview-features extra-build-dependencies --no-build-isolation-package flash-attn
+uv sync --no-install-package flash-attn
 
 datasets=${datasets:-$(ls -1 './datasets' | grep -P '[^\.]+\.json' | grep -v -e 'positions' -e 'terrain' | sed 's/.json//')}
 
