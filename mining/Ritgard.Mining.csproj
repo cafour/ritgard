@@ -34,9 +34,14 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <GitHubApiDescriptionPath>..\submodules\github-rest-api\descriptions\api.github.com\api.github.com.2026-03-10.json</GitHubApiDescriptionPath>
+    <GitHubApiDescriptionPath>.\api.github.com.2026-03-10.json</GitHubApiDescriptionPath>
     <PatchedGitHubApiDescriptionPath>$(BaseIntermediateOutputPath)api.github.com.patched.json</PatchedGitHubApiDescriptionPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="$(GitHubApiDescriptionPath)" />
+    <None Include="$(GitHubApiDescriptionPath)" />
+  </ItemGroup>
 
   <UsingTask TaskName="PatchOpenApiIntegerFormats" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
