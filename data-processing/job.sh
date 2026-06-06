@@ -38,7 +38,7 @@ model_args+=(--min-cluster-size "${min_cluster_size:-10}")
 model_args+=(--min-samples "${min_samples:-5}")
 model_args+=(--flash-attention)
 model_args+=("./datasets/$dataset.json")
-echo ./model-topics.py "${model_args[@]}" ${extra_args}
+uv run ./model-topics.py "${model_args[@]}" ${extra_args}
 cp out/* /storage/brno2/home/xstepan1/out/
 
 rm -rf $SCRATCHDIR/*
