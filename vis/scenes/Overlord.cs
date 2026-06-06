@@ -277,7 +277,7 @@ public partial class Overlord : Node
         }
 
         StepCount = Math.Max(1, Mathf.CeilToInt((Repo.MaxDate - Repo.MinDate) / SingleStepLength));
-        CurrentStep = Math.Min(CurrentStep, StepCount - 1);
+        CurrentStep = StepCount - 1;
         CurrentScope = ConversationScope.All;
 
         if (generator is not null)
@@ -359,7 +359,7 @@ public partial class Overlord : Node
 
         Player.HoverChanged += OnHoverChanged;
 
-        await ShowStep(StepCount - 1);
+        await ShowStep(CurrentStep);
         UI.LoadingBox.Visible = false;
     }
 
@@ -793,6 +793,7 @@ public partial class Overlord : Node
         }
         else
         {
+            CurrentTerrain = null;
             await WithLoading(() => Task.Run(
                     () =>
                     {
