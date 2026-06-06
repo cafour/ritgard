@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -N ritgard
+#PBS -N ritgard-topics
 #PBS -l select=1:ncpus=4:mem=40gb:scratch_local=40gb:ngpus=1:gpu_mem=50gb
 #PBS -l walltime=2:00:00
 
