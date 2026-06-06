@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -N ritgard-positions
+#PBS -N ritgard-terrains
 #PBS -l select=1:ncpus=20:mem=30gb:scratch_local=20gb
 #PBS -l walltime=2:00:00
 
