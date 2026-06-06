@@ -281,6 +281,7 @@ def main():
         choices=list(dt.WorldSizing)
     )
     args_parser.add_argument("--world-sizing-ratio", default=0.5, type=float)
+    args_parser.add_argument("--world-scale", default=1, type=float)
     args_parser.add_argument("--world-padding", default=2, type=int)
     args_parser.add_argument("--world-sizing-auto-quantile", default=0.5, type=float)
     args_parser.add_argument("--no-adjustment", default=False, action="store_true")
@@ -305,7 +306,6 @@ def main():
     positions = np.array([[item.x, item.y] for item in items])
     positions = center_positions(positions)
     positions = minimize_world_bbox(positions)
-    options.world_scale = 1.0
     padding_cells: int = options.world_padding
     match options.world_sizing:
         case dt.WorldSizing.AUTO:
@@ -340,6 +340,8 @@ def main():
                 positions, options.cell_radius, target_area=line_count / options.world_sizing_ratio,
                 padding_cells=padding_cells
             )
+        case dt.WorldSizing.ABSOLUTE:
+            log.info(f"Setting world scale to an absolute value.")
 
     log.info(f"World scale: {options.world_scale}")
     scaled_positions = positions * options.world_scale

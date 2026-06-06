@@ -169,6 +169,7 @@ class WorldSizing(Enum):
     REPO_SIZE = "repo-size"
     FILE_COUNT = "file-count"
     LINE_COUNT = "line-count"
+    ABSOLUTE = "absolute"
 
 class PositionAdjustmentOptions(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
@@ -180,12 +181,11 @@ class PositionAdjustmentOptions(BaseModel):
     world_sizing_ratio: float
     world_padding: int
     world_sizing_auto_quantile: float
+    world_scale: float
     data_path: str
     no_adjustment: bool
     plot_result: bool
     output: str | None
-
-    world_scale: float | None = None
 
 class TopicModellingResult(BaseModel):
     model_config = ConfigDict(alias_generator=to_pascal, validate_by_alias=True, validate_by_name=True,
