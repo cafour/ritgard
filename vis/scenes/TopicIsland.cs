@@ -61,7 +61,6 @@ public partial class TopicIsland : Node3D
             .Select(b => Library.GetColor((byte)b))
             .ToImmutableArray();
         islandColor = colorPalette[Topic.Id % colorPalette.Length];
-        InitializePlane();
     }
 
     public override void _Input(InputEvent @event)
