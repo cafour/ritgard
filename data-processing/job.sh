@@ -18,9 +18,27 @@ cd $SCRATCHDIR/ritgard/data-processing
 mkdir -p datasets
 
 export HF_HUB_DISABLE_XET=1
+export UV_HTTP_TIMEOUT=600
 
 uv sync --preview-features extra-build-dependencies --no-build-isolation-package flash-attn
-uv run ./model-topics.py --llm --embed-labels --embed-bodies --embed-comments --embed-model "Qwen/Qwen3-Embedding-8B" --embed-batch-size 1 --min-cluster-size "${min_cluster_size:-10}" --min-samples "${min_samples:-5}" --flash-attention "./datasets/$dataset.json" ${extra_args}
+model_args=(--llm)
+if [[ "${embed_labels:-1}" == "1" ]]; then
+	model_args+=(--embed-labels)
+fi
+if [[ "${embed_bodies:-1}" == "1" ]]; then
+	model_args+=(--embed-bodies)
+fi
+if [[ "${embed_comments:-1}" == "1" ]]; then
+	model_args+=(--embed-comments)
+fi
+
+model_args+=(--embed-model "Qwen/Qwen3-Embedding-8B")
+model_args+=(--embed-batch-size 1)
+model_args+=(--min-cluster-size "${min_cluster_size:-10}")
+model_args+=(--min-samples "${min_samples:-5}")
+model_args+=(--flash-attention)
+model_args+=("./datasets/$dataset.json")
+echo ./model-topics.py "${model_args[@]}" ${extra_args}
 cp out/* /storage/brno2/home/xstepan1/out/
 
 rm -rf $SCRATCHDIR/*
