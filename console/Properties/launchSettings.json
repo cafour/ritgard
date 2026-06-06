@@ -20,11 +20,6 @@
       "commandLineArgs": "repo git-for-windows/git --scope All",
       "workingDirectory": "$(MSBuildProjectDirectory)"
     },
-    "(repo: ohmyzsh)": {
-      "commandName": "Project",
-      "commandLineArgs": "repo ohmyzsh/ohmyzsh --scope All",
-      "workingDirectory": "$(MSBuildProjectDirectory)"
-    },
     "(repo: stb)": {
       "commandName": "Project",
       "commandLineArgs": "repo nothings/stb --scope All",
@@ -45,9 +40,9 @@
       "commandLineArgs": "repo tailwindlabs/tailwindcss --scope All",
       "workingDirectory": "$(MSBuildProjectDirectory)"
     },
-    "(repo: puppeteer)": {
+    "(repo: markitdown)": {
       "commandName": "Project",
-      "commandLineArgs": "repo puppeteer/puppeteer --scope All",
+      "commandLineArgs": "repo microsoft/markitdown --scope All",
       "workingDirectory": "$(MSBuildProjectDirectory)"
     },
     "(terrain: lume)": {

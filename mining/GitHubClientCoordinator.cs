@@ -45,15 +45,14 @@ public sealed class GitHubClientCoordinator<TClient>(
         return coordinator;
     }
 
-    public async Task<TResult> Execute<TResult>(
-        Func<TClient, CancellationToken, Task<TResult>> execute,
+    public async Task<TResult?> Execute<TResult>(
+        Func<TClient, CancellationToken, Task<TResult?>> execute,
+        int attempts = 5,
         CancellationToken ct = default
     )
     {
-        int attempt = 0;
-        while (true)
+        for (int attempt = 1; attempt <= attempts; ++attempt)
         {
-            attempt++;
             var client = Current ?? await EnsureAvailable(null, ct);
             if (client.Limiter.IsBlocked)
             {
@@ -83,6 +82,10 @@ public sealed class GitHubClientCoordinator<TClient>(
                         attempt
                     );
                 }
+                if (attempt == attempts)
+                {
+                    throw;
+                }
 
                 await EnsureAvailable(client.Token, ct);
             }
@@ -95,6 +98,10 @@ public sealed class GitHubClientCoordinator<TClient>(
                     client.Token.Name,
                     attempt
                 );
+                if (attempt == attempts)
+                {
+                    throw;
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -105,9 +112,16 @@ public sealed class GitHubClientCoordinator<TClient>(
                     client.Token.Name,
                     attempt
                 );
+                if (attempt == attempts)
+                {
+                    throw;
+                }
+
                 await CreateClient(client.Token, ct: ct);
             }
         }
+
+        throw new InvalidOperationException("Failed to execute the request.");
     }
 
     private async Task CreateClient(GitHubToken token, int attempts = 3, CancellationToken ct = default)

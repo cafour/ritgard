@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Kiota.Abstractions;
 using Ritgard.Mining.GitHub;
 
 namespace Ritgard.Mining;
@@ -356,7 +357,7 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
             var ghPrDetails = await Task.WhenAll(
                 ghPrs.Where(pr => pr.Number.HasValue)
                     .Select(ghPr => Rest.Execute(
-                            (rest, ct) =>
+                            async (rest, ct) =>
                             {
                                 logger.LogDebug(
                                     "Mining pull request details #{Number} with REST client '{TokenName}' ({Remaining} remaining).",
@@ -364,8 +365,21 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                                     rest.Token.Name,
                                     rest.Limiter.EffectiveRemaining
                                 );
-                                return rest.Client.Repos[RepoOwner][RepoName].Pulls[ghPr.Number!.Value]
-                                    .GetAsync(cancellationToken: ct);
+                                try
+                                {
+                                    return await rest.Client.Repos[RepoOwner][RepoName].Pulls[ghPr.Number!.Value]
+                                        .GetAsync(cancellationToken: ct);
+                                }
+                                catch (ApiException ex)
+                                {
+                                    // this happens for some reason :/
+                                    logger.LogError(
+                                        ex,
+                                        "Failed to obtain pull request details #{Number}. Ignoring.",
+                                        ghPr.Number
+                                    );
+                                    return null;
+                                }
                             },
                             ct: cancellationToken
                         )
@@ -400,6 +414,15 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                                 return;
                             }
 
+                            if (!pullRequests.ContainsKey(prId))
+                            {
+                                logger.LogError(
+                                    "Cannot append comments to pull request #{Number} because it was not mined.",
+                                    ghPr.Number
+                                );
+                                return;
+                            }
+
                             pullRequests.AddOrUpdate(
                                 prId,
                                 _ => throw new InvalidOperationException(),
@@ -424,6 +447,15 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                             var prId = ghPr.NodeId ?? ghPr.Id?.ToString(CultureInfo.InvariantCulture);
                             if (prId is null)
                             {
+                                return;
+                            }
+
+                            if (!pullRequests.ContainsKey(prId))
+                            {
+                                logger.LogError(
+                                    "Cannot append events to pull request #{Number} because it was not mined.",
+                                    ghPr.Number
+                                );
                                 return;
                             }
 
@@ -456,17 +488,17 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
                     RepoName,
                     after: cursor,
                     cancellationToken: ct
-                ),
+                )!,
                 ct: cancellationToken
             );
 
-            if (queryResult.Errors.Count > 0)
+            if (queryResult is null || queryResult.Errors.Count > 0)
             {
                 logger.LogError(
                     "Failed to mine discussions of '{RepoOwner}/{RepoName}'. The query returned errors: {Errors}",
                     RepoOwner,
                     RepoName,
-                    queryResult.Errors.Select(e => e.Message)
+                    queryResult?.Errors.Select(e => e.Message)
                 );
                 break;
             }
@@ -639,16 +671,16 @@ public class RepoMiner(ILogger<RepoMiner> logger, string repoOwner, string repoN
         do
         {
             var queryResult = await GraphQl.Execute(
-                execute: (graphQl, ct) => graphQl.Client.DiscussionCommentQuery.ExecuteAsync(nodeId, cursor, ct),
+                execute: (graphQl, ct) => graphQl.Client.DiscussionCommentQuery.ExecuteAsync(nodeId, cursor, ct)!,
                 ct: cancellationToken
             );
 
-            if (queryResult.Errors.Count > 0)
+            if (queryResult is null || queryResult.Errors.Count > 0)
             {
                 logger.LogError(
                     "Failed to mine discussion comments of '{DiscussionId}'. The query returned errors: {Errors}",
                     nodeId,
-                    queryResult.Errors.Select(e => e.Message)
+                    queryResult?.Errors.Select(e => e.Message)
                 );
                 break;
             }
