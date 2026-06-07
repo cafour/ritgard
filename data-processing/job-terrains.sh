@@ -73,7 +73,7 @@ for dataset in $datasets; do
         args+=(--sliding-window-presets "$sliding_windows")
     fi
 
-    out_filename=$dataset-terrain$positions_extension
+    out_filename=$dataset-terrain$extension
 
     if [[ -f "$out_dir/$out_filename" ]]; then
         echo "Skipping '$out_filename' because it already exists."
