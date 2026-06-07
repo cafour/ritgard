@@ -29,16 +29,20 @@ out_dir=${out_dir:-'/storage/brno2/home/xstepan1/out/terrains'}
 
 datasets=${datasets:-$(ls -1 "$dataset_dir" | grep -P '[^\.]+\.json' | grep -v -e 'positions' -e 'terrain' | sed 's/.json//')}
 
-extension='.json'
-
-if [[ "$suffix" != '' ]]; then
-    extension=".$suffix.json"
-fi
-
 positions_extension='.json'
 
 if [[ "$positions_suffix" != '' ]]; then
     positions_extension=".$positions_suffix.json"
+fi
+
+extension='.json'
+
+if [[ "$suffix" == '' ]]; then
+    suffix="$positions_suffix"
+fi
+
+if [[ "$suffix" != '' ]]; then
+    extension=".$suffix.json"
 fi
 
 mkdir -p out
@@ -60,12 +64,20 @@ for dataset in $datasets; do
     if [[ "$batch_size" != '' ]]; then
         args+=(--batch-size "$batch_size")
     fi
+    
+    if [[ "$scope" != '' ]]; then
+        args+=(--scope "$scope")
+    fi
+
+    if [[ "$sliding_windows" != '' ]]; then
+        args+=(--sliding-window-presets "$sliding_windows")
+    fi
 
     out_filename=$dataset-terrain$positions_extension
 
     if [[ -f "$out_dir/$out_filename" ]]; then
         echo "Skipping '$out_filename' because it already exists."
-	continue
+        continue
     fi
 
     out_path=./out/$out_filename

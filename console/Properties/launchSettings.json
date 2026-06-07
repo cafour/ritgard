@@ -59,6 +59,11 @@
       "commandName": "Project",
       "commandLineArgs": "terrain ../datasets/dotvvm.json ../datasets/dotvvm-positions.json --step-length-multiplier 7",
       "workingDirectory": "$(MSBuildProjectDirectory)"
+    },
+    "(terrain: gwf)": {
+      "commandName": "Project",
+      "commandLineArgs": "terrain ../datasets/git.json ../datasets/git-positions.coarse-q75.json --step-length-multiplier 28 --sliding-window-presets All,Year,TwoYears",
+      "workingDirectory": "$(MSBuildProjectDirectory)"
     }
   }
 }

@@ -147,7 +147,9 @@ internal class Commands
     /// <param name="output">Where to write the mined output.</param>
     /// <param name="stepLengthMultiplier">The number of "default" steps (i.e., days) in a single step.</param>
     /// <param name="batchSize">Number of steps in a batched heightmap. By default -1, meaning no batching.</param>
+    /// <param name="slidingWindowPresets">All sliding window presents for which heightmaps will be generated.</param>
     /// <param name="cancellationToken">Optional token to cancel the async operation in progress.</param>
+    /// <param name="scope">The conversation types for which a heightmap will be generated (all permutations).</param>
     [Command("terrain")]
     public async Task ComputeTerrain(
         [Argument] string datasetPath,
@@ -155,6 +157,8 @@ internal class Commands
         string? output = null,
         int stepLengthMultiplier = 1,
         int batchSize = -1,
+        ConversationScope scope = ConversationScope.All,
+        SlidingWindowPreset slidingWindowPresets = SlidingWindowPreset.AllPresets,
         CancellationToken cancellationToken = default
     )
     {
@@ -182,6 +186,8 @@ internal class Commands
 
         var generator = new TerrainGenerator(repo, LoggerFactory);
         var terrainResult = generator.Generate(
+            scope: scope,
+            slidingWindowPresets: slidingWindowPresets,
             stepLength: TerrainGenerator.DefaultStepLength * stepLengthMultiplier,
             batchSize: batchSize,
             ct: cancellationToken
