@@ -57,7 +57,12 @@ public class IslandHeightmapGenerator(
 
         topicName = topic.GetPreferredTitle();
 
-        logger.LogInformation("Initializing island generator for topic '{TopicName}'.", topicName);
+        logger.LogInformation(
+            "Initializing island generator for topic '{TopicName}' ({TopicNumber}/{TopicCount}).",
+            topicName,
+            topic.Id + 1,
+            Repo.TopicModelling.Topics.Count
+        );
 
         items =
         [
@@ -436,7 +441,7 @@ public class IslandHeightmapGenerator(
                                 || v0Item == v1Item
                                 || v0Item == v2Item
                                 || v1Item == v2Item
-                               )
+                            )
                             {
                                 logger.LogWarning(
                                     "Couldn't re-determine which item is at coordinate ({CoordX}, {CoordY}).",

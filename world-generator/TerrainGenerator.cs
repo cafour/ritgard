@@ -82,12 +82,17 @@ public class TerrainGenerator(
         }
         else
         {
-            foreach (var subScope in GetScopePermutations(scope))
+            var scopePermutations = GetScopePermutations(scope)
+                .Where(s => s != ConversationScope.None)
+                .ToImmutableArray();
+            foreach (var (i, subScope) in scopePermutations.Index())
             {
-                if (subScope == ConversationScope.None)
-                {
-                    continue;
-                }
+                logger.LogInformation(
+                    "Generating scope permutation '{Scope}' ({Number}/{Count}).",
+                    subScope,
+                    i + 1,
+                    scopePermutations.Length
+                );
 
                 terrains.AddRange(
                     GenerateSingleScope(
@@ -159,15 +164,17 @@ public class TerrainGenerator(
         );
 
         var terrains = ImmutableArray.CreateBuilder<TerrainPreset>();
-        for (int slidingWindow = 1; slidingWindow <= (int)SlidingWindowPreset.MaxValue; slidingWindow <<= 1)
+        var slidingWindows = GetSlidingWindowPresets(slidingWindowPresets).ToImmutableArray();
+        foreach (var (index, window) in slidingWindows.Index())
         {
-            if (!slidingWindowPresets.HasFlag((SlidingWindowPreset)slidingWindow))
-            {
-                continue;
-            }
-
+            logger.LogInformation(
+                "Generating terrain for scope '{Scope}' and single sliding window '{SlidingWindow}' ({Number}/{Count}).",
+                scope,
+                window,
+                index + 1,
+                slidingWindows.Length
+            );
             var topics = new ConcurrentDictionary<int, ImmutableArray<IslandHeightmap>>();
-            var window = slidingWindow;
             Parallel.ForEach(
                 islandGenerators.Keys,
                 topicId =>
@@ -175,16 +182,18 @@ public class TerrainGenerator(
                     var generator = islandGenerators[topicId];
                     var heightmaps = ImmutableArray.CreateBuilder<IslandHeightmap>();
                     logger.LogInformation(
-                        "Generating heightmap for topic '{TopicId}', the '{SlidingWindow}', and '{Scope}' scope.",
+                        "Generating heightmap for topic '{TopicId}' ({TopicNumber}/{TopicCount}), the '{SlidingWindow}', and '{Scope}' scope.",
                         topicId,
-                        (SlidingWindowPreset)window,
+                        topicId + 1,
+                        repo.TopicModelling.Topics.Count,
+                        window,
                         scope
                     );
                     if (batchSize == -1)
                     {
                         heightmaps.Add(
                             generator.Generate(
-                                slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
+                                slidingWindow: window.ToTimeSpan(),
                                 stepLength: stepLength,
                                 startStep: startStep,
                                 stepCount: stepCount,
@@ -199,7 +208,7 @@ public class TerrainGenerator(
                             var currentSize = Math.Min(batchSize, (startStep + stepCount) - s);
                             heightmaps.Add(
                                 generator.Generate(
-                                    slidingWindow: ((SlidingWindowPreset)window).ToTimeSpan(),
+                                    slidingWindow: window.ToTimeSpan(),
                                     stepLength: stepLength,
                                     startStep: s,
                                     stepCount: currentSize,
@@ -218,7 +227,7 @@ public class TerrainGenerator(
 
             terrains.Add(
                 new TerrainPreset(
-                    SlidingWindow: (SlidingWindowPreset)slidingWindow,
+                    SlidingWindow: window,
                     Scope: scope,
                     IslandHeightmaps: topics.ToImmutableDictionary(
                         p => p.Key,
@@ -256,6 +265,17 @@ public class TerrainGenerator(
         {
             yield return result;
             yield return (ConversationScope)((uint)result | (1u << highestBit));
+        }
+    }
+
+    private static IEnumerable<SlidingWindowPreset> GetSlidingWindowPresets(SlidingWindowPreset presets)
+    {
+        for (int slidingWindow = 1; slidingWindow <= (int)SlidingWindowPreset.MaxValue; slidingWindow <<= 1)
+        {
+            if (presets.HasFlag((SlidingWindowPreset)slidingWindow))
+            {
+                yield return (SlidingWindowPreset)slidingWindow;
+            }
         }
     }
 }
