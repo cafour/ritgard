@@ -125,6 +125,11 @@ public class TerrainGenerator(
         CancellationToken ct = default
     )
     {
+        logger.LogInformation(
+            "Generating terrain for scope '{Scope}' and sliding windows '{SlidingWindows}'.",
+            scope,
+            slidingWindowPresets
+        );
         var islandGenerators = repo.TopicModelling.Topics
             .Where(p => p.Key != -1)
             .ToImmutableDictionary(
