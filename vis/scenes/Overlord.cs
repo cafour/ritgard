@@ -250,6 +250,12 @@ public partial class Overlord : Node
 
     private async Task ShowDataset(int index, CancellationToken ct = default)
     {
+        if (index < 0 || index >= datasets.Length)
+        {
+            GD.PushWarning($"There is no dataset for index '{index}'.");
+            return;
+        }
+
         if (CurrentDataset == index)
         {
             return;
