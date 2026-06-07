@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #PBS -N ritgard-positions
-#PBS -l select=1:ncpus=10:mem=20gb:scratch_local=40gb
-#PBS -l walltime=2:00:00
+#PBS -l select=1:ncpus=14:mem=40gb:scratch_local=40gb
+#PBS -l walltime=4:00:00
 
 set -o errexit
 
@@ -19,6 +19,8 @@ mkdir -p datasets
 
 export HF_HUB_DISABLE_XET=1
 export UV_HTTP_TIMEOUT=600
+
+out_dir=${out_dir:-/storage/brno2/home/xstepan1/out/positions}
 
 uv sync --no-install-package flash-attn
 
@@ -37,6 +39,12 @@ if [[ "$topics_suffix" != '' ]]; then
 fi
 
 for dataset in $datasets; do
+    out_filename="$dataset-positions$extension"
+    if [[ -f "$out_dir/$out_filename" ]]; then
+        echo "Skipping '$dataset' because output '$out_filename' already exists"
+	continue
+    fi
+
     args=()
     args+=(--world-sizing "${world_sizing:-auto}")
     if [[ "$world_scale" != '' ]]; then
@@ -48,15 +56,15 @@ for dataset in $datasets; do
     fi
 
     args+=(--data-path "./datasets/$dataset.json")
-    args+=(--output ./out/$dataset-positions$extension)
+    args+=(--output ./out/$out_filename)
     args+=(./datasets/modeling/topics_$dataset$topics_extension)
 
     echo "Adjusting dataset '$dataset'"
-    uv run --no-sync ./adjust-positions.py "${args[@]}" &
+    (uv run --no-sync ./adjust-positions.py "${args[@]}" && cp ./out/$out_filename $out_dir/) &
     # echo uv run --no-sync ./adjust-positions.py "${args[@]}" &
 done
 
 wait
-cp out/* /storage/brno2/home/xstepan1/out/positions
+cp out/* $out_dir
 
 rm -rf $SCRATCHDIR/*

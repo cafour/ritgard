@@ -1,13 +1,15 @@
 #!/bin/bash
 
 #PBS -N ritgard-terrains
-#PBS -l select=1:ncpus=20:mem=30gb:scratch_local=20gb
+#PBS -l select=1:ncpus=32:mem=80gb:scratch_local=20gb
 #PBS -l walltime=2:00:00
 
 set -o errexit
 
 if ! command -v dotnet >/dev/null 2>&1 ; then
-    curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --install-dir $SCRATCHDIR/.dotnet --channel 10.0
+    curl -sSL https://dot.net/v1/dotnet-install.sh > $SCRATCHDIR/dotnet-install.sh
+    bash $SCRATCHDIR/dotnet-install.sh --install-dir $SCRATCHDIR/.dotnet --channel 10.0
+    bash $SCRATCHDIR/dotnet-install.sh --install-dir $SCRATCHDIR/.dotnet --channel 9.0 --skip-non-versioned-files
     export DOTNET_ROOT="$SCRATCHDIR/.dotnet"
     export PATH="$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools"
 fi
@@ -20,9 +22,10 @@ cd $SCRATCHDIR/ritgard/console
 
 dotnet tool restore
 dotnet restore
+dotnet build -c Release
 
 dataset_dir=${dataset_dir:-'../data-processing/datasets'}
-out_dir=${out_dir:-'/storage/brno2/home/xstepan1/out/terrain'}
+out_dir=${out_dir:-'/storage/brno2/home/xstepan1/out/terrains'}
 
 datasets=${datasets:-$(ls -1 "$dataset_dir" | grep -P '[^\.]+\.json' | grep -v -e 'positions' -e 'terrain' | sed 's/.json//')}
 
@@ -38,6 +41,8 @@ if [[ "$positions_suffix" != '' ]]; then
     positions_extension=".$positions_suffix.json"
 fi
 
+mkdir -p out
+
 for dataset in $datasets; do
     positions_path="$dataset_dir/$dataset-positions$positions_extension"
 
@@ -46,23 +51,35 @@ for dataset in $datasets; do
         continue
     fi
 
-    args=(dataset_dir/$dataset.json $positions_path)
+    args=("$dataset_dir/$dataset.json" "$positions_path")
     
     if [[ "$step_length" != '' ]]; then
         args+=(--step-length-multiplier "$step_length")
     fi
 
-    args+=(--output ./out/$dataset-terrain$positions_extension)
+    if [[ "$batch_size" != '' ]]; then
+        args+=(--batch-size "$batch_size")
+    fi
+
+    out_filename=$dataset-terrain$positions_extension
+
+    if [[ -f "$out_dir/$out_filename" ]]; then
+        echo "Skipping '$out_filename' because it already exists."
+	continue
+    fi
+
+    out_path=./out/$out_filename
+    args+=(--output "$out_path")
 
     echo "Computing terrain for '$dataset' with subname '$positions_suffix'"
-    dotnet run -c Release -- terrain "${args[@]}" &
+    (dotnet run -c Release --no-build -- terrain "${args[@]}" ; cp "$out_path" "$out_dir/$out_filename") &
     # echo dotnet run -c Release -- terrain "${args[@]}" &
 
 done
 
 wait
 
-cp out/* $out_dir
+# cp out/* $out_dir
 
 if [[ "$SCRATCHDIR" != '' ]]; then
     rm -rf $SCRATCHDIR/*
