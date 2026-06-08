@@ -24,6 +24,7 @@ dependencies = [
     "regex>=2025.9.18",
     "flash-attn>=2.8.3 ; sys_platform == 'linux'",
     "pydantic-argparse>=0.10.0",
+    "scipy-stubs~=1.16.2",
 ]
 
 [dependency-groups]
