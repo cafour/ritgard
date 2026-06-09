@@ -56,16 +56,7 @@ internal class Commands
         var result = await miner.MineRepo(cancellationToken);
         if (result is not null)
         {
-            if (!string.IsNullOrEmpty(output))
-            {
-                var parentDir = new FileInfo(output).Directory;
-                if (parentDir is not null && !parentDir.Exists)
-                {
-                    parentDir.Create();
-                }
-            }
-
-            output = $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
+            output ??= $"{repoName.ToLower()}_{result.MiningCompletedAt:yyyy-MM-dd_HH-mm-ss}.json";
             Log.LogInformation("Saving to '{OutputPath}'.", output);
             await Utils.WriteJson(
                 result,

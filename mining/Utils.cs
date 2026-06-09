@@ -78,10 +78,10 @@ public static partial class Utils
         CancellationToken token = default
     )
     {
-        var directory = Path.GetDirectoryName(path);
-        if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+        var parentDir = new FileInfo(path).Directory;
+        if (parentDir is not null && !parentDir.Exists)
         {
-            Directory.CreateDirectory(directory);
+            parentDir.Create();
         }
 
         await using var stream = new FileStream(path, FileMode.Create);
