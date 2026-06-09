@@ -35,17 +35,17 @@ Each stage has requirements that may require you to use different machines. Ensu
 2. Restore NuGet dependencies with `dotnet restore`.
 3. Navigate to `console/`.
 4. To build the command-line interface (CLI) to the data miner and the terrain generator, run:
-  ```bash
-  dotnet publish --output `${console_dir}`
-  ```
-  Where `${console_dir}` is a directory of your choosing.
+    ```bash
+    dotnet publish --output `${console_dir}`
+    ```
+    Where `${console_dir}` is a directory of your choosing.
 5. Obtain your [GitHub fine-grained personal access token#creating-a-fine-grained-personal-access-token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens). No Permissions are required for the data mining of public repositories. Put the token into the `GitHubTokens__Main__Token` environment variable or into the CLI's `./appsettings.json`.
 6. Navigate to `${console_dir}`.
 7. To mine the STAs of a GitHub repository, run the following command while in the directory where you have previously published the miner:
-  ```bash
-  ./Ritgard.Console repo "${owner}/${name}" --output "${data_path}"
-  ```
-  Where `${owner}` is the owner account of the repository and `${name}`.
+    ```bash
+    ./Ritgard.Console repo "${owner}/${name}" --output "${data_path}"
+    ```
+    Where `${owner}` is the owner account of the repository and `${name}`.
   
 ### 2. Data processing
 
@@ -53,15 +53,15 @@ Each stage has requirements that may require you to use different machines. Ensu
 
 1. Navigate to `data-processing/`
 2. Install Python dependencies. While in `data-processing/` run:
-  ```bash
-  uv sync \
-    --preview-features extra-build-dependencies \
-    --no-build-isolation-package flash-attn
-  ```
-  However, [`flash-attn`](https://github.com/Dao-AILab/flash-attention) requires CUDA and only works on Linux, so you may want to omit it with:
-  ```bash
-  uv sync --no-install-package flash-attn
-  ```
+    ```bash
+    uv sync \
+      --preview-features extra-build-dependencies \
+      --no-build-isolation-package flash-attn
+    ```
+    However, [`flash-attn`](https://github.com/Dao-AILab/flash-attention) requires CUDA and only works on Linux, so you may want to omit it with:
+    ```bash
+    uv sync --no-install-package flash-attn
+    ```
 3. If you plan on using an LLM to generate topic names, put the LLM's API endpoint and your API key into the `LLM_BASE_URL` and `LLM_API_KEY` environment variables respectively.
 4. To model the topics of the mined STAs, run the following command while in the `data-processing/` directory:
     ```bash
